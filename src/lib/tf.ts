@@ -1,44 +1,32 @@
-import '@tensorflow/tfjs-backend-webgl';
-import * as tf from '@tensorflow/tfjs';
-import * as posenet from '@tensorflow-models/posenet';
+// src/lib/tf.ts
+// Client-side TFJS init + MoveNet detector factory (no Posenet).
 
-let model: posenet.PoseNet | null = null;
+export async function initTf(): Promise<"webgl" | string> {
+  // Load TFJS core & webgl backend dynamically in the browser
+  const tf = await import("@tensorflow/tfjs");
+  await import("@tensorflow/tfjs-backend-webgl");
 
-export const initTf = async () => {
-  await tf.setBackend('webgl');
+  // Ensure we’re on webgl (faster than cpu); ignore errors if already set
+  try {
+    if (tf.getBackend() !== "webgl") {
+      await tf.setBackend("webgl");
+    }
+  } catch {}
   await tf.ready();
-  console.log('TensorFlow.js initialized with WebGL backend');
-};
+  return tf.getBackend();
+}
 
-export const initializeTensorFlow = async () => {
-  // Set WebGL backend
-  await tf.setBackend('webgl');
-  await tf.ready();
-  
-  // Load PoseNet model - simpler and fewer dependencies
-  model = await posenet.load({
-    architecture: 'MobileNetV1',
-    outputStride: 16,
-    inputResolution: { width: 640, height: 480 },
-    multiplier: 0.75
-  });
-  
-  return model;
-};
+export type MoveNetDetector = any; // type-light to avoid bundling issues
 
-export const detectPoses = async (video: HTMLVideoElement) => {
-  if (!model) {
-    throw new Error('TensorFlow not initialized. Call initializeTensorFlow first.');
-  }
-  
-  const pose = await model.estimateSinglePose(video, {
-    flipHorizontal: false
-  });
-  
-  // Convert to array format to match the expected interface
-  return [pose];
-};
-
-export const getDetector = () => model;
-
-export { tf };
+export async function createMoveNet(): Promise<MoveNetDetector> {
+  // Use @tensorflow-models/pose-detection (MoveNet Lightning)
+  const posedetection = await import("@tensorflow-models/pose-detection");
+  const detector = await posedetection.createDetector(
+    posedetection.SupportedModels.MoveNet,
+    {
+      modelType: "Lightning", // fast & mobile-friendly
+      enableSmoothing: true
+    }
+  );
+  return detector;
+}
