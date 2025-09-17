@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, AlertTriangle, Loader2, RotateCcw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowLeft, AlertTriangle, Loader2, RotateCcw, Save, TrendingUp } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // Analytics
 import { trackCapture } from '@/lib/analytics';
@@ -24,24 +24,24 @@ import type { CoachingCard } from '@/lib/cues';
 import { supabase } from '@/integrations/supabase/client';
 
 // Config
-import metricSpecsJson from '../../config/phase1_metrics.json';
 import { metricSpecs } from '@/config/phase1_metrics';
 
 interface ScoreState {
   videoBlob?: Blob;
   fps?: number;
-  poses?: any[];
+  session_id?: string;
 }
 
 export default function Score() {
   const location = useLocation();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // State from navigation
   const state = location.state as ScoreState;
   const videoBlob = state?.videoBlob;
   const fps = state?.fps || 30;
+  const sessionIdFromState = state?.session_id;
   
   // Component state
   const [isAnalyzing, setIsAnalyzing] = useState(true);
@@ -59,8 +59,10 @@ export default function Score() {
   const [shouldRetake, setShouldRetake] = useState(false);
   
   // Database IDs
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(sessionIdFromState || null);
   const [swingId, setSwingId] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!videoBlob) {
@@ -154,12 +156,6 @@ export default function Score() {
 
       trackCapture.drillShown();
 
-      // Step 5: Persist to database
-      setProgressMessage('Saving your swing data...');
-      setProgress(90);
-
-      await persistSwingData(swingScore, cards, metricsResult);
-
       setProgress(100);
       setProgressMessage('Analysis complete!');
       setIsAnalyzing(false);
@@ -236,6 +232,42 @@ export default function Score() {
     navigate('/analysis');
   };
 
+  const handleSaveSwing = async () => {
+    if (isSaved || isSaving || !score || !coachingCards.length) return;
+
+    try {
+      setIsSaving(true);
+      await persistSwingData(score, coachingCards, metricsData!);
+      setIsSaved(true);
+      toast({ title: "Swing saved successfully!" });
+    } catch (error) {
+      console.error('Failed to save swing:', error);
+      toast({
+        title: "Save failed, will retry",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSeeProgress = () => {
+    // Navigate to progress screen - adjust route as needed
+    navigate('/progress');
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'bg-green-500';
+    if (score >= 60) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  const getScoreLabel = (score: number) => {
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Good';
+    return 'Needs Work';
+  };
+
   if (!videoBlob) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -244,9 +276,7 @@ export default function Score() {
           <p className="text-muted-foreground mb-4">
             Please record a swing first to see your analysis.
           </p>
-          <Link to="/analysis">
-            <Button>Go Back to Record</Button>
-          </Link>
+          <Button onClick={() => navigate('/analysis')}>Go Back to Record</Button>
         </Card>
       </div>
     );
@@ -389,39 +419,40 @@ export default function Score() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={handleRetake}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h1 className="text-2xl font-bold">Score</h1>
+          </div>
           <Button variant="ghost" size="sm" onClick={handleRetake}>
-            <ArrowLeft className="w-4 h-4" />
+            Retake
           </Button>
-          <h1 className="text-2xl font-bold">Swing Results</h1>
         </div>
 
         <div className="space-y-6">
-          {/* Score Display */}
-          <Card className="p-6 text-center">
-            <h2 className="text-xl font-bold mb-4">Your Swing Score</h2>
+          {/* Score Badge */}
+          <Card className="p-8 text-center">
             <div className="relative inline-block">
-              <div className={`w-32 h-32 rounded-full flex items-center justify-center text-white text-3xl font-bold ${
-                score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-              }`}>
+              <div className={`w-32 h-32 rounded-full flex items-center justify-center text-white text-4xl font-bold ${getScoreColor(score)}`}>
                 {score}
               </div>
               <Badge 
                 variant="secondary" 
                 className="absolute -bottom-2 left-1/2 transform -translate-x-1/2"
               >
-                {score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs Work'}
+                {getScoreLabel(score)}
               </Badge>
             </div>
           </Card>
 
           {/* Cue Chips */}
-          {coachingCards.length > 0 && (
+          {coachingCards.length >= 2 && (
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Focus Areas</h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3 justify-center">
                 {coachingCards.slice(0, 2).map((card, index) => (
-                  <Badge key={index} variant="outline" className="text-sm py-2 px-3">
+                  <Badge key={index} variant="outline" className="text-sm py-2 px-4">
                     {card.cue}
                   </Badge>
                 ))}
@@ -432,28 +463,76 @@ export default function Score() {
           {/* Primary Drill Card */}
           {coachingCards.length > 0 && (
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Recommended Drill</h3>
-              <div className="bg-muted rounded-lg p-4">
-                <h4 className="font-medium text-lg mb-2">{coachingCards[0].drill.name}</h4>
-                <p className="text-sm text-muted-foreground mb-3">{coachingCards[0].why}</p>
-                {coachingCards[0].drill.how_to && (
-                  <div className="text-sm">
-                    <strong>How to:</strong> {coachingCards[0].drill.how_to}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold">{coachingCards[0].drill.name}</h3>
+                
+                {/* Placeholder for video clip */}
+                <div className="bg-muted rounded-lg aspect-video flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <div className="text-4xl mb-2">🎬</div>
+                    <div className="text-sm">Video demonstration coming soon</div>
                   </div>
-                )}
-                {coachingCards[0].drill.equipment && (
-                  <div className="text-xs text-muted-foreground mt-2">
-                    Equipment: {coachingCards[0].drill.equipment}
-                  </div>
-                )}
+                </div>
+
+                {/* Steps */}
+                <div>
+                  <h4 className="font-medium mb-2">Steps:</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {coachingCards[0].drill.how_to || "Practice this drill to improve your swing mechanics"}
+                  </p>
+                </div>
+
+                {/* Equipment */}
+                <div>
+                  <h4 className="font-medium mb-2">Equipment:</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {coachingCards[0].drill.equipment || "Tee / PVC"}
+                  </p>
+                </div>
               </div>
             </Card>
           )}
 
-          {/* Metrics Summary */}
+          {/* Buttons Row */}
+          <Card className="p-6">
+            <div className="grid grid-cols-3 gap-3">
+              <Button 
+                onClick={handleSaveSwing}
+                disabled={isSaved || isSaving}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save swing'}
+              </Button>
+              
+              <Button onClick={handleRetake} variant="outline">
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Retake
+              </Button>
+              
+              <Button onClick={handleSeeProgress} variant="outline">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                See progress
+              </Button>
+            </div>
+          </Card>
+
+          {/* Video Playback */}
+          <Card className="p-4">
+            <h3 className="text-lg font-semibold mb-3">Your Swing</h3>
+            <video
+              src={videoUrl}
+              controls
+              className="w-full rounded-lg"
+              muted
+            />
+          </Card>
+
+          {/* Optional: Metrics Details */}
           {metricsData && (
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Swing Metrics</h3>
+              <h3 className="text-lg font-semibold mb-4">Metrics Details</h3>
               <div className="grid grid-cols-1 gap-2 text-sm">
                 {Object.entries(metricsData.metrics).map(([key, value]) => {
                   const displayName = metricDisplayNames()[key] || key.replace(/_/g, ' ');
@@ -462,7 +541,7 @@ export default function Score() {
                   
                   return (
                     <div key={key} className={`flex justify-between p-2 rounded ${
-                      isWeakest ? 'bg-orange-50 border border-orange-200' : 'bg-muted/50'
+                      isWeakest ? 'bg-orange-50 border border-orange-200 dark:bg-orange-950/20 dark:border-orange-800/20' : 'bg-muted/50'
                     }`}>
                       <span className="font-medium">
                         {displayName}:
@@ -477,24 +556,6 @@ export default function Score() {
               </div>
             </Card>
           )}
-
-          {/* Video Playback */}
-          <Card className="p-4">
-            <h3 className="text-lg font-semibold mb-3">Your Swing</h3>
-            <video
-              src={videoUrl}
-              controls
-              className="w-full rounded-lg"
-              muted
-            />
-          </Card>
-
-          {/* Actions */}
-          <div className="space-y-3">
-            <Button onClick={handleRetake} className="w-full" size="lg">
-              Record Another Swing
-            </Button>
-          </div>
         </div>
       </div>
     </div>
