@@ -20,8 +20,10 @@ import { buildCoachingCards } from '@/lib/cues';
 import { fetchDrillByNames } from '@/lib/drills';
 import type { CoachingCard } from '@/lib/cues';
 
-// Supabase
-import { supabase } from '@/integrations/supabase/client';
+// Persistence and storage
+import { ensureSession, saveSwing, saveMetrics } from '@/lib/persistence';
+import { uploadVideo } from '@/lib/storage';
+import { offlineQueue } from '@/lib/offlineQueue';
 
 // Config
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -42,6 +44,9 @@ export default function Score() {
   const videoBlob = state?.videoBlob;
   const fps = state?.fps || 30;
   const sessionIdFromState = state?.session_id;
+  
+  // Generate client request ID on mount for idempotency
+  const [clientRequestId] = useState(() => crypto.randomUUID());
   
   // Component state
   const [isAnalyzing, setIsAnalyzing] = useState(true);
@@ -169,62 +174,69 @@ export default function Score() {
 
   const persistSwingData = async (swingScore: number, cards: CoachingCard[], metricsResult: MetricsResult) => {
     try {
-      // Create or get session
-      let currentSessionId = sessionId;
-      if (!currentSessionId) {
-        const { data: sessionData, error: sessionError } = await supabase
-          .from('sessions')
-          .insert({
-            camera_fps: fps,
-            notes: `Swing analysis session ${new Date().toISOString()}`
-          })
-          .select()
-          .single();
+      // Ensure session exists
+      const currentSessionId = await ensureSession({ 
+        session_id: sessionId, 
+        athlete_id: undefined, // Add athlete_id support later
+        fps,
+        view: 'side'
+      });
+      
+      if (!sessionId) setSessionId(currentSessionId);
 
-        if (sessionError) throw sessionError;
-        currentSessionId = sessionData.id;
-        setSessionId(currentSessionId);
+      // Upload video if available
+      let videoUrl: string | null = null;
+      if (videoBlob) {
+        try {
+          const { urlOrPath } = await uploadVideo({
+            blob: videoBlob,
+            athlete_id: undefined, // Add athlete_id support later
+            client_request_id: clientRequestId
+          });
+          videoUrl = urlOrPath;
+          
+          // Analytics for successful video upload
+          trackCapture.videoUploaded(videoBlob.size);
+        } catch (uploadError) {
+          console.warn('Video upload failed, continuing without video:', uploadError);
+          // Video upload failure shouldn't block the save
+          toast({
+            title: "Video upload queued for retry",
+            description: "Swing data saved, video will upload when connection improves"
+          });
+        }
       }
 
-      // Create swing record
-      const { data: swingData, error: swingError } = await supabase
-        .from('swings')
-        .insert({
-          session_id: currentSessionId,
-          score_phase1: swingScore,
-          cues: cards.map(c => c.cue),
-          drill_id: (cards[0]?.drill && 'id' in cards[0].drill) ? cards[0].drill.id : null,
-          // video_url: null, // Would upload to storage in production
-        })
-        .select()
-        .single();
+      // Save swing data
+      const swingId = await saveSwing({
+        session_id: currentSessionId,
+        score: swingScore,
+        cards,
+        videoUrl,
+        client_request_id: clientRequestId
+      });
+      
+      setSwingId(swingId);
 
-      if (swingError) throw swingError;
-      setSwingId(swingData.id);
+      // Save metrics
+      const metricsForSaving: Record<string, number> = {};
+      Object.entries(metricsResult.metrics).forEach(([key, value]) => {
+        if (value !== null && !isNaN(value)) {
+          metricsForSaving[key] = value;
+        }
+      });
 
-      // Insert metrics
-      const units = metricUnits();
-      const metricsToInsert = Object.entries(metricsResult.metrics)
-        .filter(([_, value]) => value !== null)
-        .map(([metric, value]) => ({
-          swing_id: swingData.id,
-          metric,
-          value: value!,
-          unit: units[metric] || '',
-          phase: 1
-        }));
+      await saveMetrics({
+        swing_id: swingId,
+        values: metricsForSaving
+      });
 
-      if (metricsToInsert.length > 0) {
-        const { error: metricsError } = await supabase
-          .from('swing_metrics')
-          .insert(metricsToInsert);
-
-        if (metricsError) throw metricsError;
-      }
+      // Analytics for successful swing save
+      trackCapture.swingSaved(swingScore);
 
     } catch (error) {
       console.error('Failed to persist swing data:', error);
-      // Don't fail the entire analysis for persistence errors
+      throw error; // Let caller handle the error
     }
   };
 

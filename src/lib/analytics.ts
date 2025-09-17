@@ -21,6 +21,8 @@ export const trackCapture = {
   poseOk: () => posthog.capture('pose_ok'),
   scoreReady: () => posthog.capture('score_ready'),
   drillShown: () => posthog.capture('drill_shown'),
+  videoUploaded: (bytes?: number) => posthog.capture('video_uploaded', { bytes }),
+  swingSaved: (score?: number) => posthog.capture('swing_saved', { score }),
 };
 
 export { posthog };
