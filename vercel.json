@@ -1,6 +1,7 @@
 {
-  "buildCommand": "npx vite build --config build.config.ts",
+  "buildCommand": "npx vite build --config build.config.ts --mode production",
   "outputDirectory": "dist",
+  "installCommand": "npm install --legacy-peer-deps",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
