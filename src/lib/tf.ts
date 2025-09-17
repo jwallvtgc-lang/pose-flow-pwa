@@ -9,9 +9,13 @@
 export type PoseDetector = any;
 export type Pose = any;
 
+// Export tf instance for direct access
+let tfInstance: any = null;
+
 export async function initTf(): Promise<"webgl" | string> {
   // Import the full TFJS bundle; it brings core+converter.
   const tf = await import("@tensorflow/tfjs");
+  tfInstance = tf;
   // Ensure WebGL backend is registered before setBackend
   await import("@tensorflow/tfjs-backend-webgl");
 
@@ -25,6 +29,11 @@ export async function initTf(): Promise<"webgl" | string> {
   await tf.ready();
   return tf.getBackend();
 }
+
+// Export tf for direct access (lazy-loaded)
+export const tf = {
+  getBackend: () => tfInstance?.getBackend?.() || 'not-initialized'
+};
 
 export async function loadPoseDetector(): Promise<PoseDetector> {
   // Dynamic import keeps it out of SSR and trims initial bundle.

@@ -1,10 +1,8 @@
 {
-  "buildCommand": "npx --yes vite@latest build --config vite.config.ts",
+  "buildCommand": "npx vite build --mode production --logLevel warn",
   "outputDirectory": "dist",
+  "installCommand": "npm install --production=false",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "env": {
-    "SKIP_TYPE_CHECK": "true"
-  }
+  ]
 }
