@@ -15,11 +15,26 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    global: 'globalThis',
+    'process.env': {},
+  },
   worker: {
     format: 'es',
     plugins: () => [react()],
   },
   optimizeDeps: {
-    exclude: ['@tensorflow/tfjs', '@tensorflow-models/pose-detection']
+    exclude: ['@tensorflow/tfjs', '@tensorflow-models/pose-detection'],
+    include: ['long']
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+      output: {
+        globals: {
+          'long': 'Long'
+        }
+      }
+    }
   }
 }));
