@@ -143,6 +143,7 @@ export type Database = {
       }
       swings: {
         Row: {
+          client_request_id: string | null
           created_at: string | null
           cues: Json | null
           drill_id: string | null
@@ -152,6 +153,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          client_request_id?: string | null
           created_at?: string | null
           cues?: Json | null
           drill_id?: string | null
@@ -161,6 +163,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          client_request_id?: string | null
           created_at?: string | null
           cues?: Json | null
           drill_id?: string | null
