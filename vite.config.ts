@@ -15,4 +15,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  worker: {
+    format: 'es',
+    plugins: () => [react()],
+  },
+  optimizeDeps: {
+    exclude: ['@tensorflow/tfjs', '@tensorflow-models/pose-detection']
+  }
 }));
