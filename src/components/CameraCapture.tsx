@@ -76,7 +76,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
         try {
           const mediaStream = await navigator.mediaDevices.getUserMedia({
             video: { 
-              facingMode: 'user',
+              facingMode: 'environment',
               width: { ideal: 720, min: 480 },
               height: { ideal: 1280, min: 640 },
               frameRate: { ideal: 60, min: 15 }
@@ -97,7 +97,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
           // Try with less restrictive constraints
           try {
             const fallbackStream = await navigator.mediaDevices.getUserMedia({
-              video: { facingMode: 'user' },
+              video: { facingMode: 'environment' },
               audio: false
             });
             setStream(fallbackStream);
@@ -346,7 +346,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
           playsInline
           muted
           className="w-full h-full object-cover"
-          style={{ transform: 'scaleX(-1)' }} // Mirror for selfie mode
+          // Back camera doesn't need mirroring
         />
         
         {/* Hidden canvas for frame processing */}
@@ -359,7 +359,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
         <canvas
           ref={overlayCanvasRef}
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
-          style={{ transform: 'scaleX(-1)' }}
+          // Back camera overlay doesn't need mirroring
         />
         
         {/* Worker Status */}
