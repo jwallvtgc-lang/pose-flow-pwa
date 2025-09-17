@@ -89,3 +89,4 @@
     "vite": "^5.4.19"
   }
 }
+remove posenet dep
