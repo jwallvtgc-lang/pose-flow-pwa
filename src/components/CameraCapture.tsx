@@ -1,11 +1,9 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { initializeTensorFlow, detectPoses } from '@/lib/tf';
 import { trackCapture } from '@/lib/analytics';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Video, Clock } from 'lucide-react';
+import { AlertTriangle, Video, Loader2 } from 'lucide-react';
 
 interface CameraCaptureProps {
   onPoseDetected?: (poses: any[]) => void;
@@ -17,8 +15,10 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const poseWorkerRef = useRef<Worker | null>(null);
   const recordingStartTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number>();
+  const frameIdRef = useRef<number>(0);
   
   const [isRecording, setIsRecording] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -27,41 +27,100 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [badAngle, setBadAngle] = useState(false);
   const [currentPoses, setCurrentPoses] = useState<any[]>([]);
+  const [workerStatus, setWorkerStatus] = useState<string>('Initializing...');
+  const [workerError, setWorkerError] = useState<string>('');
   
   const navigate = useNavigate();
 
   useEffect(() => {
-    const setupCamera = async () => {
+    const setupCameraAndWorker = async () => {
       try {
-        // Initialize TensorFlow
-        await initializeTensorFlow();
-        setIsInitialized(true);
+        // Initialize pose detection worker
+        poseWorkerRef.current = new Worker('/poseWorker.js');
+        
+        poseWorkerRef.current.onmessage = (e) => {
+          const { type, keypoints, confidence, message, error } = e.data;
+          
+          switch (type) {
+            case 'progress':
+              setWorkerStatus(message);
+              break;
+              
+            case 'initialized':
+              setWorkerStatus('Pose detection ready');
+              setIsInitialized(true);
+              break;
+              
+            case 'poses':
+              if (keypoints && keypoints.length > 0) {
+                const poseData = [{ keypoints, score: confidence }];
+                setCurrentPoses(poseData);
+                onPoseDetected?.(poseData);
+                checkAngle(keypoints);
+                drawPoseOverlay(poseData);
+              }
+              break;
+              
+            case 'error':
+              console.error('Pose worker error:', error);
+              setWorkerError(message);
+              setWorkerStatus('Pose detection failed');
+              break;
+          }
+        };
 
-        // Get camera stream with portrait orientation
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'user',
-            width: { ideal: 720 },
-            height: { ideal: 1280 },
-            frameRate: { ideal: 60, min: 30 }
-          },
-          audio: false
-        });
-        
-        setStream(mediaStream);
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          videoRef.current.onloadedmetadata = () => {
-            startPoseDetectionLoop();
-          };
+        // Initialize the worker
+        poseWorkerRef.current.postMessage({ type: 'initialize' });
+
+        // Get camera stream with better error handling
+        try {
+          const mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+              facingMode: 'user',
+              width: { ideal: 720, min: 480 },
+              height: { ideal: 1280, min: 640 },
+              frameRate: { ideal: 60, min: 15 }
+            },
+            audio: false
+          });
+          
+          setStream(mediaStream);
+          
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+            videoRef.current.onloadedmetadata = () => {
+              startPoseDetectionLoop();
+            };
+          }
+        } catch (cameraError) {
+          console.error('Camera setup failed:', cameraError);
+          // Try with less restrictive constraints
+          try {
+            const fallbackStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user' },
+              audio: false
+            });
+            setStream(fallbackStream);
+            if (videoRef.current) {
+              videoRef.current.srcObject = fallbackStream;
+              videoRef.current.onloadedmetadata = () => {
+                startPoseDetectionLoop();
+              };
+            }
+          } catch (fallbackError) {
+            setWorkerError('Camera access denied or not available');
+            setWorkerStatus('Camera setup failed');
+          }
         }
+        
       } catch (error) {
-        console.error('Camera setup failed:', error);
+        console.error('Setup failed:', error);
+        setWorkerError('Failed to initialize pose detection');
+        setWorkerStatus('Setup failed');
       }
     };
 
-    setupCamera();
+    setupCameraAndWorker();
 
     return () => {
       if (stream) {
@@ -70,39 +129,72 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      if (poseWorkerRef.current) {
+        poseWorkerRef.current.postMessage({ type: 'cleanup' });
+        poseWorkerRef.current.terminate();
+      }
     };
   }, []);
 
-  const startPoseDetectionLoop = useCallback(async () => {
-    if (!videoRef.current || !isInitialized) return;
-    
-    try {
-      const poses = await detectPoses(videoRef.current);
-      setCurrentPoses(poses);
-      
-      if (poses.length > 0) {
-        onPoseDetected?.(poses);
+  const startPoseDetectionLoop = useCallback(() => {
+    const processFrame = () => {
+      if (!videoRef.current || !poseWorkerRef.current || !isInitialized) {
+        animationFrameRef.current = requestAnimationFrame(processFrame);
+        return;
+      }
+
+      try {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
         
-        // Check for bad angle (frontal vs side view)
-        const pose = poses[0];
-        if (pose.keypoints) {
-          checkAngle(pose);
+        if (!canvas) {
+          animationFrameRef.current = requestAnimationFrame(processFrame);
+          return;
+        }
+
+        // Set canvas size to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          animationFrameRef.current = requestAnimationFrame(processFrame);
+          return;
+        }
+
+        // Draw video frame to canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Get image data for pose detection (throttle to ~30fps)
+        if (frameIdRef.current % 2 === 0) { // Process every 2nd frame for 30fps from 60fps
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          poseWorkerRef.current.postMessage({
+            type: 'processFrame',
+            data: {
+              imageData: imageData.data,
+              width: canvas.width,
+              height: canvas.height,
+              frameId: frameIdRef.current
+            }
+          });
         }
         
-        // Draw pose overlay
-        drawPoseOverlay(poses);
+        frameIdRef.current++;
+      } catch (error) {
+        console.error('Frame processing error:', error);
       }
-    } catch (error) {
-      console.error('Pose detection error:', error);
-    }
+      
+      animationFrameRef.current = requestAnimationFrame(processFrame);
+    };
     
-    animationFrameRef.current = requestAnimationFrame(startPoseDetectionLoop);
-  }, [isInitialized, onPoseDetected]);
+    processFrame();
+  }, [isInitialized]);
 
-  const checkAngle = (pose: any) => {
+  const checkAngle = (keypoints: any[]) => {
     // Check shoulder width ratio to determine if user is facing sideways
-    const leftShoulder = pose.keypoints.find((kp: any) => kp.part === 'leftShoulder' || kp.name === 'left_shoulder');
-    const rightShoulder = pose.keypoints.find((kp: any) => kp.part === 'rightShoulder' || kp.name === 'right_shoulder');
+    const leftShoulder = keypoints.find((kp: any) => kp.name === 'left_shoulder');
+    const rightShoulder = keypoints.find((kp: any) => kp.name === 'right_shoulder');
     
     if (leftShoulder && rightShoulder && leftShoulder.score > 0.5 && rightShoulder.score > 0.5) {
       const shoulderDistance = Math.abs(leftShoulder.x - rightShoulder.x);
@@ -227,7 +319,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   }, [isRecording]);
 
   const handlePointerDown = () => {
-    if (!isRecording) {
+    if (!isRecording && isInitialized && !workerError) {
       startRecording();
     }
   };
@@ -257,6 +349,12 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
           style={{ transform: 'scaleX(-1)' }} // Mirror for selfie mode
         />
         
+        {/* Hidden canvas for frame processing */}
+        <canvas
+          ref={canvasRef}
+          className="hidden"
+        />
+        
         {/* Pose Overlay Canvas */}
         <canvas
           ref={overlayCanvasRef}
@@ -264,9 +362,29 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
           style={{ transform: 'scaleX(-1)' }}
         />
         
-        {/* Bad Angle Warning */}
-        {badAngle && (
+        {/* Worker Status */}
+        {!isInitialized && (
           <div className="absolute top-4 left-4 right-4">
+            <Badge variant="secondary" className="w-full justify-center py-2">
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              {workerStatus}
+            </Badge>
+          </div>
+        )}
+        
+        {/* Worker Error */}
+        {workerError && (
+          <div className="absolute top-4 left-4 right-4">
+            <Badge variant="destructive" className="w-full justify-center py-2">
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              {workerError}
+            </Badge>
+          </div>
+        )}
+        
+        {/* Bad Angle Warning */}
+        {badAngle && isInitialized && !workerError && (
+          <div className="absolute top-16 left-4 right-4">
             <Badge variant="destructive" className="w-full justify-center py-2">
               <AlertTriangle className="w-4 h-4 mr-2" />
               Bad angle - Turn sideways for better swing analysis
@@ -301,7 +419,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
               ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
               : 'bg-primary hover:bg-primary/90'
           }`}
-          disabled={!isInitialized || !stream}
+          disabled={!isInitialized || !stream || !!workerError}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp} // Stop recording if finger leaves button
@@ -309,9 +427,9 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
           {isRecording ? 'STOP' : 'HOLD TO RECORD'}
         </Button>
         
-        {!isInitialized && (
+        {!isInitialized && !workerError && (
           <p className="text-white text-sm text-center mt-2">
-            Initializing camera...
+            {workerStatus}
           </p>
         )}
       </div>
