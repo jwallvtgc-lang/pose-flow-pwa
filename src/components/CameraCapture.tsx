@@ -72,8 +72,9 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
         // Initialize the worker
         poseWorkerRef.current.postMessage({ type: 'initialize' });
 
-        // Get camera stream with better error handling
+        // Get camera stream with better error handling and fallbacks
         try {
+          // Try back camera first
           const mediaStream = await navigator.mediaDevices.getUserMedia({
             video: { 
               facingMode: 'environment',
@@ -93,23 +94,49 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
             };
           }
         } catch (cameraError) {
-          console.error('Camera setup failed:', cameraError);
-          // Try with less restrictive constraints
+          console.error('Back camera setup failed:', cameraError);
+          // Try front camera as fallback
           try {
             const fallbackStream = await navigator.mediaDevices.getUserMedia({
-              video: { facingMode: 'environment' },
+              video: { 
+                facingMode: 'user',
+                width: { ideal: 720, min: 480 },
+                height: { ideal: 1280, min: 640 },
+                frameRate: { ideal: 60, min: 15 }
+              },
               audio: false
             });
             setStream(fallbackStream);
             if (videoRef.current) {
               videoRef.current.srcObject = fallbackStream;
+              // Apply mirroring for front camera
+              videoRef.current.style.transform = 'scaleX(-1)';
+              if (overlayCanvasRef.current) {
+                overlayCanvasRef.current.style.transform = 'scaleX(-1)';
+              }
               videoRef.current.onloadedmetadata = () => {
                 startPoseDetectionLoop();
               };
             }
-          } catch (fallbackError) {
-            setWorkerError('Camera access denied or not available');
-            setWorkerStatus('Camera setup failed');
+          } catch (frontCameraError) {
+            console.error('Front camera fallback failed:', frontCameraError);
+            // Try with minimal constraints as last resort
+            try {
+              const minimalStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+              });
+              setStream(minimalStream);
+              if (videoRef.current) {
+                videoRef.current.srcObject = minimalStream;
+                videoRef.current.onloadedmetadata = () => {
+                  startPoseDetectionLoop();
+                };
+              }
+            } catch (finalError) {
+              setWorkerError('Camera access denied or not available');
+              setWorkerStatus('Camera setup failed');
+            }
           }
         }
         
