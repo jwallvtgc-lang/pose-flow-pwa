@@ -1,7 +1,5 @@
 // TypeScript Web Worker for pose detection and swing analysis
-import * as tf from '@tensorflow/tfjs';
-import '@tensorflow/tfjs-backend-webgl';
-import * as poseDetection from '@tensorflow-models/pose-detection';
+// Fixed version with dynamic imports to resolve build issues
 
 // Types
 interface Keypoint {
@@ -38,12 +36,19 @@ interface WorkerOutput {
 }
 
 // Global variables
-let model: poseDetection.PoseDetector | null = null;
+let model: any | null = null;
 let isInitialized = false;
+let tf: any = null;
+let poseDetection: any = null;
 
-// Initialize TensorFlow.js and load MoveNet model
+// Initialize TensorFlow.js and load MoveNet model with dynamic imports
 async function initializePoseDetection(): Promise<void> {
   try {
+    // Dynamic imports to avoid build issues
+    tf = await import('@tensorflow/tfjs');
+    await import('@tensorflow/tfjs-backend-webgl');
+    poseDetection = await import('@tensorflow-models/pose-detection');
+    
     // Set WebGL backend
     await tf.setBackend('webgl');
     await tf.ready();
