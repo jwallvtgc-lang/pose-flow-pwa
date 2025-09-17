@@ -10,10 +10,10 @@ export const metricSpecs = {
 } as const;
 
 export type MetricSpec = {
-  target: [number, number];
+  target: readonly [number, number];
   weight: number;
   invert?: boolean;
   abs_window?: boolean;
 };
 
-export type MetricSpecs = typeof metricSpecs;
+export type MetricSpecs = Record<string, MetricSpec>;
