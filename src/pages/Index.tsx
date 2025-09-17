@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowRight, Camera, BarChart3, Lightbulb } from 'lucide-react';
+import { ArrowRight, Camera, BarChart3, Lightbulb, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AddToHomeScreen from "@/components/AddToHomeScreen";
 
@@ -19,8 +19,14 @@ const Index = () => {
           </p>
           
           <Link to="/analysis">
-            <Button size="lg" className="gap-2 w-full">
+            <Button size="lg" className="gap-2 w-full mb-4">
               Start Analysis <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
+          
+          <Link to="/progress">
+            <Button size="lg" variant="outline" className="gap-2 w-full">
+              View Progress <TrendingUp className="w-4 h-4" />
             </Button>
           </Link>
         </div>
@@ -58,11 +64,18 @@ const Index = () => {
           <p className="text-muted-foreground mb-6">
             Join thousands of players using AI-powered analysis to perfect their baseball swing
           </p>
-          <Link to="/analysis">
-            <Button size="lg" variant="secondary" className="w-full">
-              Start Your First Analysis
-            </Button>
-          </Link>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link to="/analysis" className="flex-1">
+              <Button size="lg" variant="secondary" className="w-full">
+                Start Your First Analysis
+              </Button>
+            </Link>
+            <Link to="/progress" className="flex-1">
+              <Button size="lg" variant="outline" className="w-full">
+                Track Your Progress
+              </Button>
+            </Link>
+          </div>
         </Card>
 
         <AddToHomeScreen />

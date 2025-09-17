@@ -1,6 +1,7 @@
-import { HomeIcon, BarChart3Icon, BugIcon } from "lucide-react";
+import { HomeIcon, BarChart3Icon, BugIcon, TrendingUpIcon } from "lucide-react";
 import Index from "./pages/Index";
 import SwingAnalysis from "./pages/SwingAnalysis";
+import Progress from "./pages/Progress";
 import Debug from "./pages/Debug";
 
 /**
@@ -21,6 +22,12 @@ export const navItems = [
     to: "/analysis",
     icon: <BarChart3Icon className="h-4 w-4" />,
     page: <SwingAnalysis />,
+  },
+  {
+    title: "Progress",
+    to: "/progress",
+    icon: <TrendingUpIcon className="h-4 w-4" />,
+    page: <Progress />,
   },
   {
     title: "Debug",
