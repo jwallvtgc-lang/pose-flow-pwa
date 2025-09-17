@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CameraCapture } from '@/components/CameraCapture';
 import { SwingScoring } from '@/components/SwingScoring';
 import { CoachingFeedback } from '@/components/CoachingFeedback';
@@ -9,6 +10,7 @@ import type { CoachingCard } from '@/lib/cues';
 type FlowStep = 'capture' | 'score' | 'feedback';
 
 export default function SwingAnalysis() {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<FlowStep>('capture');
   const [poses, setPoses] = useState<any[]>([]);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -21,7 +23,14 @@ export default function SwingAnalysis() {
 
   const handleCapture = (blob: Blob) => {
     setVideoBlob(blob);
-    setCurrentStep('score');
+    // Navigate to score page with video blob and fps
+    navigate('/score?swingId=NEW', { 
+      state: { 
+        videoBlob: blob, 
+        fps: 30, // Pass fps for analysis
+        poses: poses 
+      } 
+    });
   };
 
   const handleScoreComplete = (swingScore: number, cards: CoachingCard[]) => {
@@ -49,7 +58,10 @@ export default function SwingAnalysis() {
                 Position yourself sideways and record your baseball swing
               </p>
             </div>
-            <CameraCapture />
+            <CameraCapture 
+              onPoseDetected={handlePoseDetected}
+              onCapture={handleCapture}
+            />
           </div>
         );
       

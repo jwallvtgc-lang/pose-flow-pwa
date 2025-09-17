@@ -43,11 +43,8 @@ export class PoseWorkerClient {
 
   private async initializeWorker(): Promise<void> {
     try {
-      // Create worker from TypeScript file (Vite will handle compilation in dev)
-      this.worker = new Worker(
-        new URL('/workers/poseWorker.ts', import.meta.url),
-        { type: 'module' }
-      );
+      // Use the JavaScript worker from public directory to avoid module resolution issues
+      this.worker = new Worker('/poseWorker.js');
 
       // Set up message handling
       this.worker.onmessage = (e) => {
