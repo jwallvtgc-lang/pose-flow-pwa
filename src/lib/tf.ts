@@ -15,10 +15,11 @@ export const initializeTensorFlow = async () => {
   await tf.setBackend('webgl');
   await tf.ready();
   
-  // Initialize pose detector
-  const model = poseDetection.SupportedModels.MoveNet;
+  // Initialize pose detector with BlazePose (doesn't require MediaPipe)
+  const model = poseDetection.SupportedModels.BlazePose;
   detector = await poseDetection.createDetector(model, {
-    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+    runtime: 'tfjs',
+    modelType: 'lite'
   });
   
   return detector;
