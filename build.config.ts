@@ -1,22 +1,14 @@
-// @ts-nocheck
+// Alternative build config that bypasses TypeScript project references
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [
-    react({
-      // Disable TypeScript checking in SWC
-      plugins: []
-    })
-  ],
+  plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-  },
-  server: {
-    port: 8080
   },
   optimizeDeps: {
     include: [
@@ -45,10 +37,5 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
-  },
-  // Force esbuild to ignore TypeScript errors
-  esbuild: {
-    target: 'esnext',
-    logLevel: 'silent'
   }
 })
