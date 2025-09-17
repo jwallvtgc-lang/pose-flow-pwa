@@ -2,21 +2,24 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import path from 'path'
+import { componentTagger } from "lovable-tagger"
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react({
       // Disable TypeScript checking in SWC
       plugins: []
-    })
-  ],
+    }),
+    mode === 'development' && componentTagger(),
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
   server: {
-    port: 8080
+    host: "::",
+    port: 8080,
   },
   optimizeDeps: {
     include: [
@@ -51,4 +54,4 @@ export default defineConfig({
     target: 'esnext',
     logLevel: 'silent'
   }
-})
+}))
