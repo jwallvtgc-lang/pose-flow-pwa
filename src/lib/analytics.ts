@@ -2,16 +2,25 @@ import posthog from 'posthog-js';
 import { env } from '@/config/env';
 
 export const initPosthog = () => {
+  // Use the PostHog key from environment
   const posthogKey = env.VITE_POSTHOG_KEY;
-  const posthogHost = import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com';
+  const posthogHost = 'https://us.i.posthog.com';
   
-  if (posthogKey) {
+  if (posthogKey && posthogKey !== 'phc_BixHVyV1mfTIN1iXZyZOPALco4AYFIEtd64dRRcGU5d') {
     posthog.init(posthogKey, {
       api_host: posthogHost,
       autocapture: false,
       capture_pageview: false,
     });
   }
+};
+
+// Baseball swing analysis events
+export const trackCapture = {
+  started: () => posthog.capture('capture_started'),
+  poseOk: () => posthog.capture('pose_ok'),
+  scoreReady: () => posthog.capture('score_ready'),
+  drillShown: () => posthog.capture('drill_shown'),
 };
 
 export { posthog };
