@@ -13,28 +13,26 @@ export default defineConfig({
     include: [
       '@tensorflow/tfjs',
       '@tensorflow/tfjs-backend-webgl',
-      '@tensorflow/tfjs-converter',
+      '@tensorflow/tfjs-converter', 
       '@tensorflow/tfjs-core',
       '@tensorflow-models/pose-detection',
       '@mediapipe/pose'
-    ],
-    exclude: []
+    ]
   },
   build: {
+    commonjsOptions: {
+      include: [/node_modules/]
+    },
     rollupOptions: {
       output: {
         manualChunks: {
-          tensorflow: [
-            '@tensorflow/tfjs',
-            '@tensorflow/tfjs-backend-webgl',
-            '@tensorflow/tfjs-converter',
-            '@tensorflow/tfjs-core',
-            '@tensorflow-models/pose-detection'
-          ]
+          'tensorflow-core': ['@tensorflow/tfjs-core', '@tensorflow/tfjs-converter'],
+          'tensorflow-backend': ['@tensorflow/tfjs', '@tensorflow/tfjs-backend-webgl'],
+          'tensorflow-models': ['@tensorflow-models/pose-detection'],
+          'mediapipe': ['@mediapipe/pose']
         }
       }
-    },
-    chunkSizeWarningLimit: 1000
+    }
   },
   define: {
     global: 'globalThis',
