@@ -1,0 +1,319 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
+  public: {
+    Tables: {
+      athletes: {
+        Row: {
+          bat_length_in: number | null
+          created_at: string | null
+          dob: string | null
+          handedness: string | null
+          height_cm: number | null
+          id: string
+          name: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          bat_length_in?: number | null
+          created_at?: string | null
+          dob?: string | null
+          handedness?: string | null
+          height_cm?: number | null
+          id?: string
+          name?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          bat_length_in?: number | null
+          created_at?: string | null
+          dob?: string | null
+          handedness?: string | null
+          height_cm?: number | null
+          id?: string
+          name?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      drills: {
+        Row: {
+          equipment: string | null
+          goal_metric: string | null
+          how_to: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          equipment?: string | null
+          goal_metric?: string | null
+          how_to?: string | null
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          equipment?: string | null
+          goal_metric?: string | null
+          how_to?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          athlete_id: string | null
+          camera_fps: number | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          view: string | null
+        }
+        Insert: {
+          athlete_id?: string | null
+          camera_fps?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          view?: string | null
+        }
+        Update: {
+          athlete_id?: string | null
+          camera_fps?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          view?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      swing_metrics: {
+        Row: {
+          id: number
+          metric: string | null
+          phase: number | null
+          swing_id: string | null
+          unit: string | null
+          value: number | null
+        }
+        Insert: {
+          id?: number
+          metric?: string | null
+          phase?: number | null
+          swing_id?: string | null
+          unit?: string | null
+          value?: number | null
+        }
+        Update: {
+          id?: number
+          metric?: string | null
+          phase?: number | null
+          swing_id?: string | null
+          unit?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swing_metrics_swing_id_fkey"
+            columns: ["swing_id"]
+            isOneToOne: false
+            referencedRelation: "swings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      swings: {
+        Row: {
+          created_at: string | null
+          cues: Json | null
+          drill_id: string | null
+          id: string
+          score_phase1: number | null
+          session_id: string | null
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          cues?: Json | null
+          drill_id?: string | null
+          id?: string
+          score_phase1?: number | null
+          session_id?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          cues?: Json | null
+          drill_id?: string | null
+          id?: string
+          score_phase1?: number | null
+          session_id?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
