@@ -46,13 +46,10 @@ export default function SwingAnalysis() {
             <div className="text-center">
               <h1 className="text-2xl font-bold mb-2">Record Your Swing</h1>
               <p className="text-muted-foreground">
-                Position yourself in frame and record your baseball swing
+                Position yourself sideways and record your baseball swing
               </p>
             </div>
-            <CameraCapture 
-              onPoseDetected={handlePoseDetected}
-              onCapture={handleCapture}
-            />
+            <CameraCapture />
           </div>
         );
       
