@@ -6,7 +6,7 @@ const Index = () => {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <h1 className="mb-4 text-4xl font-bold text-foreground">SwingSense</h1>
-          <p className="text-lg text-muted-foreground leading-tight">AI-powered golf swing analysis</p>
+          <p className="text-lg text-muted-foreground leading-tight">AI-powered baseball swing analysis</p>
         </div>
       </div>
       <AddToHomeScreen />

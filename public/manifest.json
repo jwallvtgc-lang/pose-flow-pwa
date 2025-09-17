@@ -1,7 +1,7 @@
 {
-  "name": "SwingSense - Smart Golf Swing Analysis",
+  "name": "SwingSense - Smart Baseball Swing Analysis",
   "short_name": "SwingSense",
-  "description": "AI-powered golf swing analysis using pose detection technology",
+  "description": "AI-powered baseball swing analysis using pose detection technology",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
