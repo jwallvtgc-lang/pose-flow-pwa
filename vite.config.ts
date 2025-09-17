@@ -18,6 +18,8 @@ export default defineConfig(({ mode }) => ({
   define: {
     global: 'globalThis',
     'process.env': {},
+    'process.browser': true,
+    require: 'undefined'
   },
   worker: {
     format: 'es',
@@ -25,14 +27,23 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: ['@tensorflow/tfjs', '@tensorflow-models/pose-detection'],
-    include: ['long']
+    include: ['long', 'seedrandom'],
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
+    },
   },
   build: {
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       external: [],
       output: {
         globals: {
-          'long': 'Long'
+          'long': 'Long',
+          'seedrandom': 'seedrandom'
         }
       }
     }
