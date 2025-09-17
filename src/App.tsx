@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import Debug from "./pages/Debug";
+import MetricsDebug from "./pages/MetricsDebug";
 import NotFound from "./pages/NotFound";
 import { initPosthog } from "./lib/analytics";
 import { initTf } from "./lib/tf";
@@ -41,6 +42,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/debug" element={<Debug />} />
+            <Route path="/metrics-debug" element={<MetricsDebug />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
