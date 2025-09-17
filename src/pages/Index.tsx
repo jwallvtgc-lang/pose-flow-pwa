@@ -1,4 +1,4 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import AddToHomeScreen from "@/components/AddToHomeScreen";
 
 const Index = () => {
   return (
@@ -9,6 +9,7 @@ const Index = () => {
           <p className="text-lg text-muted-foreground leading-tight">AI-powered golf swing analysis</p>
         </div>
       </div>
+      <AddToHomeScreen />
     </div>
   );
 };
