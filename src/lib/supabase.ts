@@ -1,7 +1,2 @@
-import { createClient } from '@supabase/supabase-js';
-import { env } from '@/config/env';
-
-const supabaseUrl = env.VITE_SUPABASE_URL;
-const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Use the official Supabase client instead of duplicating
+export { supabase } from '@/integrations/supabase/client';
