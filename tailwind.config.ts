@@ -20,6 +20,7 @@ export default {
       colors: {
         'hunters-green': '#355E3B',
         'sp-blue': 'hsl(var(--sp-blue))',
+        'sp-royal-blue': 'hsl(var(--sp-royal-blue))',
         'sp-orange': 'hsl(var(--sp-orange))',
         'sp-green': 'hsl(var(--sp-green))',
         'sp-red': 'hsl(var(--sp-red))',

@@ -40,6 +40,7 @@ All colors MUST be HSL.
 
     /* South Park inspired colors from the image */
     --sp-blue: 135 100% 70%;     /* Sky blue background */
+    --sp-royal-blue: 225 73% 57%; /* Royal blue */
     --sp-orange: 25 100% 55%;    /* Kenny's bright orange */
     --sp-green: 120 100% 35%;    /* Kyle's bright green hat */
     --sp-red: 0 100% 50%;        /* Cartman's red coat */
