@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         'great-vibes': ['Great Vibes', 'cursive'],
-        'fredoka': ['Fredoka One', 'cursive'],
+        'anton': ['Anton', 'sans-serif'],
       },
       colors: {
         'hunters-green': '#355E3B',
@@ -24,6 +24,7 @@ export default {
         'sp-green': 'hsl(var(--sp-green))',
         'sp-red': 'hsl(var(--sp-red))',
         'sp-yellow': 'hsl(var(--sp-yellow))',
+        'sp-brown': 'hsl(var(--sp-brown))',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
