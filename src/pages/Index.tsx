@@ -21,7 +21,7 @@ const Index = () => {
         {/* Feature Cards */}
         <div className="grid gap-6 mb-12">
           <Link to="/analysis">
-            <Card className="p-8 text-center bg-sp-red border-4 border-black rounded-2xl hover:scale-105 transition-all duration-200 cursor-pointer shadow-lg">
+            <Card className="p-8 text-center bg-sp-blue border-4 border-black rounded-2xl hover:scale-105 transition-all duration-200 cursor-pointer shadow-lg">
               <Camera className="w-16 h-16 mx-auto mb-6 text-white" />
               <h3 className="text-2xl font-anton font-black mb-4 text-white uppercase tracking-wide">Capture Your Swing</h3>
               <p className="text-white font-bold text-lg mb-6">
