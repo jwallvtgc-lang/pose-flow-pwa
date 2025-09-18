@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import SwingAnalysis from "./pages/SwingAnalysis";
 import Score from "./pages/Score";
 import Progress from "./pages/Progress";
@@ -45,6 +46,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/analysis" element={<SwingAnalysis />} />
             <Route path="/score" element={<Score />} />
             <Route path="/progress" element={<Progress />} />
