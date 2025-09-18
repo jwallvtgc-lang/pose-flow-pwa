@@ -56,11 +56,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    // Safety timeout - if auth doesn't resolve in 10 seconds, stop loading
+    // Shorter timeout for mobile - if auth doesn't resolve in 5 seconds, stop loading
     timeoutId = setTimeout(() => {
       console.warn('Auth timeout - setting loading to false');
       setLoading(false);
-    }, 10000);
+    }, 5000);
 
     return () => {
       subscription.unsubscribe();
