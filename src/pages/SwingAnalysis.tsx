@@ -4,13 +4,16 @@ import { CameraCapture } from '@/components/CameraCapture';
 import { SwingScoring } from '@/components/SwingScoring';
 import { CoachingFeedback } from '@/components/CoachingFeedback';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { ArrowLeft, Camera, BarChart3, Target } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { CoachingCard } from '@/lib/cues';
 
 type FlowStep = 'capture' | 'score' | 'feedback';
 
 export default function SwingAnalysis() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState<FlowStep>('capture');
   const [poses, setPoses] = useState<any[]>([]);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -114,31 +117,63 @@ export default function SwingAnalysis() {
           )}
           
           {/* Progress indicator */}
-          <div className="flex-1 flex items-center justify-center gap-4">
-            <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${
-                currentStep === 'capture' ? 'bg-primary' : 'bg-muted'
-              }`} />
-              <span className={`text-xs ${
-                currentStep === 'capture' ? 'text-primary' : 'text-muted-foreground'
-              }`}>Record</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${
-                currentStep === 'score' ? 'bg-primary' : 'bg-muted'
-              }`} />
-              <span className={`text-xs ${
-                currentStep === 'score' ? 'text-primary' : 'text-muted-foreground'
-              }`}>Analyze</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${
-                currentStep === 'feedback' ? 'bg-primary' : 'bg-muted'
-              }`} />
-              <span className={`text-xs ${
-                currentStep === 'feedback' ? 'text-primary' : 'text-muted-foreground'
-              }`}>Results</span>
-            </div>
+          <div className="flex-1">
+            {isMobile ? (
+              // Mobile: Simple progress bar with current step
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2">
+                  {currentStep === 'capture' && <Camera className="w-4 h-4 text-primary" />}
+                  {currentStep === 'score' && <BarChart3 className="w-4 h-4 text-primary" />}
+                  {currentStep === 'feedback' && <Target className="w-4 h-4 text-primary" />}
+                  <span className="text-sm font-medium">
+                    {currentStep === 'capture' && 'Record'}
+                    {currentStep === 'score' && 'Analyze'}
+                    {currentStep === 'feedback' && 'Results'}
+                  </span>
+                </div>
+                <Progress 
+                  value={
+                    currentStep === 'capture' ? 33 : 
+                    currentStep === 'score' ? 66 : 100
+                  } 
+                  className="h-1"
+                />
+              </div>
+            ) : (
+              // Desktop: Full step indicator
+              <div className="flex items-center justify-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full flex items-center justify-center ${
+                    currentStep === 'capture' ? 'bg-primary' : 'bg-muted'
+                  }`}>
+                    <Camera className="w-2 h-2 text-background" />
+                  </div>
+                  <span className={`text-sm ${
+                    currentStep === 'capture' ? 'text-primary font-medium' : 'text-muted-foreground'
+                  }`}>Record</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full flex items-center justify-center ${
+                    currentStep === 'score' ? 'bg-primary' : 'bg-muted'
+                  }`}>
+                    <BarChart3 className="w-2 h-2 text-background" />
+                  </div>
+                  <span className={`text-sm ${
+                    currentStep === 'score' ? 'text-primary font-medium' : 'text-muted-foreground'
+                  }`}>Analyze</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full flex items-center justify-center ${
+                    currentStep === 'feedback' ? 'bg-primary' : 'bg-muted'
+                  }`}>
+                    <Target className="w-2 h-2 text-background" />
+                  </div>
+                  <span className={`text-sm ${
+                    currentStep === 'feedback' ? 'text-primary font-medium' : 'text-muted-foreground'
+                  }`}>Results</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
