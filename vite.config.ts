@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => ({
     target: 'esnext',
     sourcemap: false,
     rollupOptions: {
+      external: ['@tensorflow/tfjs-backend-webgpu'],
       output: {
         manualChunks: {
           tensorflow: [
