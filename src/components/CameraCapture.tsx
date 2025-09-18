@@ -23,7 +23,6 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   const [isRecording, setIsRecording] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [badAngle, setBadAngle] = useState(false);
   const [currentPoses, setCurrentPoses] = useState<any[]>([]);
@@ -316,7 +315,6 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
     
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunks, { type: 'video/webm' });
-      setRecordedBlob(blob);
       onCapture?.(blob);
     };
     

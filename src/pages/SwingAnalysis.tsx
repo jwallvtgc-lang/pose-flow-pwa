@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { CameraCapture } from '@/components/CameraCapture';
 import { SwingScoring } from '@/components/SwingScoring';
 import { CoachingFeedback } from '@/components/CoachingFeedback';
@@ -12,11 +11,9 @@ import type { CoachingCard } from '@/lib/cues';
 type FlowStep = 'capture' | 'score' | 'feedback';
 
 export default function SwingAnalysis() {
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState<FlowStep>('capture');
   const [poses, setPoses] = useState<any[]>([]);
-  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [score, setScore] = useState<number>(0);
   const [coachingCards, setCoachingCards] = useState<CoachingCard[]>([]);
 
@@ -24,8 +21,7 @@ export default function SwingAnalysis() {
     setPoses(detectedPoses);
   };
 
-  const handleCapture = (blob: Blob) => {
-    setVideoBlob(blob);
+  const handleCapture = (_blob: Blob) => {
     setCurrentStep('score');
   };
 
@@ -33,14 +29,6 @@ export default function SwingAnalysis() {
     setScore(swingScore);
     setCoachingCards(cards);
     setCurrentStep('feedback');
-  };
-
-  const resetFlow = () => {
-    setCurrentStep('capture');
-    setPoses([]);
-    setVideoBlob(null);
-    setScore(0);
-    setCoachingCards([]);
   };
 
   const renderStep = () => {
