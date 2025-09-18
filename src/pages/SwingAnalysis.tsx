@@ -23,14 +23,7 @@ export default function SwingAnalysis() {
 
   const handleCapture = (blob: Blob) => {
     setVideoBlob(blob);
-    // Navigate to score page with video blob and fps
-    navigate('/score?swingId=NEW', { 
-      state: { 
-        videoBlob: blob, 
-        fps: 30, // Pass fps for analysis
-        poses: poses 
-      } 
-    });
+    setCurrentStep('score');
   };
 
   const handleScoreComplete = (swingScore: number, cards: CoachingCard[]) => {
@@ -94,14 +87,6 @@ export default function SwingAnalysis() {
               score={score}
               cards={coachingCards}
             />
-            <div className="flex gap-4">
-              <Button 
-                onClick={resetFlow}
-                className="flex-1"
-              >
-                Record Another Swing
-              </Button>
-            </div>
           </div>
         );
       

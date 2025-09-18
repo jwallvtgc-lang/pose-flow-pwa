@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DrillCard } from '@/components/DrillCard';
 import { trackCapture } from '@/lib/analytics';
+import { Home } from 'lucide-react';
 import type { CoachingCard } from '@/lib/cues';
 
 interface CoachingFeedbackProps {
@@ -11,6 +14,8 @@ interface CoachingFeedbackProps {
 }
 
 export function CoachingFeedback({ score, cards }: CoachingFeedbackProps) {
+  const navigate = useNavigate();
+  
   useEffect(() => {
     if (cards.length > 0) {
       trackCapture.drillShown();
@@ -72,6 +77,24 @@ export function CoachingFeedback({ score, cards }: CoachingFeedbackProps) {
           <li>• Work with a coach for personalized feedback</li>
         </ul>
       </Card>
+
+      {/* Navigation Buttons */}
+      <div className="flex gap-4 pt-4">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/')}
+          className="flex-1"
+        >
+          <Home className="w-4 h-4 mr-2" />
+          Back to Home
+        </Button>
+        <Button 
+          onClick={() => navigate('/analysis')}
+          className="flex-1"
+        >
+          Record Another Swing
+        </Button>
+      </div>
     </div>
   );
 }
