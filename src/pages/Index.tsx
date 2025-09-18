@@ -9,12 +9,11 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Hero Section */}
-        <div className="text-center mb-12">
+<div className="text-center mb-12">
           <h1 className="text-7xl font-anton font-black mb-6 text-black tracking-wider uppercase">
             SwingSense
           </h1>
           <p className="text-xl font-bold text-black mb-8 max-w-xl mx-auto">
-            AI-powered baseball swing analysis using pose detection technology. 
             Record your swing, get instant feedback, and improve your performance!
           </p>
         </div>
