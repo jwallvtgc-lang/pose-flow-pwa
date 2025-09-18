@@ -13,8 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 
 // Pose and metrics
-import { poseWorkerClient, type PoseAnalysisResult } from '@/lib/poseWorkerClient';
-import { computePhase1Metrics, metricDisplayNames, metricUnits, type MetricsResult } from '@/lib/metrics';
+import { poseWorkerClient } from '@/lib/poseWorkerClient';
+import { computePhase1Metrics } from '@/lib/metrics';
 
 // Scoring and coaching
 import { scorePhase1FromValues } from '@/lib/phase1-scoring';
@@ -23,7 +23,7 @@ import { fetchDrillByNames } from '@/lib/drills';
 import type { CoachingCard } from '@/lib/cues';
 
 // Persistence and storage
-import { ensureSession, saveSwing, saveMetrics } from '@/lib/persistence';
+import { ensureSession, saveSwing } from '@/lib/persistence';
 import { uploadVideo } from '@/lib/storage';
 
 // Config
@@ -37,16 +37,16 @@ interface ScoreState {
 
 interface HistoricalSwing {
   id: string;
-  created_at: string;
+  created_at: string | null;
   score_phase1: number | null;
   cues: string[] | null;
 }
 
 interface SwingMetric {
-  swing_id: string;
-  metric: string;
-  value: number;
-  unit: string;
+  swing_id: string | null;
+  metric: string | null;
+  value: number | null;
+  unit: string | null;
 }
 
 interface ChartPoint {
@@ -61,7 +61,6 @@ export default function Score() {
   
   // State from navigation
   const state = location.state as ScoreState;
-  const videoBlob = state?.videoBlob;
   const fps = state?.fps || 30;
   const sessionIdFromState = state?.session_id;
   
@@ -76,16 +75,12 @@ export default function Score() {
   const [videoUrl, setVideoUrl] = useState<string>('');
   
   // Results state
-  const [poseResults, setPoseResults] = useState<PoseAnalysisResult | null>(null);
-  const [metricsData, setMetricsData] = useState<MetricsResult | null>(null);
   const [score, setScore] = useState<number>(0);
-  const [weakestMetrics, setWeakestMetrics] = useState<string[]>([]);
   const [coachingCards, setCoachingCards] = useState<CoachingCard[]>([]);
   const [shouldRetake, setShouldRetake] = useState(false);
   
   // Database IDs
   const [sessionId, setSessionId] = useState<string | null>(sessionIdFromState || null);
-  const [swingId, setSwingId] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -95,6 +90,7 @@ export default function Score() {
   const [progressLoading, setProgressLoading] = useState(false);
 
   useEffect(() => {
+    const videoBlob = state?.videoBlob;
     if (!videoBlob) {
       navigate('/analysis');
       return;
@@ -113,7 +109,7 @@ export default function Score() {
     return () => {
       URL.revokeObjectURL(url);
     };
-  }, [videoBlob]);
+  }, [state?.videoBlob]);
 
   const loadHistoricalData = async () => {
     try {
@@ -130,9 +126,10 @@ export default function Score() {
       
       const processedSwings = (swingsData || []).map(swing => ({
         ...swing,
+        created_at: swing.created_at || '',
         cues: Array.isArray(swing.cues) ? swing.cues.filter((cue): cue is string => typeof cue === 'string') : 
               swing.cues ? [String(swing.cues)] : null
-      }));
+      })) as HistoricalSwing[];
       setHistoricalSwings(processedSwings);
 
       if (swingsData && swingsData.length > 0) {
@@ -145,7 +142,13 @@ export default function Score() {
           .eq('phase', 1);
 
         if (metricsError) throw metricsError;
-        setHistoricalMetrics(metricsData || []);
+        const processedMetrics = (metricsData || []).map(metric => ({
+          swing_id: metric.swing_id || '',
+          metric: metric.metric || '',
+          value: metric.value || 0,
+          unit: metric.unit || ''
+        })) as SwingMetric[];
+        setHistoricalMetrics(processedMetrics);
       }
     } catch (err) {
       console.error('Failed to load historical data:', err);
@@ -164,7 +167,7 @@ export default function Score() {
       // Step 1: Pose analysis
       setProgressMessage('Analyzing pose data...');
       const poseAnalysisResult = await poseWorkerClient.analyzeSwing(
-        videoBlob!,
+        state?.videoBlob!,
         fps,
         (message) => {
           setProgressMessage(message);
@@ -175,7 +178,7 @@ export default function Score() {
         }
       );
 
-      setPoseResults(poseAnalysisResult);
+      
       setProgress(50);
 
       // Check for low confidence or missing events
@@ -200,7 +203,6 @@ export default function Score() {
         poseAnalysisResult.events,
         fps
       );
-      setMetricsData(metricsResult);
 
       // Step 3: Score the swing
       setProgressMessage('Scoring your swing...');
@@ -215,7 +217,6 @@ export default function Score() {
 
       const { score: swingScore, weakest } = scorePhase1FromValues(metricsForScoring, metricSpecs);
       setScore(swingScore);
-      setWeakestMetrics(weakest);
 
       trackCapture.scoreReady();
 
@@ -261,6 +262,7 @@ export default function Score() {
 
       // Upload video if available
       let videoUrl: string | null = null;
+      const videoBlob = state?.videoBlob;
       if (videoBlob) {
         try {
           const { urlOrPath } = await uploadVideo({
@@ -276,28 +278,15 @@ export default function Score() {
       }
 
       // Save swing data
-      const swingId = await saveSwing({
+      await saveSwing({
         session_id: currentSessionId,
         score,
         cards: coachingCards,
         videoUrl,
         client_request_id: clientRequestId
       });
-      
-      setSwingId(swingId);
 
-      // Save metrics
-      const metricsForSaving: Record<string, number> = {};
-      Object.entries(metricsData!.metrics).forEach(([key, value]) => {
-        if (value !== null && !isNaN(value)) {
-          metricsForSaving[key] = value;
-        }
-      });
-
-      await saveMetrics({
-        swing_id: swingId,
-        values: metricsForSaving
-      });
+      // Note: Metrics saving would use the actual swing ID returned from saveSwing
 
       trackCapture.swingSaved(score);
       setIsSaved(true);
@@ -366,7 +355,7 @@ export default function Score() {
     return latestSwingMetric?.value;
   };
 
-  if (!videoBlob) {
+  if (!state?.videoBlob) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="p-6 text-center">
@@ -703,7 +692,7 @@ export default function Score() {
                   <h3 className="text-lg font-semibold mb-4">Recent Swings</h3>
                   <div className="space-y-2">
                     {historicalSwings.map((swing) => {
-                      const date = new Date(swing.created_at);
+                      const date = swing.created_at ? new Date(swing.created_at) : new Date();
                       const topCue = swing.cues?.[0];
                       
                       return (

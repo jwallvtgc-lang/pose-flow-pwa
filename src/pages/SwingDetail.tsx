@@ -11,7 +11,7 @@ import { metricDisplayNames } from '@/lib/metrics';
 
 interface SwingData {
   id: string;
-  created_at: string;
+  created_at: string | null;
   score_phase1: number | null;
   cues: string[] | null;
   drill_id: string | null;
@@ -19,15 +19,15 @@ interface SwingData {
 }
 
 interface SwingMetric {
-  swing_id: string;
-  metric: string;
-  value: number;
-  unit: string;
+  swing_id: string | null;
+  metric: string | null;
+  value: number | null;
+  unit: string | null;
 }
 
 interface DrillInfo {
   id: string;
-  name: string;
+  name: string | null;
   how_to: string | null;
   equipment: string | null;
 }
@@ -64,9 +64,10 @@ export default function SwingDetail() {
       if (swingError) throw swingError;
       const processedSwing = {
         ...swingData,
+        created_at: swingData.created_at || '',
         cues: Array.isArray(swingData.cues) ? swingData.cues.filter((cue): cue is string => typeof cue === 'string') : 
               swingData.cues ? [String(swingData.cues)] : null
-      };
+      } as SwingData;
       setSwing(processedSwing);
 
       // Fetch swing metrics
@@ -77,7 +78,13 @@ export default function SwingDetail() {
         .eq('phase', 1);
 
       if (metricsError) throw metricsError;
-      setMetrics(metricsData || []);
+      const processedMetrics = (metricsData || []).map(metric => ({
+        swing_id: metric.swing_id || '',
+        metric: metric.metric || '',
+        value: metric.value || 0,
+        unit: metric.unit || ''
+      })) as SwingMetric[];
+      setMetrics(processedMetrics);
 
       // Fetch drill info if drill_id exists
       if (processedSwing.drill_id) {
@@ -88,7 +95,11 @@ export default function SwingDetail() {
           .single();
 
         if (!drillError && drillData) {
-          setDrill(drillData);
+          const processedDrill = {
+            ...drillData,
+            name: drillData.name || ''
+          } as DrillInfo;
+          setDrill(processedDrill);
         }
       }
 
@@ -115,14 +126,14 @@ export default function SwingDetail() {
   };
 
   const getMetricProgress = (metricName: string, value: number): number => {
-    const spec = metricSpecs[metricName];
+    const spec = metricSpecs[metricName as keyof typeof metricSpecs];
     if (!spec) return 0.5;
 
     const [min, max] = spec.target;
     let normalizedValue = Math.max(0, Math.min(1, (value - min) / (max - min)));
     
     // Invert if smaller is better
-    if (spec.invert) {
+    if ('invert' in spec && spec.invert) {
       normalizedValue = 1 - normalizedValue;
     }
     
@@ -130,11 +141,11 @@ export default function SwingDetail() {
   };
 
   const formatTargetRange = (metricName: string): string => {
-    const spec = metricSpecs[metricName];
+    const spec = metricSpecs[metricName as keyof typeof metricSpecs];
     if (!spec) return 'N/A';
 
     const [min, max] = spec.target;
-    const suffix = spec.invert ? ' (lower is better)' : '';
+    const suffix = ('invert' in spec && spec.invert) ? ' (lower is better)' : '';
     return `${min}–${max}${suffix}`;
   };
 
@@ -191,7 +202,7 @@ export default function SwingDetail() {
     );
   }
 
-  const swingDate = new Date(swing.created_at);
+  const swingDate = swing.created_at ? new Date(swing.created_at) : new Date();
 
   return (
     <div className="min-h-screen bg-background">
@@ -295,19 +306,19 @@ export default function SwingDetail() {
               </p>
             ) : (
               <div className="space-y-4">
-                {Object.entries(metricSpecs).map(([metricKey, spec]) => {
+                {Object.entries(metricSpecs).map(([metricKey]) => {
                   const metric = metrics.find(m => m.metric === metricKey);
                   const displayName = metricDisplayNames()[metricKey] || metricKey.replace(/_/g, ' ');
                   const value = metric?.value;
                   const unit = metric?.unit || '';
-                  const progress = value !== undefined ? getMetricProgress(metricKey, value) : 0;
+                  const progress = (value !== null && value !== undefined) ? getMetricProgress(metricKey, value) : 0;
                   
                   return (
                     <div key={metricKey} className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-sm">{displayName}</span>
                         <span className="text-sm font-mono">
-                          {value !== undefined ? `${value.toFixed(1)} ${unit}` : '—'}
+                          {value !== null && value !== undefined ? `${value.toFixed(1)} ${unit}` : '—'}
                         </span>
                       </div>
                       
@@ -320,7 +331,7 @@ export default function SwingDetail() {
                         <div 
                           className="h-full bg-primary transition-all duration-300 ease-out"
                           style={{ 
-                            width: value !== undefined ? `${Math.max(5, progress * 100)}%` : '0%' 
+                            width: (value !== null && value !== undefined) ? `${Math.max(5, progress * 100)}%` : '0%' 
                           }}
                         />
                       </div>

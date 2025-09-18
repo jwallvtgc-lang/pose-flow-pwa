@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { tf } from '@/lib/tf';
 import { supabase } from '@/lib/supabase';
 import { posthog } from '@/lib/analytics';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Debug = () => {

@@ -9,17 +9,17 @@ import { trackCapture } from '@/lib/analytics';
 
 interface Swing {
   id: string;
-  created_at: string;
+  created_at: string | null;
   score_phase1: number | null;
   cues: string[] | null;
   drill_id: string | null;
 }
 
 interface SwingMetric {
-  swing_id: string;
-  metric: string;
-  value: number;
-  unit: string;
+  swing_id: string | null;
+  metric: string | null;
+  value: number | null;
+  unit: string | null;
 }
 
 interface ChartPoint {
@@ -53,9 +53,10 @@ export default function Progress() {
       if (swingsError) throw swingsError;
       const processedSwings = (swingsData || []).map(swing => ({
         ...swing,
+        created_at: swing.created_at || '',
         cues: Array.isArray(swing.cues) ? swing.cues.filter((cue): cue is string => typeof cue === 'string') : 
               swing.cues ? [String(swing.cues)] : null
-      }));
+      })) as Swing[];
       setSwings(processedSwings);
 
       if (swingsData && swingsData.length > 0) {
@@ -68,7 +69,13 @@ export default function Progress() {
           .eq('phase', 1);
 
         if (metricsError) throw metricsError;
-        setMetrics(metricsData || []);
+        const processedMetrics = (metricsData || []).map(metric => ({
+          swing_id: metric.swing_id || '',
+          metric: metric.metric || '',
+          value: metric.value || 0,
+          unit: metric.unit || ''
+        })) as SwingMetric[];
+        setMetrics(processedMetrics);
 
         // Analytics
         trackCapture.progressViewed(processedSwings.length);
@@ -120,12 +127,6 @@ export default function Progress() {
     return 'bg-red-500';
   };
 
-  const getScoreLabel = (score: number | null) => {
-    if (!score) return 'N/A';
-    if (score >= 80) return 'Excellent';
-    if (score >= 60) return 'Good';
-    return 'Needs Work';
-  };
 
   const handleSwingTap = (swingId: string) => {
     navigate(`/swing/${swingId}`);
@@ -253,7 +254,7 @@ export default function Progress() {
             <h3 className="text-lg font-semibold mb-4">Recent Swings</h3>
             <div className="space-y-2">
               {swings.map((swing) => {
-                const date = new Date(swing.created_at);
+                const date = swing.created_at ? new Date(swing.created_at) : new Date();
                 const topCue = swing.cues?.[0];
                 
                 return (

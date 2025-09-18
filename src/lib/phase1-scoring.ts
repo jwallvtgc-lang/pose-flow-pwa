@@ -1,4 +1,4 @@
-import { metricSpecs, type MetricSpec, type MetricSpecs } from "@/config/phase1_metrics";
+import { metricSpecs, type MetricSpecs } from "@/config/phase1_metrics";
 
 export function scorePhase1FromValues(
   values: Record<string, number>,
