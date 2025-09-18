@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
-import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, AlertTriangle, Loader2, RotateCcw, Save, TrendingUp } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, AlertTriangle, Loader2, RotateCcw, Save, TrendingUp, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 // Analytics
 import { trackCapture } from '@/lib/analytics';
@@ -23,7 +25,6 @@ import type { CoachingCard } from '@/lib/cues';
 // Persistence and storage
 import { ensureSession, saveSwing, saveMetrics } from '@/lib/persistence';
 import { uploadVideo } from '@/lib/storage';
-import { offlineQueue } from '@/lib/offlineQueue';
 
 // Config
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -32,6 +33,25 @@ interface ScoreState {
   videoBlob?: Blob;
   fps?: number;
   session_id?: string;
+}
+
+interface HistoricalSwing {
+  id: string;
+  created_at: string;
+  score_phase1: number | null;
+  cues: string[] | null;
+}
+
+interface SwingMetric {
+  swing_id: string;
+  metric: string;
+  value: number;
+  unit: string;
+}
+
+interface ChartPoint {
+  t: number;
+  value: number;
 }
 
 export default function Score() {
@@ -69,6 +89,11 @@ export default function Score() {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Progress data
+  const [historicalSwings, setHistoricalSwings] = useState<HistoricalSwing[]>([]);
+  const [historicalMetrics, setHistoricalMetrics] = useState<SwingMetric[]>([]);
+  const [progressLoading, setProgressLoading] = useState(false);
+
   useEffect(() => {
     if (!videoBlob) {
       navigate('/analysis');
@@ -81,11 +106,53 @@ export default function Score() {
 
     // Start analysis
     analyzeSwing();
+    
+    // Load historical data for progress section
+    loadHistoricalData();
 
     return () => {
       URL.revokeObjectURL(url);
     };
   }, [videoBlob]);
+
+  const loadHistoricalData = async () => {
+    try {
+      setProgressLoading(true);
+
+      // Fetch recent swings
+      const { data: swingsData, error: swingsError } = await supabase
+        .from('swings')
+        .select('id, created_at, score_phase1, cues')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (swingsError) throw swingsError;
+      
+      const processedSwings = (swingsData || []).map(swing => ({
+        ...swing,
+        cues: Array.isArray(swing.cues) ? swing.cues.filter((cue): cue is string => typeof cue === 'string') : 
+              swing.cues ? [String(swing.cues)] : null
+      }));
+      setHistoricalSwings(processedSwings);
+
+      if (swingsData && swingsData.length > 0) {
+        // Fetch metrics for those swings
+        const swingIds = swingsData.map(s => s.id);
+        const { data: metricsData, error: metricsError } = await supabase
+          .from('swing_metrics')
+          .select('swing_id, metric, value, unit')
+          .in('swing_id', swingIds)
+          .eq('phase', 1);
+
+        if (metricsError) throw metricsError;
+        setHistoricalMetrics(metricsData || []);
+      }
+    } catch (err) {
+      console.error('Failed to load historical data:', err);
+    } finally {
+      setProgressLoading(false);
+    }
+  };
 
   const analyzeSwing = async () => {
     try {
@@ -103,7 +170,7 @@ export default function Score() {
           setProgressMessage(message);
           const progressMatch = message.match(/(\d+\.?\d*)%/);
           if (progressMatch) {
-            setProgress(Math.min(50, parseFloat(progressMatch[1]) * 0.5)); // First 50% for pose analysis
+            setProgress(Math.min(50, parseFloat(progressMatch[1]) * 0.5));
           }
         }
       );
@@ -172,12 +239,20 @@ export default function Score() {
     }
   };
 
-  const persistSwingData = async (swingScore: number, cards: CoachingCard[], metricsResult: MetricsResult) => {
+  const handleRetake = () => {
+    navigate('/analysis');
+  };
+
+  const handleSaveSwing = async () => {
+    if (isSaved || isSaving || !score || !coachingCards.length) return;
+
     try {
+      setIsSaving(true);
+      
       // Ensure session exists
       const currentSessionId = await ensureSession({ 
         session_id: sessionId, 
-        athlete_id: undefined, // Add athlete_id support later
+        athlete_id: undefined,
         fps,
         view: 'side'
       });
@@ -190,28 +265,21 @@ export default function Score() {
         try {
           const { urlOrPath } = await uploadVideo({
             blob: videoBlob,
-            athlete_id: undefined, // Add athlete_id support later
+            athlete_id: undefined,
             client_request_id: clientRequestId
           });
           videoUrl = urlOrPath;
-          
-          // Analytics for successful video upload
           trackCapture.videoUploaded(videoBlob.size);
         } catch (uploadError) {
           console.warn('Video upload failed, continuing without video:', uploadError);
-          // Video upload failure shouldn't block the save
-          toast({
-            title: "Video upload queued for retry",
-            description: "Swing data saved, video will upload when connection improves"
-          });
         }
       }
 
       // Save swing data
       const swingId = await saveSwing({
         session_id: currentSessionId,
-        score: swingScore,
-        cards,
+        score,
+        cards: coachingCards,
         videoUrl,
         client_request_id: clientRequestId
       });
@@ -220,7 +288,7 @@ export default function Score() {
 
       // Save metrics
       const metricsForSaving: Record<string, number> = {};
-      Object.entries(metricsResult.metrics).forEach(([key, value]) => {
+      Object.entries(metricsData!.metrics).forEach(([key, value]) => {
         if (value !== null && !isNaN(value)) {
           metricsForSaving[key] = value;
         }
@@ -231,26 +299,12 @@ export default function Score() {
         values: metricsForSaving
       });
 
-      // Analytics for successful swing save
-      trackCapture.swingSaved(swingScore);
-
-    } catch (error) {
-      console.error('Failed to persist swing data:', error);
-      throw error; // Let caller handle the error
-    }
-  };
-
-  const handleRetake = () => {
-    navigate('/analysis');
-  };
-
-  const handleSaveSwing = async () => {
-    if (isSaved || isSaving || !score || !coachingCards.length) return;
-
-    try {
-      setIsSaving(true);
-      await persistSwingData(score, coachingCards, metricsData!);
+      trackCapture.swingSaved(score);
       setIsSaved(true);
+      
+      // Refresh historical data
+      loadHistoricalData();
+      
       toast({ title: "Swing saved successfully!" });
     } catch (error) {
       console.error('Failed to save swing:', error);
@@ -263,11 +317,6 @@ export default function Score() {
     }
   };
 
-  const handleSeeProgress = () => {
-    // Navigate to progress screen - adjust route as needed
-    navigate('/progress');
-  };
-
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'bg-green-500';
     if (score >= 60) return 'bg-yellow-500';
@@ -278,6 +327,43 @@ export default function Score() {
     if (score >= 80) return 'Excellent';
     if (score >= 60) return 'Good';
     return 'Needs Work';
+  };
+
+  // Memoized chart data for progress section
+  const chartData = useMemo(() => {
+    if (!historicalSwings.length) return { scoreSeries: [], attackSeries: [], headDriftSeries: [], sepSeries: [] };
+
+    const chronologicalSwings = [...historicalSwings].reverse();
+    
+    const scoreSeries: ChartPoint[] = chronologicalSwings
+      .map((swing, index) => ({
+        t: index,
+        value: swing.score_phase1 || 0
+      }))
+      .filter(point => point.value > 0);
+
+    const getMetricSeries = (metricName: string): ChartPoint[] => {
+      return chronologicalSwings
+        .map((swing, index) => {
+          const metric = historicalMetrics.find(m => m.swing_id === swing.id && m.metric === metricName);
+          return metric ? { t: index, value: metric.value } : null;
+        })
+        .filter(point => point !== null) as ChartPoint[];
+    };
+
+    return {
+      scoreSeries,
+      attackSeries: getMetricSeries('attack_angle_deg'),
+      headDriftSeries: getMetricSeries('head_drift_cm'),
+      sepSeries: getMetricSeries('hip_shoulder_sep_deg')
+    };
+  }, [historicalSwings, historicalMetrics]);
+
+  const getLatestMetricValue = (metricName: string) => {
+    const latestSwingMetric = historicalMetrics.find(m => 
+      m.swing_id === historicalSwings[0]?.id && m.metric === metricName
+    );
+    return latestSwingMetric?.value;
   };
 
   if (!videoBlob) {
@@ -328,23 +414,16 @@ export default function Score() {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-primary">•</span>
-                <span className="text-sm">Avoid busy backgrounds that might interfere</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-primary">•</span>
                 <span className="text-sm">Take a complete swing through finish</span>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <Button onClick={handleRetake} className="w-full">
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Record Another Swing
-              </Button>
-            </div>
+            <Button onClick={handleRetake} className="w-full">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Record Another Swing
+            </Button>
           </Card>
 
-          {/* Show video preview */}
           <Card className="p-4 mt-6">
             <video
               src={videoUrl}
@@ -381,7 +460,6 @@ export default function Score() {
             </div>
           </Card>
 
-          {/* Video preview while analyzing */}
           <Card className="p-4 mt-6">
             <video
               src={videoUrl}
@@ -426,150 +504,350 @@ export default function Score() {
     );
   }
 
-  // Show results
+  // Show consolidated results with tabs
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 max-w-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={handleRetake}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-2xl font-bold">Score</h1>
+            <h1 className="text-2xl font-bold">Results</h1>
           </div>
           <Button variant="ghost" size="sm" onClick={handleRetake}>
             Retake
           </Button>
         </div>
 
-        <div className="space-y-6">
-          {/* Score Badge */}
-          <Card className="p-8 text-center">
-            <div className="relative inline-block">
-              <div className={`w-32 h-32 rounded-full flex items-center justify-center text-white text-4xl font-bold ${getScoreColor(score)}`}>
-                {score}
-              </div>
-              <Badge 
-                variant="secondary" 
-                className="absolute -bottom-2 left-1/2 transform -translate-x-1/2"
-              >
-                {getScoreLabel(score)}
-              </Badge>
-            </div>
-          </Card>
+        <Tabs defaultValue="score" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="score">This Swing</TabsTrigger>
+            <TabsTrigger value="progress">Progress</TabsTrigger>
+          </TabsList>
 
-          {/* Cue Chips */}
-          {coachingCards.length >= 2 && (
-            <Card className="p-6">
-              <div className="flex flex-wrap gap-3 justify-center">
-                {coachingCards.slice(0, 2).map((card, index) => (
-                  <Badge key={index} variant="outline" className="text-sm py-2 px-4">
-                    {card.cue}
-                  </Badge>
-                ))}
+          <TabsContent value="score" className="space-y-6">
+            {/* Score Display */}
+            <Card className="p-8 text-center">
+              <div className="relative inline-block">
+                <div className={`w-32 h-32 rounded-full flex items-center justify-center text-white text-4xl font-bold ${getScoreColor(score)}`}>
+                  {score}
+                </div>
+                <Badge 
+                  variant="secondary" 
+                  className="absolute -bottom-2 left-1/2 transform -translate-x-1/2"
+                >
+                  {getScoreLabel(score)}
+                </Badge>
               </div>
             </Card>
-          )}
 
-          {/* Primary Drill Card */}
-          {coachingCards.length > 0 && (
-            <Card className="p-6">
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold">{coachingCards[0].drill.name}</h3>
-                
-                {/* Placeholder for video clip */}
-                <div className="bg-muted rounded-lg aspect-video flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <div className="text-4xl mb-2">🎬</div>
-                    <div className="text-sm">Video demonstration coming soon</div>
+            {/* Coaching Cues */}
+            {coachingCards.length >= 2 && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Focus Areas</h3>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {coachingCards.slice(0, 2).map((card, index) => (
+                    <Badge key={index} variant="outline" className="text-sm py-2 px-4">
+                      {card.cue}
+                    </Badge>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Primary Drill */}
+            {coachingCards.length > 0 && (
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold">{coachingCards[0].drill.name}</h3>
+                  
+                  <div className="bg-muted rounded-lg aspect-video flex items-center justify-center">
+                    <div className="text-center text-muted-foreground">
+                      <div className="text-4xl mb-2">🎬</div>
+                      <div className="text-sm">Video demonstration coming soon</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-2">Steps:</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {coachingCards[0].drill.how_to || "Practice this drill to improve your swing mechanics"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-2">Equipment:</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {coachingCards[0].drill.equipment || "No special equipment needed"}
+                    </p>
                   </div>
                 </div>
+              </Card>
+            )}
 
-                {/* Steps */}
-                <div>
-                  <h4 className="font-medium mb-2">Steps:</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {coachingCards[0].drill.how_to || "Practice this drill to improve your swing mechanics"}
-                  </p>
-                </div>
-
-                {/* Equipment */}
-                <div>
-                  <h4 className="font-medium mb-2">Equipment:</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {coachingCards[0].drill.equipment || "Tee / PVC"}
-                  </p>
-                </div>
-              </div>
+            {/* Video Playback */}
+            <Card className="p-4">
+              <h3 className="text-lg font-semibold mb-3">Your Swing</h3>
+              <video
+                src={videoUrl}
+                controls
+                className="w-full rounded-lg"
+                muted
+              />
             </Card>
-          )}
 
-          {/* Buttons Row */}
-          <Card className="p-6">
-            <div className="grid grid-cols-3 gap-3">
+            {/* Save Button */}
+            <Card className="p-4">
               <Button 
                 onClick={handleSaveSwing}
                 disabled={isSaved || isSaving}
-                variant="outline"
-                className="flex items-center gap-2"
+                className="w-full"
+                size="lg"
               >
-                <Save className="w-4 h-4" />
-                {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save swing'}
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : isSaved ? (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Swing Saved
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save This Swing
+                  </>
+                )}
               </Button>
-              
-              <Button onClick={handleRetake} variant="outline">
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Retake
-              </Button>
-              
-              <Button onClick={handleSeeProgress} variant="outline">
-                <TrendingUp className="w-4 h-4 mr-2" />
-                See progress
-              </Button>
-            </div>
-          </Card>
+            </Card>
+          </TabsContent>
 
-          {/* Video Playback */}
-          <Card className="p-4">
-            <h3 className="text-lg font-semibold mb-3">Your Swing</h3>
-            <video
-              src={videoUrl}
-              controls
-              className="w-full rounded-lg"
-              muted
-            />
-          </Card>
+          <TabsContent value="progress" className="space-y-6">
+            {progressLoading ? (
+              <div className="space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <Card key={i} className="p-4">
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-muted rounded mb-2"></div>
+                      <div className="h-24 bg-muted rounded"></div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : historicalSwings.length === 0 ? (
+              <Card className="p-8 text-center">
+                <TrendingUp className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">No Historical Data</h3>
+                <p className="text-muted-foreground mb-4">
+                  Save this swing to start tracking your progress over time.
+                </p>
+              </Card>
+            ) : (
+              <>
+                {/* Score Trend */}
+                <Card className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">Score Trend</h3>
+                      <p className="text-sm text-muted-foreground">Last {historicalSwings.length} swings</p>
+                    </div>
+                    {historicalSwings[0]?.score_phase1 && (
+                      <Badge 
+                        className={`text-white ${getScoreColor(historicalSwings[0].score_phase1)}`}
+                      >
+                        {historicalSwings[0].score_phase1}
+                      </Badge>
+                    )}
+                  </div>
+                  <LineChart data={chartData.scoreSeries} height={80} />
+                </Card>
 
-          {/* Optional: Metrics Details */}
-          {metricsData && (
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Metrics Details</h3>
-              <div className="grid grid-cols-1 gap-2 text-sm">
-                {Object.entries(metricsData.metrics).map(([key, value]) => {
-                  const displayName = metricDisplayNames()[key] || key.replace(/_/g, ' ');
-                  const unit = metricUnits()[key] || '';
-                  const isWeakest = weakestMetrics.includes(key);
-                  
-                  return (
-                    <div key={key} className={`flex justify-between p-2 rounded ${
-                      isWeakest ? 'bg-orange-50 border border-orange-200 dark:bg-orange-950/20 dark:border-orange-800/20' : 'bg-muted/50'
-                    }`}>
-                      <span className="font-medium">
-                        {displayName}:
-                        {isWeakest && <span className="text-orange-600 ml-1">⚠</span>}
-                      </span>
-                      <span className="font-mono">
-                        {value !== null ? `${value.toFixed(1)} ${unit}` : 'N/A'}
+                {/* Key Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium">Attack Angle</h4>
+                      <span className="text-xs text-muted-foreground">
+                        {getLatestMetricValue('attack_angle_deg')?.toFixed(1) || '—'}°
                       </span>
                     </div>
-                  );
-                })}
-              </div>
-            </Card>
-          )}
-        </div>
+                    <Sparkline data={chartData.attackSeries} height={40} />
+                  </Card>
+
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium">Head Drift</h4>
+                      <span className="text-xs text-muted-foreground">
+                        {getLatestMetricValue('head_drift_cm')?.toFixed(1) || '—'}cm
+                      </span>
+                    </div>
+                    <Sparkline data={chartData.headDriftSeries} height={40} />
+                  </Card>
+
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium">Hip–Shoulder Sep</h4>
+                      <span className="text-xs text-muted-foreground">
+                        {getLatestMetricValue('hip_shoulder_sep_deg')?.toFixed(1) || '—'}°
+                      </span>
+                    </div>
+                    <Sparkline data={chartData.sepSeries} height={40} />
+                  </Card>
+                </div>
+
+                {/* Recent Swings */}
+                <Card className="p-4">
+                  <h3 className="text-lg font-semibold mb-4">Recent Swings</h3>
+                  <div className="space-y-2">
+                    {historicalSwings.map((swing) => {
+                      const date = new Date(swing.created_at);
+                      const topCue = swing.cues?.[0];
+                      
+                      return (
+                        <div
+                          key={swing.id}
+                          className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => navigate(`/swing/${swing.id}`)}
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div>
+                              <div className="text-sm font-medium">
+                                {date.toLocaleDateString()} {date.toLocaleTimeString([], { 
+                                  hour: '2-digit', 
+                                  minute: '2-digit' 
+                                })}
+                              </div>
+                              {topCue && (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {topCue}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="ml-auto flex items-center gap-2">
+                              {swing.score_phase1 && (
+                                <Badge 
+                                  variant="secondary"
+                                  className={`text-xs text-white ${getScoreColor(swing.score_phase1)}`}
+                                >
+                                  {swing.score_phase1}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground ml-2" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
+  );
+}
+
+// Simple SVG Line Chart Component
+function LineChart({ data, height = 80 }: { data: ChartPoint[], height?: number }) {
+  if (!data.length) {
+    return (
+      <div 
+        className="w-full bg-muted/20 rounded flex items-center justify-center text-xs text-muted-foreground"
+        style={{ height }}
+      >
+        No data available
+      </div>
+    );
+  }
+
+  const width = 300;
+  const padding = 10;
+  
+  const minValue = Math.min(...data.map(d => d.value));
+  const maxValue = Math.max(...data.map(d => d.value));
+  const valueRange = maxValue - minValue || 1;
+  
+  const minTime = Math.min(...data.map(d => d.t));
+  const maxTime = Math.max(...data.map(d => d.t));
+  const timeRange = maxTime - minTime || 1;
+
+  const points = data.map(point => {
+    const x = padding + ((point.t - minTime) / timeRange) * (width - 2 * padding);
+    const y = padding + (1 - (point.value - minValue) / valueRange) * (height - 2 * padding);
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+      <polyline
+        points={points}
+        fill="none"
+        stroke="hsl(var(--primary))"
+        strokeWidth="2"
+        className="opacity-80"
+      />
+      {data.map((point, index) => {
+        const x = padding + ((point.t - minTime) / timeRange) * (width - 2 * padding);
+        const y = padding + (1 - (point.value - minValue) / valueRange) * (height - 2 * padding);
+        return (
+          <circle
+            key={index}
+            cx={x}
+            cy={y}
+            r="3"
+            fill="hsl(var(--primary))"
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+// Simple SVG Sparkline Component  
+function Sparkline({ data, height = 40 }: { data: ChartPoint[], height?: number }) {
+  if (!data.length) {
+    return (
+      <div 
+        className="w-full bg-muted/20 rounded flex items-center justify-center text-xs text-muted-foreground"
+        style={{ height }}
+      >
+        —
+      </div>
+    );
+  }
+
+  const width = 120;
+  const padding = 4;
+  
+  const minValue = Math.min(...data.map(d => d.value));
+  const maxValue = Math.max(...data.map(d => d.value));
+  const valueRange = maxValue - minValue || 1;
+  
+  const minTime = Math.min(...data.map(d => d.t));
+  const maxTime = Math.max(...data.map(d => d.t));
+  const timeRange = maxTime - minTime || 1;
+
+  const points = data.map(point => {
+    const x = padding + ((point.t - minTime) / timeRange) * (width - 2 * padding);
+    const y = padding + (1 - (point.value - minValue) / valueRange) * (height - 2 * padding);
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
+      <polyline
+        points={points}
+        fill="none"
+        stroke="hsl(var(--primary))"
+        strokeWidth="1.5"
+        className="opacity-70"
+      />
+    </svg>
   );
 }
