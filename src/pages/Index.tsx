@@ -25,6 +25,7 @@ const Index = () => {
 
   // Debug: Log the current state
   console.log('Index render:', { user: user?.email, loading });
+  console.log('Index component rendered to DOM');
 
   const handleSignOut = async () => {
     await signOut();

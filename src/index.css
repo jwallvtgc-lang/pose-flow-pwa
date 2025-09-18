@@ -110,9 +110,11 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground text-base leading-tight;
-    font-family: "Fredoka One", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Fredoka One", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: white;
+    color: black;
   }
 
   /* Mobile-first button styling */
