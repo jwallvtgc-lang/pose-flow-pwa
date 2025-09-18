@@ -51,12 +51,12 @@ const Index = () => {
         </div>
 
         {/* CTA Section */}
-        <Card className="p-8 text-center bg-sp-yellow border-4 border-black rounded-2xl mb-8 shadow-lg">
+        <div className="p-8 text-center mb-8">
           <h2 className="text-3xl font-anton font-black mb-6 text-black uppercase tracking-wide">Ready to improve your swing?</h2>
           <p className="text-black font-bold text-lg">
             Join thousands of players using AI-powered analysis to perfect their baseball swing. Click "Capture Your Swing" above to get started!
           </p>
-        </Card>
+        </div>
 
         <AddToHomeScreen />
       </div>
