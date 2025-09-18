@@ -318,11 +318,6 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
       const blob = new Blob(chunks, { type: 'video/webm' });
       setRecordedBlob(blob);
       onCapture?.(blob);
-      
-      // Navigate to score page with blob
-      navigate('/score?swingId=NEW', { 
-        state: { recordedBlob: blob, poses: currentPoses } 
-      });
     };
     
     mediaRecorder.start(100); // Record in 100ms chunks for smooth recording
@@ -422,7 +417,10 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
         {/* Guidance Text */}
         <div className="absolute top-20 left-4 right-4 text-center">
           <p className="text-white text-sm bg-black/50 rounded px-3 py-1">
-            Stand sideways and hold the record button during your swing
+            {isRecording 
+              ? "Keep holding until your swing is complete!" 
+              : "Stand sideways and hold the record button during your swing"
+            }
           </p>
         </div>
         
@@ -441,7 +439,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
         <Button
           size="lg"
-          className={`w-24 h-24 rounded-full text-white font-bold text-lg ${
+          className={`w-24 h-24 rounded-full text-white font-bold text-sm ${
             isRecording 
               ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
               : 'bg-primary hover:bg-primary/90'
@@ -451,7 +449,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp} // Stop recording if finger leaves button
         >
-          {isRecording ? 'STOP' : 'HOLD TO RECORD'}
+          {isRecording ? 'RELEASE TO ANALYZE' : 'HOLD TO RECORD'}
         </Button>
         
         {!isInitialized && !workerError && (
