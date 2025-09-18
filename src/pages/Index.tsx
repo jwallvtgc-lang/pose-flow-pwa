@@ -17,23 +17,22 @@ const Index = () => {
             AI-powered baseball swing analysis using pose detection technology. 
             Record your swing, get instant feedback, and improve your performance.
           </p>
-          
-          <Link to="/analysis">
-            <Button size="lg" className="gap-2 w-full">
-              Start Analysis <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
         </div>
 
         {/* Feature Cards */}
         <div className="grid gap-6 mb-12">
-          <Card className="p-6 text-center">
-            <Camera className="w-12 h-12 mx-auto mb-4 text-primary" />
-            <h3 className="text-lg font-semibold mb-2">Capture</h3>
-            <p className="text-muted-foreground">
-              Record your swing with AI pose detection for precise motion analysis
-            </p>
-          </Card>
+          <Link to="/analysis">
+            <Card className="p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer">
+              <Camera className="w-12 h-12 mx-auto mb-4 text-primary" />
+              <h3 className="text-lg font-semibold mb-2">Capture Your Swing</h3>
+              <p className="text-muted-foreground">
+                Record your swing with AI pose detection for precise motion analysis
+              </p>
+              <div className="mt-4 flex items-center justify-center gap-2 text-primary font-medium">
+                Start Recording <ArrowRight className="w-4 h-4" />
+              </div>
+            </Card>
+          </Link>
           
           <Card className="p-6 text-center">
             <BarChart3 className="w-12 h-12 mx-auto mb-4 text-primary" />
@@ -55,14 +54,9 @@ const Index = () => {
         {/* CTA Section */}
         <Card className="p-6 text-center bg-muted mb-8">
           <h2 className="text-2xl font-bold mb-4">Ready to improve your swing?</h2>
-          <p className="text-muted-foreground mb-6">
-            Join thousands of players using AI-powered analysis to perfect their baseball swing
+          <p className="text-muted-foreground">
+            Join thousands of players using AI-powered analysis to perfect their baseball swing. Click "Capture Your Swing" above to get started.
           </p>
-          <Link to="/analysis">
-            <Button size="lg" variant="secondary" className="w-full">
-              Start Your First Analysis
-            </Button>
-          </Link>
         </Card>
 
         <AddToHomeScreen />
