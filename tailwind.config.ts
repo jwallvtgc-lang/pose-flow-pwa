@@ -13,7 +13,11 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        'great-vibes': ['Great Vibes', 'cursive'],
+      },
       colors: {
+        'hunters-green': '#355E3B',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
