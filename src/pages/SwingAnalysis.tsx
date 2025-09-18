@@ -114,16 +114,31 @@ export default function SwingAnalysis() {
           )}
           
           {/* Progress indicator */}
-          <div className="flex-1 flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${
-              currentStep === 'capture' ? 'bg-primary' : 'bg-muted'
-            }`} />
-            <div className={`w-2 h-2 rounded-full ${
-              currentStep === 'score' ? 'bg-primary' : 'bg-muted'
-            }`} />
-            <div className={`w-2 h-2 rounded-full ${
-              currentStep === 'feedback' ? 'bg-primary' : 'bg-muted'
-            }`} />
+          <div className="flex-1 flex items-center justify-center gap-4">
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${
+                currentStep === 'capture' ? 'bg-primary' : 'bg-muted'
+              }`} />
+              <span className={`text-xs ${
+                currentStep === 'capture' ? 'text-primary' : 'text-muted-foreground'
+              }`}>Record</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${
+                currentStep === 'score' ? 'bg-primary' : 'bg-muted'
+              }`} />
+              <span className={`text-xs ${
+                currentStep === 'score' ? 'text-primary' : 'text-muted-foreground'
+              }`}>Analyze</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${
+                currentStep === 'feedback' ? 'bg-primary' : 'bg-muted'
+              }`} />
+              <span className={`text-xs ${
+                currentStep === 'feedback' ? 'text-primary' : 'text-muted-foreground'
+              }`}>Results</span>
+            </div>
           </div>
         </div>
 
