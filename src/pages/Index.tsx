@@ -33,7 +33,7 @@ const Index = () => {
             </Card>
           </Link>
           
-          <Card className="p-8 text-center bg-sp-orange border-4 border-black rounded-2xl shadow-lg">
+          <Card className="p-8 text-center bg-white border-4 border-black rounded-2xl shadow-lg">
             <BarChart3 className="w-16 h-16 mx-auto mb-6 text-black" />
             <h3 className="text-2xl font-anton font-black mb-4 text-black uppercase tracking-wide">Score</h3>
             <p className="text-black font-bold text-lg">
