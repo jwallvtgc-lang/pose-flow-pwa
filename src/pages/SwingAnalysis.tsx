@@ -1,33 +1,119 @@
 import { useState } from 'react';
 import { CameraCapture } from '@/components/CameraCapture';
 import { SwingAnalysisResults } from '@/components/SwingAnalysisResults';
+import { CoachingFeedback } from '@/components/CoachingFeedback';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Camera, BarChart3, Target } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { evaluateSwing } from '@/lib/swing-evaluation';
+import { saveSwing, saveMetrics, ensureSession } from '@/lib/persistence';
+import { uploadVideo } from '@/lib/storage';
+import { computePhase1Metrics } from '@/lib/metrics';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import type { PoseAnalysisResult } from '@/lib/poseWorkerClient';
+import type { CoachingCard } from '@/lib/cues';
 
 type FlowStep = 'capture' | 'score' | 'feedback';
 
 export default function SwingAnalysis() {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<FlowStep>('capture');
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [analysisResult, setAnalysisResult] = useState<PoseAnalysisResult | null>(null);
+  const [swingScore, setSwingScore] = useState<number>(0);
+  const [coachingCards, setCoachingCards] = useState<CoachingCard[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleCapture = (blob: Blob) => {
     setVideoBlob(blob);
     setCurrentStep('score');
   };
 
-  const handleAnalysisComplete = (result: PoseAnalysisResult) => {
-    setAnalysisResult(result);
-    setCurrentStep('feedback');
+  const handleAnalysisComplete = async (result: PoseAnalysisResult) => {
+    try {
+      setAnalysisResult(result);
+      setIsSaving(true);
+
+      // Generate metrics from pose analysis data
+      const { metrics } = computePhase1Metrics(
+        result.keypointsByFrame,
+        result.events,
+        30 // fps
+      );
+      
+      // Filter out null values for evaluation
+      const validMetrics = Object.fromEntries(
+        Object.entries(metrics).filter(([_, value]) => value !== null)
+      ) as Record<string, number>;
+      
+      // Evaluate the swing to get score and coaching cards
+      const evaluation = await evaluateSwing(validMetrics);
+      setSwingScore(evaluation.score);
+      setCoachingCards(evaluation.cards);
+
+      // Save to database
+      const clientRequestId = crypto.randomUUID();
+      
+      // Upload video
+      let videoUrl = null;
+      if (videoBlob) {
+        try {
+          const uploadResult = await uploadVideo({
+            blob: videoBlob,
+            athlete_id: user?.id,
+            client_request_id: clientRequestId
+          });
+          videoUrl = uploadResult.urlOrPath;
+        } catch (uploadError) {
+          console.warn('Video upload failed:', uploadError);
+          toast.error('Video upload failed, but analysis will still be saved');
+        }
+      }
+
+      // Ensure we have a session
+      const sessionId = await ensureSession({
+        athlete_id: user?.id,
+        fps: 30,
+        view: 'side'
+      });
+
+      // Save swing data
+      const swingId = await saveSwing({
+        session_id: sessionId,
+        score: evaluation.score,
+        cards: evaluation.cards,
+        videoUrl,
+        client_request_id: clientRequestId
+      });
+
+      // Save metrics
+      if (Object.keys(validMetrics).length > 0) {
+        await saveMetrics({
+          swing_id: swingId,
+          values: validMetrics
+        });
+      }
+
+      toast.success('Swing analysis saved successfully!');
+      setCurrentStep('feedback');
+    } catch (error) {
+      console.error('Failed to process swing analysis:', error);
+      toast.error('Failed to save analysis. Please try again.');
+      // Still show feedback even if saving failed
+      setCurrentStep('feedback');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleRetake = () => {
     setVideoBlob(null);
     setAnalysisResult(null);
+    setSwingScore(0);
+    setCoachingCards([]);
     setCurrentStep('capture');
   };
 
@@ -65,30 +151,39 @@ export default function SwingAnalysis() {
         );
       
       case 'feedback':
-        return analysisResult ? (
-          <div className="space-y-6">
-            <div className="text-center">
+        if (isSaving) {
+          return (
+            <div className="space-y-6">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold mb-2">Saving Analysis</h1>
+                <p className="text-muted-foreground">
+                  Processing your swing data...
+                </p>
+                <Progress value={75} className="mt-4" />
+              </div>
+            </div>
+          );
+        }
+        
+        return analysisResult && coachingCards.length > 0 ? (
+          <CoachingFeedback 
+            score={swingScore}
+            cards={coachingCards}
+          />
+        ) : (
+          <div className="text-center space-y-4">
+            <div>
               <h1 className="text-2xl font-bold mb-2">Your Results</h1>
               <p className="text-muted-foreground">
                 Swing analysis complete with coaching feedback
               </p>
             </div>
-            {/* Show analysis summary and allow user to save or retake */}
-            <div className="text-center space-y-4">
-              <p className="text-lg">Analysis completed successfully!</p>
-              <div className="flex gap-4 justify-center">
-                <Button onClick={handleRetake}>
-                  Record Another Swing
-                </Button>
-              </div>
+            <p className="text-lg">Analysis completed successfully!</p>
+            <div className="flex gap-4 justify-center">
+              <Button onClick={handleRetake}>
+                Record Another Swing
+              </Button>
             </div>
-          </div>
-        ) : (
-          <div className="text-center">
-            <p className="text-muted-foreground">No analysis available</p>
-            <Button onClick={handleRetake} className="mt-4">
-              Try Again
-            </Button>
           </div>
         );
       
