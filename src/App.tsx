@@ -10,6 +10,7 @@ import SwingAnalysis from "./pages/SwingAnalysis";
 import Score from "./pages/Score";
 import Progress from "./pages/Progress";
 import SwingDetail from "./pages/SwingDetail";
+import RecentSwings from "./pages/RecentSwings";
 import Debug from "./pages/Debug";
 import MetricsDebug from "./pages/MetricsDebug";
 import NotFound from "./pages/NotFound";
@@ -51,6 +52,7 @@ const App = () => {
             <Route path="/score" element={<Score />} />
             <Route path="/progress" element={<Progress />} />
             <Route path="/swing/:id" element={<SwingDetail />} />
+            <Route path="/recent-swings" element={<RecentSwings />} />
             <Route path="/debug" element={<Debug />} />
             <Route path="/metrics-debug" element={<MetricsDebug />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

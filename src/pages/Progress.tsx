@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, TrendingUp, ArrowRight } from 'lucide-react';
+import { TrendingUp, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 
@@ -128,9 +128,6 @@ export default function Progress() {
   };
 
 
-  const handleSwingTap = (swingId: string) => {
-    navigate(`/swing/${swingId}`);
-  };
 
   if (isLoading) {
     return (
@@ -249,52 +246,6 @@ export default function Progress() {
             </Card>
           </div>
 
-          {/* Recent Swings List */}
-          <Card className="p-4">
-            <h3 className="text-lg font-semibold mb-4">Recent Swings</h3>
-            <div className="space-y-2">
-              {swings.map((swing) => {
-                const date = swing.created_at ? new Date(swing.created_at) : new Date();
-                const topCue = swing.cues?.[0];
-                
-                return (
-                  <div
-                    key={swing.id}
-                    onClick={() => handleSwingTap(swing.id)}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div>
-                        <div className="text-sm font-medium">
-                          {date.toLocaleDateString()} {date.toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </div>
-                        {topCue && (
-                          <div className="text-xs text-muted-foreground truncate">
-                            {topCue}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="ml-auto flex items-center gap-2">
-                        {swing.score_phase1 && (
-                          <Badge 
-                            variant="secondary"
-                            className={`text-xs text-white ${getScoreColor(swing.score_phase1)}`}
-                          >
-                            {swing.score_phase1}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground ml-2" />
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
 
           {/* Action Button */}
           <Button 

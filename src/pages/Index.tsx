@@ -83,7 +83,7 @@ const Index = () => {
           <Link to={user ? "/progress" : "/auth"}>
             <Card className="p-8 text-center bg-white border-4 border-black rounded-2xl shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer">
               <BarChart3 className="w-16 h-16 mx-auto mb-6 text-black" />
-              <h3 className="text-2xl font-anton font-black mb-4 text-black uppercase tracking-wide">Score</h3>
+              <h3 className="text-2xl font-anton font-black mb-4 text-black uppercase tracking-wide">Scores</h3>
               <p className="text-black font-bold text-lg mb-6">
                 Get detailed metrics and performance scores based on swing mechanics analysis
               </p>
@@ -93,13 +93,18 @@ const Index = () => {
             </Card>
           </Link>
           
-          <Card className="p-8 text-center bg-sp-green border-4 border-black rounded-2xl shadow-lg">
-            <Lightbulb className="w-16 h-16 mx-auto mb-6 text-white" />
-            <h3 className="text-2xl font-anton font-black mb-4 text-white uppercase tracking-wide">Feedback</h3>
-            <p className="text-white font-bold text-lg">
-              Receive personalized coaching tips and drill recommendations
-            </p>
-          </Card>
+          <Link to={user ? "/recent-swings" : "/auth"}>
+            <Card className="p-8 text-center bg-sp-green border-4 border-black rounded-2xl shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer">
+              <Lightbulb className="w-16 h-16 mx-auto mb-6 text-white" />
+              <h3 className="text-2xl font-anton font-black mb-4 text-white uppercase tracking-wide">Feedback</h3>
+              <p className="text-white font-bold text-lg mb-6">
+                Review your swing history and get personalized coaching tips
+              </p>
+              <div className="mt-4 flex items-center justify-center gap-2 text-white font-anton text-xl uppercase">
+                {user ? 'View Recent Swings' : 'Sign In to View'} <ArrowRight className="w-6 h-6" />
+              </div>
+            </Card>
+          </Link>
         </div>
 
         {/* CTA Section */}
