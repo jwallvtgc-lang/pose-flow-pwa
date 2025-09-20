@@ -26,6 +26,14 @@ export default function SwingAnalysis() {
   const [swingScore, setSwingScore] = useState<number>(0);
   const [coachingCards, setCoachingCards] = useState<CoachingCard[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+
+  const addDebugLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}`;
+    setDebugLogs(prev => [...prev.slice(-10), logEntry]); // Keep last 10 logs
+    console.log(logEntry);
+  };
 
   const handleCapture = (blob: Blob) => {
     setVideoBlob(blob);
@@ -37,12 +45,8 @@ export default function SwingAnalysis() {
       setAnalysisResult(result);
       setIsSaving(true);
 
-      console.log('=== ANALYSIS COMPLETE DEBUG ===');
-      console.log('Raw analysis result:', {
-        events: result.events,
-        frameCount: result.keypointsByFrame.length,
-        quality: result.quality
-      });
+      addDebugLog('=== ANALYSIS COMPLETE DEBUG ===');
+      addDebugLog(`Raw analysis: ${result.keypointsByFrame.length} frames, quality: ${JSON.stringify(result.quality)}`);
 
       // Generate metrics from pose analysis data
       const metricsResult = computePhase1Metrics(
@@ -51,26 +55,18 @@ export default function SwingAnalysis() {
         30 // fps
       );
       
-      console.log('Raw metrics computed:', {
-        allMetrics: metricsResult.metrics,
-        pixelsPerCm: metricsResult.pixelsPerCm,
-        qualityFlags: metricsResult.qualityFlags
-      });
+      addDebugLog(`Raw metrics: ${Object.keys(metricsResult.metrics).length} computed, pixelsPerCm: ${metricsResult.pixelsPerCm}`);
       
       // Filter out null values for evaluation
       const validMetrics = Object.fromEntries(
         Object.entries(metricsResult.metrics).filter(([_, value]) => value !== null)
       ) as Record<string, number>;
       
-      console.log('Valid metrics for evaluation:', validMetrics);
+      addDebugLog(`Valid metrics: ${Object.keys(validMetrics).length} metrics - ${Object.keys(validMetrics).join(', ')}`);
       
       // Evaluate the swing to get score and coaching cards
       const evaluation = await evaluateSwing(validMetrics);
-      console.log('Swing evaluation result:', {
-        score: evaluation.score,
-        weakest: evaluation.weakest,
-        cardsCount: evaluation.cards.length
-      });
+      addDebugLog(`Swing evaluation: Score ${evaluation.score}, weakest: ${evaluation.weakest.join(',')}, ${evaluation.cards.length} cards`);
       
       setSwingScore(evaluation.score);
       setCoachingCards(evaluation.cards);
@@ -78,50 +74,37 @@ export default function SwingAnalysis() {
       // Save to database
       const clientRequestId = crypto.randomUUID();
       
-      console.log('Starting save process:', {
-        userIdExists: !!user?.id,
-        userId: user?.id,
-        validMetricsCount: Object.keys(validMetrics).length,
-        evaluationScore: evaluation.score,
-        cardsCount: evaluation.cards.length,
-        clientRequestId
-      });
+      addDebugLog(`Starting save: User ${user?.id ? 'exists' : 'missing'}, ${Object.keys(validMetrics).length} metrics, score ${evaluation.score}`);
       
       // Upload video
       let videoUrl = null;
       if (videoBlob) {
         try {
-          console.log('Uploading video...');
+          addDebugLog('Uploading video...');
           const uploadResult = await uploadVideo({
             blob: videoBlob,
             athlete_id: user?.id,
             client_request_id: clientRequestId
           });
           videoUrl = uploadResult.urlOrPath;
-          console.log('Video upload successful:', videoUrl);
+          addDebugLog(`Video upload successful: ${videoUrl}`);
         } catch (uploadError) {
-          console.error('Video upload failed:', uploadError);
+          addDebugLog(`Video upload failed: ${uploadError}`);
           toast.error('Video upload failed, but analysis will still be saved');
         }
       }
 
       // Ensure we have a session
-      console.log('Creating session...');
+      addDebugLog('Creating session...');
       const sessionId = await ensureSession({
         athlete_id: user?.id,
         fps: 30,
         view: 'side'
       });
-      console.log('Session created:', sessionId);
+      addDebugLog(`Session created: ${sessionId}`);
 
       // Save swing data
-      console.log('Saving swing data with payload:', {
-        session_id: sessionId,
-        score: evaluation.score,
-        cards: evaluation.cards,
-        videoUrl,
-        client_request_id: clientRequestId
-      });
+      addDebugLog(`Saving swing: session ${sessionId}, score ${evaluation.score}, ${evaluation.cards.length} cards`);
       const swingId = await saveSwing({
         session_id: sessionId,
         score: evaluation.score,
@@ -129,24 +112,24 @@ export default function SwingAnalysis() {
         videoUrl,
         client_request_id: clientRequestId
       });
-      console.log('Swing saved with ID:', swingId);
+      addDebugLog(`Swing saved with ID: ${swingId}`);
 
       // Save metrics
       if (Object.keys(validMetrics).length > 0) {
-        console.log('Saving metrics to swing_id:', swingId, 'with metrics:', validMetrics);
+        addDebugLog(`Saving ${Object.keys(validMetrics).length} metrics to swing ${swingId}`);
         await saveMetrics({
           swing_id: swingId,
           values: validMetrics
         });
-        console.log('Metrics saved successfully');
+        addDebugLog('Metrics saved successfully');
       } else {
-        console.warn('No valid metrics to save');
+        addDebugLog('No valid metrics to save');
       }
 
       toast.success('Swing analysis saved successfully!');
       setCurrentStep('feedback');
     } catch (error) {
-      console.error('Failed to process swing analysis:', error);
+      addDebugLog(`ERROR: ${error}`);
       toast.error('Failed to save analysis. Please try again.');
       // Still show feedback even if saving failed
       setCurrentStep('feedback');
@@ -316,6 +299,26 @@ export default function SwingAnalysis() {
             )}
           </div>
         </div>
+
+        {/* Debug Panel */}
+        {debugLogs.length > 0 && (
+          <div className="mt-4 p-3 bg-muted rounded-lg">
+            <h3 className="text-sm font-medium mb-2">Debug Log:</h3>
+            <div className="text-xs font-mono space-y-1 max-h-40 overflow-y-auto">
+              {debugLogs.map((log, i) => (
+                <div key={i} className="text-muted-foreground">{log}</div>
+              ))}
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setDebugLogs([])}
+              className="mt-2 h-6 text-xs"
+            >
+              Clear Logs
+            </Button>
+          </div>
+        )}
 
         {/* Main content */}
         {renderStep()}
