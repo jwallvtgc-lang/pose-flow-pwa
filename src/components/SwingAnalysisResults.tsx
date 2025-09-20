@@ -21,11 +21,18 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
   const [videoUrl, setVideoUrl] = useState<string>('');
 
   useEffect(() => {
+    // Reset all state for new video
+    setIsAnalyzing(true);
+    setProgress(0);
+    setProgressMessage('Starting analysis...');
+    setResults(null);
+    setError('');
+
     // Create video URL for playback
     const url = URL.createObjectURL(videoBlob);
     setVideoUrl(url);
 
-    // Start analysis
+    // Start analysis with fresh state
     analyzeSwing();
 
     return () => {
