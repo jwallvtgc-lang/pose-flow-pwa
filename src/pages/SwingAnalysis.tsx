@@ -97,7 +97,7 @@ export default function SwingAnalysis() {
       // Ensure we have a session
       addDebugLog('Creating session...');
       const sessionId = await ensureSession({
-        athlete_id: user?.id,
+        athlete_id: null, // Fix: Don't use user.id directly, athlete_id should reference athletes table
         fps: 30,
         view: 'side'
       });
