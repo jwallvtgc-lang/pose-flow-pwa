@@ -1,34 +1,34 @@
 import { useState } from 'react';
 import { CameraCapture } from '@/components/CameraCapture';
-import { SwingScoring } from '@/components/SwingScoring';
-import { CoachingFeedback } from '@/components/CoachingFeedback';
+import { SwingAnalysisResults } from '@/components/SwingAnalysisResults';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Camera, BarChart3, Target } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import type { CoachingCard } from '@/lib/cues';
+import type { PoseAnalysisResult } from '@/lib/poseWorkerClient';
 
 type FlowStep = 'capture' | 'score' | 'feedback';
 
 export default function SwingAnalysis() {
   const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState<FlowStep>('capture');
-  const [poses, setPoses] = useState<any[]>([]);
-  const [score, setScore] = useState<number>(0);
-  const [coachingCards, setCoachingCards] = useState<CoachingCard[]>([]);
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<PoseAnalysisResult | null>(null);
 
-  const handlePoseDetected = (detectedPoses: any[]) => {
-    setPoses(detectedPoses);
-  };
-
-  const handleCapture = (_blob: Blob) => {
+  const handleCapture = (blob: Blob) => {
+    setVideoBlob(blob);
     setCurrentStep('score');
   };
 
-  const handleScoreComplete = (swingScore: number, cards: CoachingCard[]) => {
-    setScore(swingScore);
-    setCoachingCards(cards);
+  const handleAnalysisComplete = (result: PoseAnalysisResult) => {
+    setAnalysisResult(result);
     setCurrentStep('feedback');
+  };
+
+  const handleRetake = () => {
+    setVideoBlob(null);
+    setAnalysisResult(null);
+    setCurrentStep('capture');
   };
 
   const renderStep = () => {
@@ -43,41 +43,52 @@ export default function SwingAnalysis() {
               </p>
             </div>
             <CameraCapture 
-              onPoseDetected={handlePoseDetected}
               onCapture={handleCapture}
             />
           </div>
         );
       
       case 'score':
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-2">Analyzing Your Swing</h1>
-              <p className="text-muted-foreground">
-                AI is evaluating your swing mechanics
-              </p>
-            </div>
-            <SwingScoring 
-              poses={poses}
-              onScoreComplete={handleScoreComplete}
-            />
+        return videoBlob ? (
+          <SwingAnalysisResults
+            videoBlob={videoBlob}
+            onRetake={handleRetake}
+            onComplete={handleAnalysisComplete}
+          />
+        ) : (
+          <div className="text-center">
+            <p className="text-muted-foreground">No video recorded</p>
+            <Button onClick={handleRetake} className="mt-4">
+              Try Again
+            </Button>
           </div>
         );
       
       case 'feedback':
-        return (
+        return analysisResult ? (
           <div className="space-y-6">
             <div className="text-center">
               <h1 className="text-2xl font-bold mb-2">Your Results</h1>
               <p className="text-muted-foreground">
-                Personalized coaching feedback and drills
+                Swing analysis complete with coaching feedback
               </p>
             </div>
-            <CoachingFeedback 
-              score={score}
-              cards={coachingCards}
-            />
+            {/* Show analysis summary and allow user to save or retake */}
+            <div className="text-center space-y-4">
+              <p className="text-lg">Analysis completed successfully!</p>
+              <div className="flex gap-4 justify-center">
+                <Button onClick={handleRetake}>
+                  Record Another Swing
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center">
+            <p className="text-muted-foreground">No analysis available</p>
+            <Button onClick={handleRetake} className="mt-4">
+              Try Again
+            </Button>
           </div>
         );
       
