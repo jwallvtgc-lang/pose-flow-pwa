@@ -353,9 +353,9 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   };
 
   return (
-    <div className="relative min-h-screen bg-black">
+    <div className="relative h-screen bg-black flex flex-col">
       {/* Camera Preview */}
-      <div className="relative w-full h-screen overflow-hidden">
+      <div className="relative flex-1 overflow-hidden">
         <video
           ref={videoRef}
           autoPlay
@@ -429,8 +429,8 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
         )}
       </div>
       
-      {/* Controls */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+      {/* Controls - Fixed bottom section */}
+      <div className="flex-shrink-0 p-8 flex flex-col items-center">
         <Button
           size="lg"
           className={`w-24 h-24 rounded-full text-white font-bold text-sm ${
