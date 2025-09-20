@@ -335,8 +335,19 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      
+      // Stop the camera stream
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+      }
+      
+      // Clear video source
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     }
-  }, [isRecording]);
+  }, [isRecording, stream]);
 
   const toggleRecording = () => {
     if (!isRecording && isInitialized && !workerError) {
