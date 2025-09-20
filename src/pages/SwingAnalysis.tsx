@@ -129,7 +129,9 @@ export default function SwingAnalysis() {
       toast.success('Swing analysis saved successfully!');
       setCurrentStep('feedback');
     } catch (error) {
-      addDebugLog(`ERROR: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addDebugLog(`ERROR: ${errorMessage}`);
+      console.error('Full error object:', error);
       toast.error('Failed to save analysis. Please try again.');
       // Still show feedback even if saving failed
       setCurrentStep('feedback');

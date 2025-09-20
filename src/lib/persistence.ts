@@ -39,6 +39,10 @@ export async function ensureSession({
 
   console.log('=== CREATE SESSION DEBUG ===');
   console.log('Creating new session with:', { athlete_id, fps, view });
+  console.log('Current user auth state:', { 
+    user: (await supabase.auth.getUser()).data.user?.id,
+    session: (await supabase.auth.getSession()).data.session !== null 
+  });
 
   try {
     const { data, error } = await supabase
