@@ -14,15 +14,20 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     rollupOptions: {
-      external: [],
       output: {
         manualChunks: {
-          tensorflow: ['@tensorflow/tfjs', '@tensorflow/tfjs-backend-webgpu']
+          'tensorflow': ['@tensorflow/tfjs', '@tensorflow/tfjs-backend-webgl', '@tensorflow/tfjs-backend-cpu'],
+          'pose-detection': ['@tensorflow-models/pose-detection']
         }
       }
     }
   },
   optimizeDeps: {
-    include: ['@tensorflow/tfjs', '@tensorflow/tfjs-backend-webgpu']
+    include: [
+      '@tensorflow/tfjs',
+      '@tensorflow/tfjs-backend-webgl',
+      '@tensorflow/tfjs-backend-cpu',
+      '@tensorflow-models/pose-detection'
+    ]
   }
 })
