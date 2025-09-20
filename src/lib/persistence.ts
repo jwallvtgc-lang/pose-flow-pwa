@@ -32,7 +32,13 @@ export async function ensureSession({
   fps: number;
   view?: string;
 }): Promise<string> {
-  if (session_id) return session_id;
+  if (session_id) {
+    console.log('Using existing session_id:', session_id);
+    return session_id;
+  }
+
+  console.log('=== CREATE SESSION DEBUG ===');
+  console.log('Creating new session with:', { athlete_id, fps, view });
 
   try {
     const { data, error } = await supabase
@@ -46,9 +52,15 @@ export async function ensureSession({
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Session creation error:', error);
+      throw error;
+    }
+    
+    console.log('Session created successfully:', data);
     return data.id;
   } catch (error) {
+    console.error('Session creation failed:', error);
     if (isNetworkError(error)) {
       await offlineQueue.enqueue({
         type: 'insert_session',
@@ -75,6 +87,16 @@ export async function saveSwing({
   client_request_id: string;
 }): Promise<string> {
   try {
+    console.log('=== SAVE SWING DEBUG ===');
+    console.log('Payload:', {
+      session_id,
+      score_phase1: score,
+      cues: cards.map(c => c.cue),
+      drill_id: (cards[0]?.drill && typeof cards[0].drill === 'object' && 'id' in cards[0].drill) ? cards[0].drill.id : null,
+      video_url: videoUrl,
+      client_request_id
+    });
+    
     // Try to insert, if conflict on client_request_id, fetch existing
     const { data, error } = await supabase
       .from('swings')
@@ -90,8 +112,10 @@ export async function saveSwing({
       .single();
 
     if (error) {
+      console.error('Swing insert error:', error);
       // Check for unique constraint violation (idempotent behavior)
       if (error.code === '23505' && error.message.includes('client_request_id')) {
+        console.log('Swing already exists, fetching existing...');
         // Fetch existing swing with this client_request_id
         const { data: existingData, error: fetchError } = await supabase
           .from('swings')
@@ -99,12 +123,17 @@ export async function saveSwing({
           .eq('client_request_id', client_request_id)
           .single();
 
-        if (fetchError) throw fetchError;
+        if (fetchError) {
+          console.error('Failed to fetch existing swing:', fetchError);
+          throw fetchError;
+        }
+        console.log('Found existing swing:', existingData.id);
         return existingData.id;
       }
       throw error;
     }
 
+    console.log('Swing insert successful:', data);
     return data.id;
   } catch (error) {
     if (isNetworkError(error)) {
@@ -126,6 +155,10 @@ export async function saveMetrics({
   swing_id: string;
   values: Record<string, number>;
 }): Promise<void> {
+  console.log('=== SAVE METRICS DEBUG ===');
+  console.log('swing_id:', swing_id);
+  console.log('values:', values);
+  
   const units = metricUnits();
   const metricsToInsert = Object.entries(values)
     .filter(([_, value]) => value !== null && !isNaN(value))
@@ -137,15 +170,26 @@ export async function saveMetrics({
       phase: 1
     }));
 
-  if (metricsToInsert.length === 0) return;
+  console.log('Metrics to insert:', metricsToInsert);
+
+  if (metricsToInsert.length === 0) {
+    console.log('No metrics to insert, returning');
+    return;
+  }
 
   try {
     const { error } = await supabase
       .from('swing_metrics')
       .insert(metricsToInsert);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Metrics insert error:', error);
+      throw error;
+    }
+    
+    console.log('Metrics inserted successfully');
   } catch (error) {
+    console.error('Save metrics error:', error);
     if (isNetworkError(error)) {
       await offlineQueue.enqueue({
         type: 'insert_metrics',

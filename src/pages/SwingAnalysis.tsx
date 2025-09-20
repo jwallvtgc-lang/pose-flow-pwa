@@ -37,20 +37,41 @@ export default function SwingAnalysis() {
       setAnalysisResult(result);
       setIsSaving(true);
 
+      console.log('=== ANALYSIS COMPLETE DEBUG ===');
+      console.log('Raw analysis result:', {
+        events: result.events,
+        frameCount: result.keypointsByFrame.length,
+        quality: result.quality
+      });
+
       // Generate metrics from pose analysis data
-      const { metrics } = computePhase1Metrics(
+      const metricsResult = computePhase1Metrics(
         result.keypointsByFrame,
         result.events,
         30 // fps
       );
       
+      console.log('Raw metrics computed:', {
+        allMetrics: metricsResult.metrics,
+        pixelsPerCm: metricsResult.pixelsPerCm,
+        qualityFlags: metricsResult.qualityFlags
+      });
+      
       // Filter out null values for evaluation
       const validMetrics = Object.fromEntries(
-        Object.entries(metrics).filter(([_, value]) => value !== null)
+        Object.entries(metricsResult.metrics).filter(([_, value]) => value !== null)
       ) as Record<string, number>;
+      
+      console.log('Valid metrics for evaluation:', validMetrics);
       
       // Evaluate the swing to get score and coaching cards
       const evaluation = await evaluateSwing(validMetrics);
+      console.log('Swing evaluation result:', {
+        score: evaluation.score,
+        weakest: evaluation.weakest,
+        cardsCount: evaluation.cards.length
+      });
+      
       setSwingScore(evaluation.score);
       setCoachingCards(evaluation.cards);
 
@@ -59,15 +80,18 @@ export default function SwingAnalysis() {
       
       console.log('Starting save process:', {
         userIdExists: !!user?.id,
+        userId: user?.id,
         validMetricsCount: Object.keys(validMetrics).length,
         evaluationScore: evaluation.score,
-        cardsCount: evaluation.cards.length
+        cardsCount: evaluation.cards.length,
+        clientRequestId
       });
       
       // Upload video
       let videoUrl = null;
       if (videoBlob) {
         try {
+          console.log('Uploading video...');
           const uploadResult = await uploadVideo({
             blob: videoBlob,
             athlete_id: user?.id,
@@ -91,7 +115,13 @@ export default function SwingAnalysis() {
       console.log('Session created:', sessionId);
 
       // Save swing data
-      console.log('Saving swing data...');
+      console.log('Saving swing data with payload:', {
+        session_id: sessionId,
+        score: evaluation.score,
+        cards: evaluation.cards,
+        videoUrl,
+        client_request_id: clientRequestId
+      });
       const swingId = await saveSwing({
         session_id: sessionId,
         score: evaluation.score,
@@ -103,7 +133,7 @@ export default function SwingAnalysis() {
 
       // Save metrics
       if (Object.keys(validMetrics).length > 0) {
-        console.log('Saving metrics:', validMetrics);
+        console.log('Saving metrics to swing_id:', swingId, 'with metrics:', validMetrics);
         await saveMetrics({
           swing_id: swingId,
           values: validMetrics
