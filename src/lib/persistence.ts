@@ -39,9 +39,17 @@ export async function ensureSession({
 
   console.log('=== CREATE SESSION DEBUG ===');
   console.log('Creating new session with:', { athlete_id, fps, view });
-  console.log('Current user auth state:', { 
-    user: (await supabase.auth.getUser()).data.user?.id,
-    session: (await supabase.auth.getSession()).data.session !== null 
+  
+  // Check auth state
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  
+  console.log('Auth check results:', {
+    userError: userError ? JSON.stringify(userError) : null,
+    sessionError: sessionError ? JSON.stringify(sessionError) : null,
+    hasUser: !!userData.user,
+    hasSession: !!sessionData.session,
+    userId: userData.user?.id
   });
 
   try {
@@ -57,14 +65,28 @@ export async function ensureSession({
       .single();
 
     if (error) {
-      console.error('Session creation error:', error);
+      console.error('Session creation error details:', {
+        message: error.message,
+        code: error.code,
+        hint: error.hint,
+        details: error.details,
+        fullError: JSON.stringify(error, null, 2)
+      });
       throw error;
     }
     
     console.log('Session created successfully:', data);
     return data.id;
   } catch (error) {
-    console.error('Session creation failed:', error);
+    console.error('Session creation failed - detailed error:', {
+      type: typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      code: (error as any)?.code,
+      hint: (error as any)?.hint,
+      details: (error as any)?.details,
+      stack: error instanceof Error ? error.stack : null,
+      fullError: JSON.stringify(error, null, 2)
+    });
     if (isNetworkError(error)) {
       await offlineQueue.enqueue({
         type: 'insert_session',

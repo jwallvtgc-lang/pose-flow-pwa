@@ -129,7 +129,14 @@ export default function SwingAnalysis() {
       toast.success('Swing analysis saved successfully!');
       setCurrentStep('feedback');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        errorMessage = JSON.stringify(error, null, 2);
+      }
       addDebugLog(`ERROR: ${errorMessage}`);
       console.error('Full error object:', error);
       toast.error('Failed to save analysis. Please try again.');
