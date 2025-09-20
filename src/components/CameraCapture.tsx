@@ -338,14 +338,10 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
     }
   }, [isRecording]);
 
-  const handlePointerDown = () => {
+  const toggleRecording = () => {
     if (!isRecording && isInitialized && !workerError) {
       startRecording();
-    }
-  };
-
-  const handlePointerUp = () => {
-    if (isRecording) {
+    } else if (isRecording) {
       stopRecording();
     }
   };
@@ -416,8 +412,8 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
         <div className="absolute top-20 left-4 right-4 text-center">
           <p className="text-white text-sm bg-black/50 rounded px-3 py-1">
             {isRecording 
-              ? "Keep holding until your swing is complete!" 
-              : "Stand sideways and hold the record button during your swing"
+              ? "Recording swing - tap to stop when complete!" 
+              : "Stand sideways and tap to start recording your swing"
             }
           </p>
         </div>
@@ -443,11 +439,9 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
               : 'bg-primary hover:bg-primary/90'
           }`}
           disabled={!isInitialized || !stream || !!workerError}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp} // Stop recording if finger leaves button
+          onClick={toggleRecording}
         >
-          {isRecording ? 'RELEASE TO ANALYZE' : 'HOLD TO RECORD'}
+          {isRecording ? 'TAP TO STOP' : 'TAP TO RECORD'}
         </Button>
         
         {!isInitialized && !workerError && (
