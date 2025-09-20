@@ -57,6 +57,13 @@ export default function SwingAnalysis() {
       // Save to database
       const clientRequestId = crypto.randomUUID();
       
+      console.log('Starting save process:', {
+        userIdExists: !!user?.id,
+        validMetricsCount: Object.keys(validMetrics).length,
+        evaluationScore: evaluation.score,
+        cardsCount: evaluation.cards.length
+      });
+      
       // Upload video
       let videoUrl = null;
       if (videoBlob) {
@@ -67,20 +74,24 @@ export default function SwingAnalysis() {
             client_request_id: clientRequestId
           });
           videoUrl = uploadResult.urlOrPath;
+          console.log('Video upload successful:', videoUrl);
         } catch (uploadError) {
-          console.warn('Video upload failed:', uploadError);
+          console.error('Video upload failed:', uploadError);
           toast.error('Video upload failed, but analysis will still be saved');
         }
       }
 
       // Ensure we have a session
+      console.log('Creating session...');
       const sessionId = await ensureSession({
         athlete_id: user?.id,
         fps: 30,
         view: 'side'
       });
+      console.log('Session created:', sessionId);
 
       // Save swing data
+      console.log('Saving swing data...');
       const swingId = await saveSwing({
         session_id: sessionId,
         score: evaluation.score,
@@ -88,13 +99,18 @@ export default function SwingAnalysis() {
         videoUrl,
         client_request_id: clientRequestId
       });
+      console.log('Swing saved with ID:', swingId);
 
       // Save metrics
       if (Object.keys(validMetrics).length > 0) {
+        console.log('Saving metrics:', validMetrics);
         await saveMetrics({
           swing_id: swingId,
           values: validMetrics
         });
+        console.log('Metrics saved successfully');
+      } else {
+        console.warn('No valid metrics to save');
       }
 
       toast.success('Swing analysis saved successfully!');

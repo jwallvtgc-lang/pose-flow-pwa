@@ -50,9 +50,6 @@ export function CoachingFeedback({ score, cards }: CoachingFeedbackProps) {
             {getScoreText(score)}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground mt-4">
-          Based on Phase 1 swing mechanics analysis
-        </p>
       </Card>
 
       {/* Coaching Cards */}
