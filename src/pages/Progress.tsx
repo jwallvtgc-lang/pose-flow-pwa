@@ -460,7 +460,7 @@ interface DetailedMetricCardProps {
   targetRange: string;
 }
 
-function DetailedMetricCard({ title, description, average, unit }: DetailedMetricCardProps) {
+function DetailedMetricCard({ title, description, average, unit, targetRange }: DetailedMetricCardProps) {
   const getProgressColor = (title: string, value?: number) => {
     if (!value) return 'bg-muted';
     
@@ -490,7 +490,7 @@ function DetailedMetricCard({ title, description, average, unit }: DetailedMetri
       <div className="mb-3">
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <Target className="w-4 h-4" />
-          <span>Target Range</span>
+          <span>Target: {targetRange}</span>
         </div>
       </div>
       
