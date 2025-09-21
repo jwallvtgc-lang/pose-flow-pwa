@@ -2,10 +2,10 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp, ArrowRight, ArrowLeft } from 'lucide-react';
+import { TrendingUp, ArrowRight, ArrowLeft, Target, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
+import { metricSpecs } from '@/config/phase1_metrics';
 
 interface Swing {
   id: string;
@@ -155,12 +155,62 @@ export default function Progress() {
     };
   }, [swings, metrics]);
 
-  const getScoreColor = (score: number | null) => {
-    if (!score) return 'bg-muted';
-    if (score >= 80) return 'bg-green-500';
-    if (score >= 60) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
+  // Calculate improvement metrics
+  const improvingMetrics = useMemo(() => {
+    const allMetrics = Object.keys(metricSpecs);
+    let improving = 0;
+    let needsWork = 0;
+    
+    allMetrics.forEach(metricName => {
+      const series = chartData.allMetricsSeries[metricName];
+      if (series && series.length >= 2) {
+        const recent = series.slice(-3).map(p => p.value);
+        const older = series.slice(-6, -3).map(p => p.value);
+        
+        if (recent.length && older.length) {
+          const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+          const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
+          const spec = metricSpecs[metricName as keyof typeof metricSpecs];
+          
+          // Check if improving (moving toward target range)
+          const isImproving = spec && 'invert' in spec && spec.invert 
+            ? recentAvg < olderAvg  // Lower is better
+            : recentAvg > olderAvg; // Higher is better
+            
+          if (isImproving) {
+            improving++;
+          } else {
+            needsWork++;
+          }
+        }
+      }
+    });
+    
+    return { improving, needsWork };
+  }, [chartData]);
+
+  // Calculate score trend
+  const scoreTrend = useMemo(() => {
+    const scores = chartData.scoreSeries;
+    if (scores && scores.length >= 2) {
+      const recent = scores.slice(-3).map(p => p.value);
+      const older = scores.slice(-6, -3).map(p => p.value);
+      
+      if (recent.length && older.length) {
+        const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+        const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
+        const change = recentAvg - olderAvg;
+        
+        return {
+          change,
+          isImproving: change > 0,
+          description: change > 0 ? 'Improving steadily' : 'Needs focus'
+        };
+      }
+    }
+    
+    return { change: 0, isImproving: true, description: 'Getting started' };
+  }, [chartData]);
 
 
 
@@ -237,12 +287,6 @@ export default function Progress() {
   }
 
   const latestScore = swings[0]?.score_phase1;
-  const getLatestMetricValue = (metricName: string) => {
-    const latestSwingMetric = metrics.find(m => 
-      m.swing_id === swings[0]?.id && m.metric === metricName
-    );
-    return latestSwingMetric?.value;
-  };
 
   return (
       <div className="min-h-screen bg-background">
@@ -260,99 +304,111 @@ export default function Progress() {
           </div>
 
         <div className="space-y-6">
-          {/* Score Trend Card */}
-          <Card className="p-6">
+          {/* Score Trend Card - Blue Gradient */}
+          <Card className="relative p-6 overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold">Score Trend</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-blue-100 text-sm">
                   Last {swings.length} swings • Avg: {chartData.averages['score']?.toFixed(1) || '—'}
                 </p>
               </div>
               {latestScore && (
-                <Badge 
-                  className={`text-white ${getScoreColor(latestScore)}`}
-                >
-                  {latestScore}
-                </Badge>
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+                  <div className="flex items-center gap-1">
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="text-2xl font-bold">{latestScore}</span>
+                  </div>
+                </div>
               )}
             </div>
-            <LineChart data={chartData.scoreSeries} height={80} />
+            
+            {/* Trend Line Visualization */}
+            <div className="mb-4">
+              <TrendLineVisual data={chartData.scoreSeries} />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-blue-100 text-sm">{scoreTrend.description}</span>
+              <span className="text-blue-100 text-sm font-medium">
+                {scoreTrend.change > 0 ? '+' : ''}{scoreTrend.change.toFixed(1)} points
+              </span>
+            </div>
           </Card>
 
-          {/* All Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <MetricCard
-              title="Hip-Shoulder Separation"
-              unit="°"
-              data={chartData.allMetricsSeries['hip_shoulder_sep_deg']}
-              average={chartData.averages['hip_shoulder_sep_deg']}
-              latestValue={getLatestMetricValue('hip_shoulder_sep_deg') || undefined}
-              definition="The angle between shoulder and hip rotation at launch. More separation creates power."
-            />
+          {/* Improving & Focus Areas Cards */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <span className="text-green-700 font-medium text-sm">Improving</span>
+              </div>
+              <div className="text-2xl font-bold text-green-800">{improvingMetrics.improving}</div>
+              <div className="text-green-600 text-xs">metrics trending up</div>
+            </Card>
             
-            <MetricCard
-              title="Attack Angle"
-              unit="°"
-              data={chartData.allMetricsSeries['attack_angle_deg']}
-              average={chartData.averages['attack_angle_deg']}
-              latestValue={getLatestMetricValue('attack_angle_deg') || undefined}
-              definition="The angle of the bat path through the hitting zone. Slight upward angle is ideal."
-            />
-            
-            <MetricCard
-              title="Head Drift"
-              unit="cm"
-              data={chartData.allMetricsSeries['head_drift_cm']}
-              average={chartData.averages['head_drift_cm']}
-              latestValue={getLatestMetricValue('head_drift_cm') || undefined}
-              definition="How much the head moves during the swing. Less movement improves consistency."
-            />
-            
-            <MetricCard
-              title="Contact Timing"
-              unit=" frames"
-              data={chartData.allMetricsSeries['contact_timing_frames']}
-              average={chartData.averages['contact_timing_frames']}
-              latestValue={getLatestMetricValue('contact_timing_frames') || undefined}
-              definition="How well-timed contact is relative to optimal swing sequence. 0 is perfect timing."
-            />
-            
-            <MetricCard
-              title="Bat Lag"
-              unit="°"
-              data={chartData.allMetricsSeries['bat_lag_deg']}
-              average={chartData.averages['bat_lag_deg']}
-              latestValue={getLatestMetricValue('bat_lag_deg') || undefined}
-              definition="The angle between the bat and lead arm at launch. Proper lag creates whip action."
-            />
-            
-            <MetricCard
-              title="Torso Tilt"
-              unit="°"
-              data={chartData.allMetricsSeries['torso_tilt_deg']}
-              average={chartData.averages['torso_tilt_deg']}
-              latestValue={getLatestMetricValue('torso_tilt_deg') || undefined}
-              definition="The forward lean of the torso at contact. Proper tilt helps attack angle."
-            />
-            
-            <MetricCard
-              title="Stride Variance"
-              unit="%"
-              data={chartData.allMetricsSeries['stride_var_pct']}
-              average={chartData.averages['stride_var_pct']}
-              latestValue={getLatestMetricValue('stride_var_pct') || undefined}
-              definition="Consistency of stride length across swings. Lower variance shows better repeatability."
-            />
-            
-            <MetricCard
-              title="Finish Balance"
-              unit=""
-              data={chartData.allMetricsSeries['finish_balance_idx']}
-              average={chartData.averages['finish_balance_idx']}
-              latestValue={getLatestMetricValue('finish_balance_idx') || undefined}
-              definition="How balanced the player is at swing completion. Lower values indicate better balance."
-            />
+            <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-orange-600" />
+                <span className="text-orange-700 font-medium text-sm">Focus Areas</span>
+              </div>
+              <div className="text-2xl font-bold text-orange-800">{improvingMetrics.needsWork}</div>
+              <div className="text-orange-600 text-xs">metrics need work</div>
+            </Card>
+          </div>
+
+          {/* Swing Metrics Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Swing Metrics</h3>
+            <div className="space-y-4">
+              <DetailedMetricCard
+                title="Hip-Shoulder Separation"
+                description="The angle between shoulder and hip rotation at launch. More separation creates power."
+                average={chartData.averages['hip_shoulder_sep_deg']}
+                unit="deg"
+                targetRange="15-35°"
+              />
+              
+              <DetailedMetricCard
+                title="Attack Angle"
+                description="The angle of the bat path through the hitting zone. Slight upward angle is ideal."
+                average={chartData.averages['attack_angle_deg']}
+                unit="deg"
+                targetRange="5-20°"
+              />
+              
+              <DetailedMetricCard
+                title="Head Drift"
+                description="How much the head moves during the swing. Less movement improves consistency."
+                average={chartData.averages['head_drift_cm']}
+                unit="cm"
+                targetRange="0-6 cm (lower is better)"
+              />
+              
+              <DetailedMetricCard
+                title="Contact Timing"
+                description="How well-timed contact is relative to optimal swing sequence."
+                average={chartData.averages['contact_timing_frames']}
+                unit="frames"
+                targetRange="-3 to +3"
+              />
+              
+              <DetailedMetricCard
+                title="Bat Lag"
+                description="The angle between the bat and lead arm at launch. Proper lag creates whip action."
+                average={chartData.averages['bat_lag_deg']}
+                unit="deg"
+                targetRange="50-70°"
+              />
+              
+              <DetailedMetricCard
+                title="Torso Tilt"
+                description="The forward lean of the torso at contact. Proper tilt helps attack angle."
+                average={chartData.averages['torso_tilt_deg']}
+                unit="deg"
+                targetRange="20-35°"
+              />
+            </div>
           </div>
 
 
@@ -371,133 +427,85 @@ export default function Progress() {
   );
 }
 
-// Simple SVG Line Chart Component
-function LineChart({ data, height = 80 }: { data: ChartPoint[], height?: number }) {
+// Trend Line Visual Component (simple dots for trend display)
+function TrendLineVisual({ data }: { data: ChartPoint[] }) {
   if (!data.length) {
     return (
-      <div 
-        className="w-full bg-muted/20 rounded flex items-center justify-center text-xs text-muted-foreground"
-        style={{ height }}
-      >
-        No data available
+      <div className="flex items-center justify-center h-8">
+        <span className="text-blue-200 text-xs">No trend data</span>
       </div>
     );
   }
 
-  const width = 300;
-  const padding = 10;
+  const points = data.slice(-7); // Show last 7 points
   
-  const minValue = Math.min(...data.map(d => d.value));
-  const maxValue = Math.max(...data.map(d => d.value));
-  const valueRange = maxValue - minValue || 1; // Prevent division by zero
-  
-  const minTime = Math.min(...data.map(d => d.t));
-  const maxTime = Math.max(...data.map(d => d.t));
-  const timeRange = maxTime - minTime || 1;
-
-  const points = data.map(point => {
-    const x = padding + ((point.t - minTime) / timeRange) * (width - 2 * padding);
-    const y = padding + (1 - (point.value - minValue) / valueRange) * (height - 2 * padding);
-    return `${x},${y}`;
-  }).join(' ');
-
   return (
-    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
-      <polyline
-        points={points}
-        fill="none"
-        stroke="hsl(var(--primary))"
-        strokeWidth="2"
-        className="opacity-80"
-      />
-      {data.map((point, index) => {
-        const x = padding + ((point.t - minTime) / timeRange) * (width - 2 * padding);
-        const y = padding + (1 - (point.value - minValue) / valueRange) * (height - 2 * padding);
-        return (
-          <circle
-            key={index}
-            cx={x}
-            cy={y}
-            r="3"
-            fill="hsl(var(--primary))"
-          />
-        );
-      })}
-    </svg>
+    <div className="flex items-center justify-between h-8">
+      {points.map((_, index) => (
+        <div 
+          key={index} 
+          className="w-3 h-3 bg-white/60 rounded-full flex-shrink-0"
+        />
+      ))}
+    </div>
   );
 }
 
-// Simple SVG Sparkline Component  
-function Sparkline({ data, height = 40 }: { data: ChartPoint[], height?: number }) {
-  if (!data.length) {
-    return (
-      <div 
-        className="w-full bg-muted/20 rounded flex items-center justify-center text-xs text-muted-foreground"
-        style={{ height }}
-      >
-        —
-      </div>
-    );
-  }
-
-  const width = 120;
-  const padding = 4;
-  
-  const minValue = Math.min(...data.map(d => d.value));
-  const maxValue = Math.max(...data.map(d => d.value));
-  const valueRange = maxValue - minValue || 1;
-  
-  const minTime = Math.min(...data.map(d => d.t));
-  const maxTime = Math.max(...data.map(d => d.t));
-  const timeRange = maxTime - minTime || 1;
-
-  const points = data.map(point => {
-    const x = padding + ((point.t - minTime) / timeRange) * (width - 2 * padding);
-    const y = padding + (1 - (point.value - minValue) / valueRange) * (height - 2 * padding);
-    return `${x},${y}`;
-  }).join(' ');
-
-  return (
-    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
-      <polyline
-        points={points}
-        fill="none"
-        stroke="hsl(var(--primary))"
-        strokeWidth="1.5"
-        className="opacity-70"
-      />
-    </svg>
-  );
-}
-
-// Metric Card Component
-interface MetricCardProps {
+// Detailed Metric Card Component
+interface DetailedMetricCardProps {
   title: string;
-  unit: string;
-  data: ChartPoint[];
+  description: string;
   average?: number;
-  latestValue?: number;
-  definition?: string;
+  unit: string;
+  targetRange: string;
 }
 
-function MetricCard({ title, unit, data, average, latestValue, definition }: MetricCardProps) {
+function DetailedMetricCard({ title, description, average, unit }: DetailedMetricCardProps) {
+  const getProgressColor = (title: string, value?: number) => {
+    if (!value) return 'bg-muted';
+    
+    // Simple heuristic for color coding - would be better to use actual target ranges
+    if (title === "Head Drift" && value < 3) return 'bg-green-500';
+    if (title === "Attack Angle" && value > 0 && value < 25) return 'bg-green-500';
+    if (title === "Hip-Shoulder Separation" && value > 15) return 'bg-green-500';
+    return 'bg-red-500';
+  };
+
+  const progressColor = getProgressColor(title, average);
+  
   return (
-    <Card className="p-4">
-      <div className="mb-3">
-        <h4 className="text-sm font-medium">{title}</h4>
-        {definition && (
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{definition}</p>
-        )}
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-xs text-muted-foreground">
-            Latest: {latestValue?.toFixed(1) || '—'}{unit}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Avg: {average?.toFixed(1) || '—'}{unit}
-          </span>
+    <Card className="p-6">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1">
+          <h4 className="font-medium text-base mb-1">{title}</h4>
+          <p className="text-sm text-muted-foreground mb-3">{description}</p>
+        </div>
+        <div className="text-right ml-4">
+          <div className="text-lg font-bold">
+            {average ? `${average.toFixed(1)} ${unit}` : '—'}
+          </div>
         </div>
       </div>
-      <Sparkline data={data} height={40} />
+      
+      <div className="mb-3">
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Target className="w-4 h-4" />
+          <span>Target Range</span>
+        </div>
+      </div>
+      
+      {/* Progress Bar */}
+      <div className="flex items-center gap-2">
+        {[...Array(7)].map((_, i) => (
+          <div 
+            key={i} 
+            className={`h-2 flex-1 rounded ${
+              i < 4 ? progressColor : 'bg-muted'
+            }`}
+          />
+        ))}
+        <div className="bg-blue-500 h-2 w-8 rounded ml-2" />
+      </div>
     </Card>
   );
 }
