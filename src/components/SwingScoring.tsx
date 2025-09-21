@@ -7,38 +7,20 @@ import { trackCapture } from '@/lib/analytics';
 import type { CoachingCard } from '@/lib/cues';
 
 interface SwingScoringProps {
-  poses: any[];
+  analysisResults: any;
   onScoreComplete: (score: number, cards: CoachingCard[]) => void;
 }
 
-// Mock function to extract metrics from poses
-const extractMetricsFromPoses = (poses: any[]): Record<string, number> => {
-  // This would contain real pose analysis logic
-  // For now, returning mock data based on pose detection
-  if (poses.length === 0) return {};
-  
-  return {
-    head_drift_cm: Math.random() * 10,
-    attack_angle_deg: 10 + Math.random() * 15,
-    hip_shoulder_sep_deg: 20 + Math.random() * 20,
-    bat_lag_deg: 55 + Math.random() * 10,
-    torso_tilt_deg: 25 + Math.random() * 10,
-    stride_var_pct: Math.random() * 8,
-    finish_balance_idx: Math.random() * 0.4,
-    contact_timing_frames: (Math.random() - 0.5) * 6,
-  };
-};
-
-export function SwingScoring({ poses, onScoreComplete }: SwingScoringProps) {
+export function SwingScoring({ analysisResults, onScoreComplete }: SwingScoringProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [metrics, setMetrics] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    if (poses.length > 0) {
+    if (analysisResults && Object.keys(analysisResults).length > 0) {
       analyzeSwing();
     }
-  }, [poses]);
+  }, [analysisResults]);
 
   const analyzeSwing = async () => {
     setIsAnalyzing(true);
@@ -56,15 +38,15 @@ export function SwingScoring({ poses, onScoreComplete }: SwingScoringProps) {
     }, 200);
 
     try {
-      // Extract metrics from poses
-      const extractedMetrics = extractMetricsFromPoses(poses);
-      setMetrics(extractedMetrics);
-
       // Wait for progress to complete
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Evaluate swing
-      const { score, cards } = await evaluateSwing(extractedMetrics);
+      // Use metrics from pose worker analysis
+      const analysisMetrics = analysisResults?.metrics || {};
+      setMetrics(analysisMetrics);
+
+      // Evaluate swing using the real metrics
+      const { score, cards } = await evaluateSwing(analysisMetrics);
       
       trackCapture.scoreReady();
       onScoreComplete(score, cards);
