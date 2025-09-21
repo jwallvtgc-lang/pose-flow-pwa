@@ -243,6 +243,19 @@ function angleBetweenVectors(v1, v2) {
   return angle * (180 / Math.PI);
 }
 
+function calculateAttackAngle(v1, v2) {
+  // Calculate the angle of trajectory relative to horizontal
+  // Positive angle = upward trajectory, negative = downward
+  const deltaX = v2.x - v1.x;
+  const deltaY = v2.y - v1.y;
+  
+  if (deltaX === 0) return 0; // Vertical movement
+  
+  // Calculate angle in radians, then convert to degrees
+  const angleRad = Math.atan2(-deltaY, deltaX); // Negative deltaY because screen coordinates are inverted
+  return angleRad * (180 / Math.PI);
+}
+
 function estimatePixelsPerCm(frame) {
   const leftShoulder = getKeypoint(frame.keypoints, 'left_shoulder');
   const rightShoulder = getKeypoint(frame.keypoints, 'right_shoulder');
@@ -317,20 +330,34 @@ function computeMetrics(keypointsByFrame, events, fps) {
     }
   }
   
-  // 3. Simple attack angle estimation (wrist trajectory)
-  if (contactIdx && contactIdx >= 3 && contactIdx < keypointsByFrame.length - 2) {
-    const beforeFrame = keypointsByFrame[contactIdx - 3];
-    const afterFrame = keypointsByFrame[contactIdx + 2];
-    const beforeWrist = getKeypoint(beforeFrame.keypoints, 'left_wrist');
-    const afterWrist = getKeypoint(afterFrame.keypoints, 'left_wrist');
+  // 3. Attack angle estimation using wrist trajectory through contact
+  if (contactIdx && contactIdx >= 5 && contactIdx < keypointsByFrame.length - 5) {
+    // Use a wider window around contact to get better trajectory
+    const beforeFrame = keypointsByFrame[contactIdx - 5];
+    const afterFrame = keypointsByFrame[contactIdx + 5];
     
-    if (beforeWrist && afterWrist) {
-      const trajectory = {
-        x: afterWrist.x - beforeWrist.x,
-        y: afterWrist.y - beforeWrist.y
-      };
-      const horizontal = { x: 1, y: 0 };
-      metrics.attack_angle_deg = angleBetweenVectors(trajectory, horizontal);
+    // Try to use both wrists and get the most confident one
+    const beforeLeftWrist = getKeypoint(beforeFrame.keypoints, 'left_wrist');
+    const afterLeftWrist = getKeypoint(afterFrame.keypoints, 'left_wrist');
+    const beforeRightWrist = getKeypoint(beforeFrame.keypoints, 'right_wrist');
+    const afterRightWrist = getKeypoint(afterFrame.keypoints, 'right_wrist');
+    
+    let attackAngle = null;
+    
+    // Use left wrist if both points are confident
+    if (beforeLeftWrist && afterLeftWrist && 
+        beforeLeftWrist.score > 0.5 && afterLeftWrist.score > 0.5) {
+      attackAngle = calculateAttackAngle(beforeLeftWrist, afterLeftWrist);
+    }
+    // Fallback to right wrist if left wrist not confident enough
+    else if (beforeRightWrist && afterRightWrist && 
+             beforeRightWrist.score > 0.5 && afterRightWrist.score > 0.5) {
+      attackAngle = calculateAttackAngle(beforeRightWrist, afterRightWrist);
+    }
+    
+    if (attackAngle !== null) {
+      // Clamp to reasonable attack angle range (-30 to +30 degrees)
+      metrics.attack_angle_deg = Math.max(-30, Math.min(30, attackAngle));
     }
   }
   
