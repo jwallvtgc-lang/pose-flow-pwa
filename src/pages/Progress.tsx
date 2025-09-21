@@ -408,6 +408,14 @@ export default function Progress() {
                 unit="deg"
                 targetRange="20-35°"
               />
+              
+              <DetailedMetricCard
+                title="Finish Balance"
+                description="Balance stability at swing finish. Lower values indicate better control and stability."
+                average={chartData.averages['finish_balance_idx']}
+                unit="index"
+                targetRange="0.0-0.3 (lower is better)"
+              />
             </div>
           </div>
 
@@ -468,6 +476,7 @@ function DetailedMetricCard({ title, description, average, unit, targetRange }: 
     if (title === "Head Drift" && value < 3) return 'bg-green-500';
     if (title === "Attack Angle" && value > 0 && value < 25) return 'bg-green-500';
     if (title === "Hip-Shoulder Separation" && value > 15) return 'bg-green-500';
+    if (title === "Finish Balance" && value < 0.3) return 'bg-green-500';
     return 'bg-red-500';
   };
 
