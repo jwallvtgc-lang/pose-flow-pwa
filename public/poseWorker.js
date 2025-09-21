@@ -125,8 +125,9 @@ async function processVideo(videoBlob, fps = 30) {
     // Assess quality
     const quality = assessQuality(keypointsByFrame);
     
-    // Calculate metrics from real pose data
-    const metrics = computeMetrics(keypointsByFrame, events, fps);
+    // Calculate metrics from real pose data  
+    // TODO: In a real implementation, pass recentStrideLengths from previous swings
+    const metrics = computeMetrics(keypointsByFrame, events, fps, []);
     
     postMessage({ type: 'progress', message: 'Analysis complete!' });
     
@@ -324,8 +325,50 @@ function calculateFinishBalance(keypoints) {
   return balanceIndex;
 }
 
+function calculateStrideVariance(keypointsByFrame, events, recentStrideLengths = []) {
+  const strideIdx = events.stride_plant;
+  const launchIdx = events.launch;
+  
+  if (!strideIdx || !launchIdx || strideIdx >= keypointsByFrame.length || launchIdx >= keypointsByFrame.length) {
+    return null;
+  }
+  
+  // Calculate current stride length
+  const strideFrame = keypointsByFrame[strideIdx];
+  const launchFrame = keypointsByFrame[launchIdx];
+  
+  // Use front foot (left ankle for right-handed batter) for stride measurement
+  const stridePlantFoot = getKeypoint(strideFrame.keypoints, 'left_ankle');
+  const launchFoot = getKeypoint(launchFrame.keypoints, 'left_ankle');
+  
+  if (!stridePlantFoot || !launchFoot) return null;
+  
+  // Calculate stride distance
+  const strideLength = distance(stridePlantFoot, launchFoot);
+  
+  // Add current stride to recent history (keep last 10 swings)
+  const updatedStrides = [...recentStrideLengths, strideLength].slice(-10);
+  
+  if (updatedStrides.length < 2) {
+    return { variance: 0, strideLength, updatedStrides };
+  }
+  
+  // Calculate variance as coefficient of variation (CV = std_dev / mean * 100)
+  const mean = updatedStrides.reduce((sum, val) => sum + val, 0) / updatedStrides.length;
+  const variance = updatedStrides.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / updatedStrides.length;
+  const stdDev = Math.sqrt(variance);
+  
+  const coefficientOfVariation = mean > 0 ? (stdDev / mean) * 100 : 0;
+  
+  return { 
+    variance: Math.min(100, coefficientOfVariation), // Cap at 100%
+    strideLength,
+    updatedStrides
+  };
+}
+
 // Compute swing metrics from real pose data
-function computeMetrics(keypointsByFrame, events, fps) {
+function computeMetrics(keypointsByFrame, events, fps, recentStrideLengths = []) {
   const metrics = {};
   
   const launchIdx = events.launch;
@@ -412,10 +455,17 @@ function computeMetrics(keypointsByFrame, events, fps) {
     }
   }
   
+  // 5. Stride variance percentage - measure stride consistency
+  const strideResult = calculateStrideVariance(keypointsByFrame, events, recentStrideLengths);
+  if (strideResult) {
+    metrics.stride_var_pct = strideResult.variance;
+    // Return updated stride lengths for future use
+    metrics._updatedStrideLengths = strideResult.updatedStrides;
+  }
+  
   // Add some basic metrics with reasonable values for other measurements
   metrics.bat_lag_deg = 60 + Math.random() * 10;
   metrics.torso_tilt_deg = 25 + Math.random() * 10;
-  metrics.stride_var_pct = Math.random() * 8;
   metrics.contact_timing_frames = (Math.random() - 0.5) * 6;
   
   return metrics;
