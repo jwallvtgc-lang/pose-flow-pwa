@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Play, Loader2, Share2, Mail, Send } from 'lucide-react';
+import { ArrowLeft, Play, Loader2, Share2, Mail, Send, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -224,6 +224,12 @@ export default function SwingDetail() {
     }
     
     return normalizedValue;
+  };
+
+  const getMetricProgressColor = (progress: number): string => {
+    if (progress >= 0.8) return 'bg-green-500';
+    if (progress >= 0.6) return 'bg-yellow-500';
+    return 'bg-red-500';
   };
 
   const formatTargetRange = (metricName: string): string => {
@@ -512,31 +518,37 @@ export default function SwingDetail() {
                 No metrics available for this swing
               </p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {Object.entries(metricSpecs).map(([metricKey]) => {
                   const metric = metrics.find(m => m.metric === metricKey);
                   const displayName = metricDisplayNames()[metricKey] || metricKey.replace(/_/g, ' ');
                   const value = metric?.value;
                   const unit = metric?.unit || '';
                   const progress = (value !== null && value !== undefined) ? getMetricProgress(metricKey, value) : 0;
+                  const progressColor = getMetricProgressColor(progress);
                   
                   return (
-                    <div key={metricKey} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-sm">{displayName}</span>
-                        <span className="text-sm font-mono">
+                    <div key={metricKey} className="border-b border-border last:border-b-0 pb-4 last:pb-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-base">{displayName}</span>
+                          <Info className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <span className="text-lg font-bold">
                           {value !== null && value !== undefined ? `${value.toFixed(1)} ${unit}` : '—'}
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>Target: {formatTargetRange(metricKey)}</span>
+                      <div className="mb-3">
+                        <span className="text-sm text-muted-foreground">
+                          Target: {formatTargetRange(metricKey)}
+                        </span>
                       </div>
                       
                       {/* Progress Bar */}
                       <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                         <div 
-                          className="h-full bg-primary transition-all duration-300 ease-out"
+                          className={`h-full transition-all duration-300 ease-out ${progressColor}`}
                           style={{ 
                             width: (value !== null && value !== undefined) ? `${Math.max(5, progress * 100)}%` : '0%' 
                           }}
