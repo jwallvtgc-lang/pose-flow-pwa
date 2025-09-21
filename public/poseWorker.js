@@ -367,6 +367,28 @@ function calculateStrideVariance(keypointsByFrame, events, recentStrideLengths =
   };
 }
 
+function calculateContactTiming(keypointsByFrame, events, fps) {
+  const launchIdx = events.launch;
+  const contactIdx = events.contact;
+  const finishIdx = events.finish;
+  
+  if (!launchIdx || !contactIdx || !finishIdx) return null;
+  
+  // Calculate the total swing duration from launch to finish
+  const totalSwingFrames = finishIdx - launchIdx;
+  
+  // Ideal contact should occur at approximately 60-70% through the swing
+  // This is based on biomechanical analysis of optimal swing timing
+  const idealContactRatio = 0.65; // 65% through the swing
+  const idealContactFrame = launchIdx + (totalSwingFrames * idealContactRatio);
+  
+  // Calculate timing difference in frames
+  const timingDifference = contactIdx - idealContactFrame;
+  
+  // Clamp to reasonable range (-10 to +10 frames at 30fps = ±0.33 seconds)
+  return Math.max(-10, Math.min(10, timingDifference));
+}
+
 // Compute swing metrics from real pose data
 function computeMetrics(keypointsByFrame, events, fps, recentStrideLengths = []) {
   const metrics = {};
@@ -463,10 +485,15 @@ function computeMetrics(keypointsByFrame, events, fps, recentStrideLengths = [])
     metrics._updatedStrideLengths = strideResult.updatedStrides;
   }
   
+  // 6. Contact timing - measure timing relative to ideal contact point
+  const contactTiming = calculateContactTiming(keypointsByFrame, events, fps);
+  if (contactTiming !== null) {
+    metrics.contact_timing_frames = contactTiming;
+  }
+  
   // Add some basic metrics with reasonable values for other measurements
   metrics.bat_lag_deg = 60 + Math.random() * 10;
   metrics.torso_tilt_deg = 25 + Math.random() * 10;
-  metrics.contact_timing_frames = (Math.random() - 0.5) * 6;
   
   return metrics;
 }
