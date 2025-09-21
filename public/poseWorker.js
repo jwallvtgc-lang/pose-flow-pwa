@@ -49,7 +49,7 @@ async function initializePoseDetection() {
   }
 }
 
-// Process a single video frame
+// Process a single video frame from image data
 async function processFrame(imageData, width, height) {
   if (!isInitialized || !model) {
     postMessage({
@@ -60,18 +60,14 @@ async function processFrame(imageData, width, height) {
   }
 
   try {
-    // Create tensor from image data
-    const tensor = tf.browser.fromPixels({
-      data: imageData,
-      width: width,
-      height: height
-    });
+    // Create tensor from image data array
+    const tensor = tf.tensor3d(imageData, [height, width, 4]);
+    const rgbTensor = tf.slice(tensor, [0, 0, 0], [height, width, 3]);
+    tensor.dispose();
 
     // Estimate poses
-    const poses = await model.estimatePoses(tensor);
-    
-    // Clean up tensor
-    tensor.dispose();
+    const poses = await model.estimatePoses(rgbTensor);
+    rgbTensor.dispose();
 
     if (poses.length > 0) {
       const pose = poses[0];
@@ -151,75 +147,34 @@ async function processVideo(videoBlob, fps = 30) {
   }
 }
 
-// Extract frames from video blob using real TensorFlow pose detection
-async function extractFramesFromVideo(videoBlob, targetFps = 30) {
+// Process frame data sent from main thread
+async function processFrameData(imageData, width, height, timestamp) {
   try {
-    postMessage({ type: 'progress', message: 'Loading video...' });
-    
-    // Create video element from blob
-    const video = document.createElement('video');
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    return new Promise((resolve, reject) => {
-      video.onloadedmetadata = async () => {
-        try {
-          const duration = video.duration;
-          const frameInterval = 1 / targetFps;
-          const totalFrames = Math.floor(duration * targetFps);
-          
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          
-          const frames = [];
-          
-          for (let i = 0; i < totalFrames; i++) {
-            const currentTime = i * frameInterval;
-            video.currentTime = currentTime;
-            
-            await new Promise(resolve => {
-              video.onseeked = resolve;
-            });
-            
-            // Draw frame to canvas
-            ctx.drawImage(video, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            
-            // Create tensor and detect pose
-            const tensor = tf.browser.fromPixels(canvas);
-            const poses = await model.estimatePoses(tensor);
-            tensor.dispose();
-            
-            if (poses.length > 0) {
-              const keypoints = extractKeypoints(poses[0].keypoints);
-              frames.push({
-                t: currentTime * 1000,
-                keypoints: keypoints
-              });
-            }
-            
-            // Update progress
-            if (i % 5 === 0) {
-              const progress = (i / totalFrames) * 100;
-              postMessage({ 
-                type: 'progress', 
-                message: `Processing frames: ${progress.toFixed(1)}%` 
-              });
-            }
-          }
-          
-          resolve(frames);
-        } catch (error) {
-          reject(error);
-        }
+    if (!isInitialized || !model) {
+      throw new Error('Model not initialized');
+    }
+
+    // Create tensor from image data array
+    const tensor = tf.tensor3d(imageData, [height, width, 4]);
+    const rgbTensor = tf.slice(tensor, [0, 0, 0], [height, width, 3]);
+    tensor.dispose();
+
+    // Estimate poses
+    const poses = await model.estimatePoses(rgbTensor);
+    rgbTensor.dispose();
+
+    if (poses.length > 0) {
+      const keypoints = extractKeypoints(poses[0].keypoints);
+      return {
+        t: timestamp,
+        keypoints: keypoints,
+        confidence: poses[0].score || 0.5
       };
-      
-      video.onerror = () => reject(new Error('Failed to load video'));
-      video.src = URL.createObjectURL(videoBlob);
-    });
-    
+    }
+
+    return null;
   } catch (error) {
-    throw new Error(`Frame extraction failed: ${error.message}`);
+    throw new Error(`Pose detection failed: ${error.message}`);
   }
 }
 
@@ -605,45 +560,57 @@ function extractKeypoints(allKeypoints) {
 self.onmessage = async function(e) {
   const { type, data } = e.data;
   
-  switch (type) {
-    case 'initialize':
-      await initializePoseDetection();
-      break;
-      
-    case 'processFrame':
-      const { imageData, width, height, frameId } = data;
-      await processFrame(imageData, width, height);
-      
-      // Send progress update
-      if (frameId % 30 === 0) { // Every 30 frames (~1 second at 30fps)
-        postMessage({
-          type: 'progress',
-          message: `Processed ${frameId} frames`
-        });
-      }
-      break;
+  try {
+    switch (type) {
+      case 'initialize':
+        await initializePoseDetection();
+        break;
+        
+      case 'processFrame':
+        const { imageData, width, height, frameId } = data;
+        await processFrame(imageData, width, height);
+        
+        // Send progress update
+        if (frameId % 30 === 0) { // Every 30 frames (~1 second at 30fps)
+          postMessage({
+            type: 'progress',
+            message: `Processed ${frameId} frames`
+          });
+        }
+        break;
 
-    case 'process':
-      const { videoBlob, fps } = data;
-      await processVideo(videoBlob, fps);
-      break;
-      
-    case 'cleanup':
-      if (model) {
-        model.dispose();
-        model = null;
-      }
-      isInitialized = false;
-      postMessage({
-        type: 'cleanup',
-        message: 'Pose detection cleanup completed'
-      });
-      break;
-      
-    default:
-      postMessage({
-        type: 'error',
-        message: `Unknown message type: ${type}`
-      });
+      case 'processFrameData':
+        const { imageData: frameImageData, width: frameWidth, height: frameHeight, timestamp } = data;
+        const result = await processFrameData(frameImageData, frameWidth, frameHeight, timestamp);
+        postMessage({
+          type: 'frameResult',
+          result: result
+        });
+        break;
+        
+      case 'cleanup':
+        if (model) {
+          model.dispose();
+          model = null;
+        }
+        isInitialized = false;
+        postMessage({
+          type: 'cleanup',
+          message: 'Pose detection cleanup completed'
+        });
+        break;
+        
+      default:
+        postMessage({
+          type: 'error',
+          message: `Unknown message type: ${type}`
+        });
+    }
+  } catch (error) {
+    postMessage({
+      type: 'error',
+      message: error.message,
+      error: error.toString()
+    });
   }
 };

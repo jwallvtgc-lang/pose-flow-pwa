@@ -112,49 +112,148 @@ export class PoseWorkerClient {
     this.isProcessing = true;
 
     try {
-      return new Promise((resolve, reject) => {
-        if (!this.worker) {
-          reject(new Error('Worker not available'));
-          return;
-        }
+      // Process video in main thread and send frames to worker
+      const frames = await this.extractVideoFrames(videoBlob, fps || 30, onProgress);
+      
+      if (frames.length === 0) {
+        throw new Error('No frames could be processed from video');
+      }
 
-        // Set up message handler for this analysis
-        const messageHandler = (e: MessageEvent) => {
-          const { type, data, message } = e.data;
-
-          switch (type) {
-            case 'progress':
-              onProgress?.(message);
-              break;
-
-            case 'result':
-              // Analysis complete
-              this.worker!.removeEventListener('message', messageHandler);
-              this.isProcessing = false;
-              resolve(data);
-              break;
-
-            case 'error':
-              this.worker!.removeEventListener('message', messageHandler);
-              this.isProcessing = false;
-              reject(new Error(message));
-              break;
-          }
-        };
-
-        this.worker.addEventListener('message', messageHandler);
-
-        // Start processing
-        this.worker.postMessage({
-          type: 'process',
-          data: { videoBlob, fps }
-        });
-      });
-
+      onProgress?.('Analyzing swing phases...');
+      
+      // Process the extracted frames to get swing analysis
+      const result = await this.processFramesForAnalysis(frames);
+      
+      this.isProcessing = false;
+      return result;
     } catch (error) {
       this.isProcessing = false;
       throw error;
     }
+  }
+
+  private async extractVideoFrames(videoBlob: Blob, targetFps: number, onProgress?: (message: string) => void): Promise<FrameData[]> {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+
+      video.onloadedmetadata = async () => {
+        try {
+          const duration = video.duration;
+          const frameInterval = 1 / targetFps;
+          const totalFrames = Math.floor(duration * targetFps);
+          
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          
+          const frames: FrameData[] = [];
+          
+          for (let i = 0; i < totalFrames; i++) {
+            const currentTime = i * frameInterval;
+            video.currentTime = currentTime;
+            
+            await new Promise<void>(resolve => {
+              video.onseeked = () => resolve();
+            });
+            
+            // Draw frame to canvas
+            ctx.drawImage(video, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Send frame to worker for pose detection
+            const frameResult = await this.processFrameInWorker(imageData.data, canvas.width, canvas.height, currentTime * 1000);
+            
+            if (frameResult) {
+              frames.push(frameResult);
+            }
+            
+            // Update progress
+            if (i % 5 === 0) {
+              const progress = (i / totalFrames) * 100;
+              onProgress?.(`Processing frames: ${progress.toFixed(1)}%`);
+            }
+          }
+          
+          resolve(frames);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      video.onerror = () => reject(new Error('Failed to load video'));
+      video.src = URL.createObjectURL(videoBlob);
+    });
+  }
+
+  private async processFrameInWorker(imageData: Uint8ClampedArray, width: number, height: number, timestamp: number): Promise<FrameData | null> {
+    if (!this.worker) {
+      throw new Error('Worker not initialized');
+    }
+
+    return new Promise((resolve, reject) => {
+      const handleMessage = (event: MessageEvent) => {
+        const { type, result, message } = event.data;
+
+        if (this.worker) {
+          this.worker.removeEventListener('message', handleMessage);
+        }
+
+        switch (type) {
+          case 'frameResult':
+            resolve(result);
+            break;
+          case 'error':
+            reject(new Error(message));
+            break;
+        }
+      };
+
+      if (this.worker) {
+        this.worker.addEventListener('message', handleMessage);
+
+        // Send frame data for processing
+        this.worker.postMessage({
+          type: 'processFrameData',
+          data: { 
+            imageData: Array.from(imageData),
+            width, 
+            height, 
+            timestamp 
+          }
+        });
+      }
+    });
+  }
+
+  private async processFramesForAnalysis(frames: FrameData[]): Promise<PoseAnalysisResult> {
+    // Simple swing segmentation and analysis
+    const events: SwingEvents = this.segmentSwing(frames);
+    
+    return {
+      events,
+      keypointsByFrame: frames,
+      quality: frames.length < 30 ? 'low_confidence' : undefined
+    };
+  }
+
+  private segmentSwing(frames: FrameData[]): SwingEvents {
+    // Simple phase detection based on frame count
+    const totalFrames = frames.length;
+    
+    return {
+      load_start: Math.floor(totalFrames * 0.1),
+      stride_plant: Math.floor(totalFrames * 0.3),
+      launch: Math.floor(totalFrames * 0.4),
+      contact: Math.floor(totalFrames * 0.5),
+      extension: Math.floor(totalFrames * 0.7),
+      finish: Math.floor(totalFrames * 0.9)
+    };
   }
 
   public getSwingPhaseNames(): Record<keyof SwingEvents, string> {
