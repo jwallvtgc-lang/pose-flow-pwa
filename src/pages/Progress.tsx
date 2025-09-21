@@ -258,6 +258,7 @@ export default function Progress() {
               data={chartData.allMetricsSeries['hip_shoulder_sep_deg']}
               average={chartData.averages['hip_shoulder_sep_deg']}
               latestValue={getLatestMetricValue('hip_shoulder_sep_deg') || undefined}
+              definition="The angle between shoulder and hip rotation at launch. More separation creates power."
             />
             
             <MetricCard
@@ -266,6 +267,7 @@ export default function Progress() {
               data={chartData.allMetricsSeries['attack_angle_deg']}
               average={chartData.averages['attack_angle_deg']}
               latestValue={getLatestMetricValue('attack_angle_deg') || undefined}
+              definition="The angle of the bat path through the hitting zone. Slight upward angle is ideal."
             />
             
             <MetricCard
@@ -274,6 +276,7 @@ export default function Progress() {
               data={chartData.allMetricsSeries['head_drift_cm']}
               average={chartData.averages['head_drift_cm']}
               latestValue={getLatestMetricValue('head_drift_cm') || undefined}
+              definition="How much the head moves during the swing. Less movement improves consistency."
             />
             
             <MetricCard
@@ -282,6 +285,7 @@ export default function Progress() {
               data={chartData.allMetricsSeries['contact_timing_frames']}
               average={chartData.averages['contact_timing_frames']}
               latestValue={getLatestMetricValue('contact_timing_frames') || undefined}
+              definition="How well-timed contact is relative to optimal swing sequence. 0 is perfect timing."
             />
             
             <MetricCard
@@ -290,6 +294,7 @@ export default function Progress() {
               data={chartData.allMetricsSeries['bat_lag_deg']}
               average={chartData.averages['bat_lag_deg']}
               latestValue={getLatestMetricValue('bat_lag_deg') || undefined}
+              definition="The angle between the bat and lead arm at launch. Proper lag creates whip action."
             />
             
             <MetricCard
@@ -298,6 +303,7 @@ export default function Progress() {
               data={chartData.allMetricsSeries['torso_tilt_deg']}
               average={chartData.averages['torso_tilt_deg']}
               latestValue={getLatestMetricValue('torso_tilt_deg') || undefined}
+              definition="The forward lean of the torso at contact. Proper tilt helps attack angle."
             />
             
             <MetricCard
@@ -306,6 +312,7 @@ export default function Progress() {
               data={chartData.allMetricsSeries['stride_var_pct']}
               average={chartData.averages['stride_var_pct']}
               latestValue={getLatestMetricValue('stride_var_pct') || undefined}
+              definition="Consistency of stride length across swings. Lower variance shows better repeatability."
             />
             
             <MetricCard
@@ -314,6 +321,7 @@ export default function Progress() {
               data={chartData.allMetricsSeries['finish_balance_idx']}
               average={chartData.averages['finish_balance_idx']}
               latestValue={getLatestMetricValue('finish_balance_idx') || undefined}
+              definition="How balanced the player is at swing completion. Lower values indicate better balance."
             />
           </div>
 
@@ -439,14 +447,18 @@ interface MetricCardProps {
   data: ChartPoint[];
   average?: number;
   latestValue?: number;
+  definition?: string;
 }
 
-function MetricCard({ title, unit, data, average, latestValue }: MetricCardProps) {
+function MetricCard({ title, unit, data, average, latestValue, definition }: MetricCardProps) {
   return (
     <Card className="p-4">
       <div className="mb-3">
         <h4 className="text-sm font-medium">{title}</h4>
-        <div className="flex items-center justify-between mt-1">
+        {definition && (
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{definition}</p>
+        )}
+        <div className="flex items-center justify-between mt-2">
           <span className="text-xs text-muted-foreground">
             Latest: {latestValue?.toFixed(1) || '—'}{unit}
           </span>
