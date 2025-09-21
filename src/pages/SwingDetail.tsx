@@ -3,11 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Play, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
 import { metricDisplayNames } from '@/lib/metrics';
+import { getVideoSignedUrl } from '@/lib/storage';
 
 interface SwingData {
   id: string;
@@ -41,6 +42,9 @@ export default function SwingDetail() {
   const [drill, setDrill] = useState<DrillInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [videoError, setVideoError] = useState<string>('');
 
   useEffect(() => {
     if (id) {
@@ -48,6 +52,20 @@ export default function SwingDetail() {
       trackCapture.swingDetailViewed(id);
     }
   }, [id]);
+
+  const loadVideoUrl = async (videoPath: string) => {
+    try {
+      setIsVideoLoading(true);
+      setVideoError('');
+      const signedUrl = await getVideoSignedUrl(videoPath);
+      setVideoUrl(signedUrl);
+    } catch (err) {
+      console.error('Failed to load video URL:', err);
+      setVideoError('Failed to load video');
+    } finally {
+      setIsVideoLoading(false);
+    }
+  };
 
   const loadSwingDetail = async (swingId: string) => {
     try {
@@ -285,14 +303,55 @@ export default function SwingDetail() {
           {swing.video_url && (
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-3">Swing Video</h3>
-              <div className="bg-muted rounded-lg p-4 text-center">
-                <Play className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mb-3">Video available</p>
-                <Button size="sm" variant="outline">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  View Video
-                </Button>
-              </div>
+              
+              {!videoUrl && !isVideoLoading && !videoError && (
+                <div className="bg-muted rounded-lg p-4 text-center">
+                  <Play className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mb-3">Video available</p>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => loadVideoUrl(swing.video_url!)}
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Load Video
+                  </Button>
+                </div>
+              )}
+
+              {isVideoLoading && (
+                <div className="bg-muted rounded-lg p-8 text-center">
+                  <Loader2 className="w-8 h-8 mx-auto mb-2 text-muted-foreground animate-spin" />
+                  <p className="text-sm text-muted-foreground">Loading video...</p>
+                </div>
+              )}
+
+              {videoError && (
+                <div className="bg-muted rounded-lg p-4 text-center">
+                  <p className="text-sm text-red-600 mb-3">{videoError}</p>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => loadVideoUrl(swing.video_url!)}
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              )}
+
+              {videoUrl && (
+                <div className="bg-black rounded-lg overflow-hidden">
+                  <video
+                    src={videoUrl}
+                    controls
+                    className="w-full h-auto"
+                    preload="metadata"
+                    onError={() => setVideoError('Failed to load video')}
+                  >
+                    Your browser does not support video playback.
+                  </video>
+                </div>
+              )}
             </Card>
           )}
 
