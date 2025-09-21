@@ -89,9 +89,13 @@ export default function Progress() {
     }
   };
 
-  // Memoized chart data (oldest to newest for trends)
+  // Memoized chart data and averages (oldest to newest for trends)
   const chartData = useMemo(() => {
-    if (!swings.length) return { scoreSeries: [], attackSeries: [], headDriftSeries: [], sepSeries: [] };
+    if (!swings.length) return { 
+      scoreSeries: [], 
+      allMetricsSeries: {},
+      averages: {}
+    };
 
     // Reverse for chronological order (oldest → newest)
     const chronologicalSwings = [...swings].reverse();
@@ -112,11 +116,42 @@ export default function Progress() {
         .filter(point => point !== null) as ChartPoint[];
     };
 
+    // All available metrics
+    const allMetrics = [
+      'hip_shoulder_sep_deg',
+      'attack_angle_deg', 
+      'head_drift_cm',
+      'contact_timing_frames',
+      'bat_lag_deg',
+      'torso_tilt_deg', 
+      'stride_var_pct',
+      'finish_balance_idx'
+    ];
+
+    const allMetricsSeries: Record<string, ChartPoint[]> = {};
+    const averages: Record<string, number> = {};
+
+    allMetrics.forEach(metric => {
+      const series = getMetricSeries(metric);
+      allMetricsSeries[metric] = series;
+      
+      // Calculate average for last 10 swings
+      if (series.length > 0) {
+        const values = series.slice(-10).map(point => point.value);
+        averages[metric] = values.reduce((sum, val) => sum + val, 0) / values.length;
+      }
+    });
+
+    // Score average
+    if (scoreSeries.length > 0) {
+      const scoreValues = scoreSeries.slice(-10).map(point => point.value);
+      averages['score'] = scoreValues.reduce((sum, val) => sum + val, 0) / scoreValues.length;
+    }
+
     return {
       scoreSeries,
-      attackSeries: getMetricSeries('attack_angle_deg'),
-      headDriftSeries: getMetricSeries('head_drift_cm'),
-      sepSeries: getMetricSeries('hip_shoulder_sep_deg')
+      allMetricsSeries,
+      averages
     };
   }, [swings, metrics]);
 
@@ -200,7 +235,9 @@ export default function Progress() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold">Score Trend</h3>
-                <p className="text-sm text-muted-foreground">Last {swings.length} swings</p>
+                <p className="text-sm text-muted-foreground">
+                  Last {swings.length} swings • Avg: {chartData.averages['score']?.toFixed(1) || '—'}
+                </p>
               </div>
               {latestScore && (
                 <Badge 
@@ -213,37 +250,71 @@ export default function Progress() {
             <LineChart data={chartData.scoreSeries} height={80} />
           </Card>
 
-          {/* Sparklines Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium">Attack Angle</h4>
-                <span className="text-xs text-muted-foreground">
-                  {getLatestMetricValue('attack_angle_deg')?.toFixed(1) || '—'}°
-                </span>
-              </div>
-              <Sparkline data={chartData.attackSeries} height={40} />
-            </Card>
-
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium">Head Drift</h4>
-                <span className="text-xs text-muted-foreground">
-                  {getLatestMetricValue('head_drift_cm')?.toFixed(1) || '—'}cm
-                </span>
-              </div>
-              <Sparkline data={chartData.headDriftSeries} height={40} />
-            </Card>
-
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium">Hip–Shoulder Sep</h4>
-                <span className="text-xs text-muted-foreground">
-                  {getLatestMetricValue('hip_shoulder_sep_deg')?.toFixed(1) || '—'}°
-                </span>
-              </div>
-              <Sparkline data={chartData.sepSeries} height={40} />
-            </Card>
+          {/* All Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <MetricCard
+              title="Hip-Shoulder Separation"
+              unit="°"
+              data={chartData.allMetricsSeries['hip_shoulder_sep_deg']}
+              average={chartData.averages['hip_shoulder_sep_deg']}
+              latestValue={getLatestMetricValue('hip_shoulder_sep_deg') || undefined}
+            />
+            
+            <MetricCard
+              title="Attack Angle"
+              unit="°"
+              data={chartData.allMetricsSeries['attack_angle_deg']}
+              average={chartData.averages['attack_angle_deg']}
+              latestValue={getLatestMetricValue('attack_angle_deg') || undefined}
+            />
+            
+            <MetricCard
+              title="Head Drift"
+              unit="cm"
+              data={chartData.allMetricsSeries['head_drift_cm']}
+              average={chartData.averages['head_drift_cm']}
+              latestValue={getLatestMetricValue('head_drift_cm') || undefined}
+            />
+            
+            <MetricCard
+              title="Contact Timing"
+              unit=" frames"
+              data={chartData.allMetricsSeries['contact_timing_frames']}
+              average={chartData.averages['contact_timing_frames']}
+              latestValue={getLatestMetricValue('contact_timing_frames') || undefined}
+            />
+            
+            <MetricCard
+              title="Bat Lag"
+              unit="°"
+              data={chartData.allMetricsSeries['bat_lag_deg']}
+              average={chartData.averages['bat_lag_deg']}
+              latestValue={getLatestMetricValue('bat_lag_deg') || undefined}
+            />
+            
+            <MetricCard
+              title="Torso Tilt"
+              unit="°"
+              data={chartData.allMetricsSeries['torso_tilt_deg']}
+              average={chartData.averages['torso_tilt_deg']}
+              latestValue={getLatestMetricValue('torso_tilt_deg') || undefined}
+            />
+            
+            <MetricCard
+              title="Stride Variance"
+              unit="%"
+              data={chartData.allMetricsSeries['stride_var_pct']}
+              average={chartData.averages['stride_var_pct']}
+              latestValue={getLatestMetricValue('stride_var_pct') || undefined}
+            />
+            
+            <MetricCard
+              title="Finish Balance"
+              unit=""
+              data={chartData.allMetricsSeries['finish_balance_idx']}
+              average={chartData.averages['finish_balance_idx']}
+              latestValue={getLatestMetricValue('finish_balance_idx') || undefined}
+            />
           </div>
 
 
@@ -358,5 +429,33 @@ function Sparkline({ data, height = 40 }: { data: ChartPoint[], height?: number 
         className="opacity-70"
       />
     </svg>
+  );
+}
+
+// Metric Card Component
+interface MetricCardProps {
+  title: string;
+  unit: string;
+  data: ChartPoint[];
+  average?: number;
+  latestValue?: number;
+}
+
+function MetricCard({ title, unit, data, average, latestValue }: MetricCardProps) {
+  return (
+    <Card className="p-4">
+      <div className="mb-3">
+        <h4 className="text-sm font-medium">{title}</h4>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-xs text-muted-foreground">
+            Latest: {latestValue?.toFixed(1) || '—'}{unit}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Avg: {average?.toFixed(1) || '—'}{unit}
+          </span>
+        </div>
+      </div>
+      <Sparkline data={data} height={40} />
+    </Card>
   );
 }
