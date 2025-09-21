@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, ArrowRight } from 'lucide-react';
+import { TrendingUp, ArrowRight, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 
@@ -168,7 +168,17 @@ export default function Progress() {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-6 max-w-2xl">
-          <h1 className="text-2xl font-bold mb-6">Progress</h1>
+          <div className="flex items-center gap-3 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate(-1)}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-2xl font-bold">Progress</h1>
+          </div>
           <div className="space-y-4">
             {[...Array(4)].map((_, i) => (
               <Card key={i} className="p-4">
@@ -198,9 +208,19 @@ export default function Progress() {
 
   if (!swings.length) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
-          <h1 className="text-2xl font-bold mb-6">Progress</h1>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
+        <div className="flex items-center gap-3 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate(-1)}
+            className="h-8 w-8 p-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold">Progress</h1>
+        </div>
           <Card className="p-8 text-center">
             <TrendingUp className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">No Swings Yet</h3>
@@ -225,9 +245,19 @@ export default function Progress() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6">Progress</h1>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-6 max-w-2xl">
+          <div className="flex items-center gap-3 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate(-1)}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-2xl font-bold">Progress</h1>
+          </div>
 
         <div className="space-y-6">
           {/* Score Trend Card */}
