@@ -143,11 +143,41 @@ export class PoseWorkerClient {
         return;
       }
 
+      console.log('Video blob info:', {
+        size: videoBlob.size,
+        type: videoBlob.type
+      });
+
+      // Add timeout for video loading
+      const loadTimeout = setTimeout(() => {
+        reject(new Error('Video loading timeout - check video format or blob'));
+      }, 10000);
+
       video.onloadedmetadata = async () => {
+        clearTimeout(loadTimeout);
         try {
+          console.log('Video metadata loaded:', {
+            duration: video.duration,
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight
+          });
+
           const duration = video.duration;
+          
+          if (!duration || duration === 0) {
+            reject(new Error('Video has no duration - invalid video file'));
+            return;
+          }
+
+          if (video.videoWidth === 0 || video.videoHeight === 0) {
+            reject(new Error('Video has no dimensions - invalid video file'));
+            return;
+          }
+
           const frameInterval = 1 / targetFps;
           const totalFrames = Math.floor(duration * targetFps);
+          
+          console.log(`Processing ${totalFrames} frames at ${targetFps}fps`);
           
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
@@ -158,19 +188,42 @@ export class PoseWorkerClient {
             const currentTime = i * frameInterval;
             video.currentTime = currentTime;
             
-            await new Promise<void>(resolve => {
-              video.onseeked = () => resolve();
+            await new Promise<void>((resolve, reject) => {
+              const seekTimeout = setTimeout(() => {
+                reject(new Error(`Seek timeout at frame ${i}`));
+              }, 1000);
+
+              video.onseeked = () => {
+                clearTimeout(seekTimeout);
+                resolve();
+              };
+
+              video.onerror = () => {
+                clearTimeout(seekTimeout);
+                reject(new Error(`Video error during seek at frame ${i}`));
+              };
             });
             
             // Draw frame to canvas
             ctx.drawImage(video, 0, 0);
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             
-            // Send frame to worker for pose detection
-            const frameResult = await this.processFrameInWorker(imageData.data, canvas.width, canvas.height, currentTime * 1000);
+            // Check if we got valid image data
+            if (imageData.data.length === 0) {
+              console.warn(`No image data at frame ${i}`);
+              continue;
+            }
             
-            if (frameResult) {
-              frames.push(frameResult);
+            // Send frame to worker for pose detection
+            try {
+              const frameResult = await this.processFrameInWorker(imageData.data, canvas.width, canvas.height, currentTime * 1000);
+              
+              if (frameResult) {
+                frames.push(frameResult);
+              }
+            } catch (frameError) {
+              console.warn(`Frame processing failed at frame ${i}:`, frameError);
+              // Continue with next frame instead of failing completely
             }
             
             // Update progress
@@ -180,14 +233,42 @@ export class PoseWorkerClient {
             }
           }
           
+          console.log(`Successfully processed ${frames.length} frames`);
+          
+          if (frames.length === 0) {
+            reject(new Error('No frames could be processed from video'));
+            return;
+          }
+          
           resolve(frames);
         } catch (error) {
+          console.error('Video processing error:', error);
           reject(error);
         }
       };
       
-      video.onerror = () => reject(new Error('Failed to load video'));
-      video.src = URL.createObjectURL(videoBlob);
+      video.onerror = (event) => {
+        clearTimeout(loadTimeout);
+        console.error('Video load error:', event);
+        reject(new Error('Failed to load video - check video format'));
+      };
+
+      video.onloadstart = () => {
+        console.log('Video load started');
+      };
+
+      // Set video attributes for better compatibility
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      
+      try {
+        video.src = URL.createObjectURL(videoBlob);
+        console.log('Video src set, waiting for metadata...');
+      } catch (error) {
+        clearTimeout(loadTimeout);
+        reject(new Error(`Failed to create video URL: ${error}`));
+      }
     });
   }
 
@@ -197,20 +278,32 @@ export class PoseWorkerClient {
     }
 
     return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        if (this.worker) {
+          this.worker.removeEventListener('message', handleMessage);
+        }
+        reject(new Error('Worker frame processing timeout'));
+      }, 5000);
+
       const handleMessage = (event: MessageEvent) => {
-        const { type, result, message } = event.data;
+        const { type, result, message, error } = event.data;
 
         if (this.worker) {
           this.worker.removeEventListener('message', handleMessage);
         }
+        clearTimeout(timeout);
 
         switch (type) {
           case 'frameResult':
             resolve(result);
             break;
           case 'error':
-            reject(new Error(message));
+            console.error('Worker frame processing error:', message);
+            reject(new Error(message || error || 'Worker processing failed'));
             break;
+          default:
+            // Ignore other message types
+            return;
         }
       };
 
@@ -218,15 +311,24 @@ export class PoseWorkerClient {
         this.worker.addEventListener('message', handleMessage);
 
         // Send frame data for processing
-        this.worker.postMessage({
-          type: 'processFrameData',
-          data: { 
-            imageData: Array.from(imageData),
-            width, 
-            height, 
-            timestamp 
-          }
-        });
+        try {
+          this.worker.postMessage({
+            type: 'processFrameData',
+            data: { 
+              imageData: Array.from(imageData),
+              width, 
+              height, 
+              timestamp 
+            }
+          });
+        } catch (error) {
+          clearTimeout(timeout);
+          this.worker.removeEventListener('message', handleMessage);
+          reject(new Error(`Failed to send frame to worker: ${error}`));
+        }
+      } else {
+        clearTimeout(timeout);
+        reject(new Error('Worker not available'));
       }
     });
   }

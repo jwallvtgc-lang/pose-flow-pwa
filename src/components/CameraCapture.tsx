@@ -300,7 +300,13 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
     trackCapture.started();
     
     const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm;codecs=vp9',
+      mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
+        ? 'video/webm;codecs=vp9'
+        : MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
+        ? 'video/webm;codecs=vp8'
+        : MediaRecorder.isTypeSupported('video/webm')
+        ? 'video/webm'
+        : 'video/mp4',
     });
     mediaRecorderRef.current = mediaRecorder;
     
