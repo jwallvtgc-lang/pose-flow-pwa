@@ -283,6 +283,47 @@ function getHeadCenter(keypoints) {
   return null;
 }
 
+function getCenterOfMass(keypoints) {
+  // Calculate approximate center of mass using key body landmarks
+  const torso = getKeypoint(keypoints, 'nose'); // Head proxy
+  const leftShoulder = getKeypoint(keypoints, 'left_shoulder');
+  const rightShoulder = getKeypoint(keypoints, 'right_shoulder');
+  const leftHip = getKeypoint(keypoints, 'left_hip');
+  const rightHip = getKeypoint(keypoints, 'right_hip');
+  
+  if (!leftShoulder || !rightShoulder || !leftHip || !rightHip) return null;
+  
+  // Weighted average of torso landmarks
+  const centerX = (leftShoulder.x + rightShoulder.x + leftHip.x + rightHip.x) / 4;
+  const centerY = (leftShoulder.y + rightShoulder.y + leftHip.y + rightHip.y) / 4;
+  
+  return { x: centerX, y: centerY };
+}
+
+function calculateFinishBalance(keypoints) {
+  // Calculate balance index based on center of mass relative to base of support
+  const leftAnkle = getKeypoint(keypoints, 'left_ankle');
+  const rightAnkle = getKeypoint(keypoints, 'right_ankle');
+  const centerOfMass = getCenterOfMass(keypoints);
+  
+  if (!leftAnkle || !rightAnkle || !centerOfMass) return null;
+  
+  // Base of support is between the feet
+  const baseOfSupportX = (leftAnkle.x + rightAnkle.x) / 2;
+  const footSpread = Math.abs(rightAnkle.x - leftAnkle.x);
+  
+  if (footSpread === 0) return 1.0; // No spread, assume unstable
+  
+  // Distance of center of mass from center of base of support
+  const comOffset = Math.abs(centerOfMass.x - baseOfSupportX);
+  
+  // Balance index: 0 = perfectly balanced, 1 = maximally unbalanced
+  // Normalize by foot spread (wider stance is more stable)
+  const balanceIndex = Math.min(1.0, comOffset / (footSpread * 0.5));
+  
+  return balanceIndex;
+}
+
 // Compute swing metrics from real pose data
 function computeMetrics(keypointsByFrame, events, fps) {
   const metrics = {};
@@ -361,11 +402,20 @@ function computeMetrics(keypointsByFrame, events, fps) {
     }
   }
   
+  // 4. Finish balance index - measure balance at swing finish
+  if (finishIdx && finishIdx < keypointsByFrame.length) {
+    const finishFrame = keypointsByFrame[finishIdx];
+    const balanceIndex = calculateFinishBalance(finishFrame.keypoints);
+    
+    if (balanceIndex !== null) {
+      metrics.finish_balance_idx = balanceIndex;
+    }
+  }
+  
   // Add some basic metrics with reasonable values for other measurements
   metrics.bat_lag_deg = 60 + Math.random() * 10;
   metrics.torso_tilt_deg = 25 + Math.random() * 10;
   metrics.stride_var_pct = Math.random() * 8;
-  metrics.finish_balance_idx = Math.random() * 0.4;
   metrics.contact_timing_frames = (Math.random() - 0.5) * 6;
   
   return metrics;
