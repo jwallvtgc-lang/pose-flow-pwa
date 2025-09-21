@@ -3,12 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Play, Loader2, Share2, Mail, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
 import { metricDisplayNames } from '@/lib/metrics';
 import { getVideoSignedUrl } from '@/lib/storage';
+import { toast } from 'sonner';
 
 interface SwingData {
   id: string;
@@ -45,6 +50,13 @@ export default function SwingDetail() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [videoError, setVideoError] = useState<string>('');
+  
+  // Share functionality state
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareName, setShareName] = useState('');
+  const [shareMessage, setShareMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -64,6 +76,62 @@ export default function SwingDetail() {
       setVideoError('Failed to load video');
     } finally {
       setIsVideoLoading(false);
+    }
+  };
+
+  const handleShareSwing = async () => {
+    if (!shareEmail.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    if (!swing) return;
+
+    setIsSending(true);
+    try {
+      // Prepare swing data for sharing
+      const swingData = {
+        id: swing.id,
+        score: swing.score_phase1 || 0,
+        date: swing.created_at ? new Date(swing.created_at).toLocaleDateString('en-US', { 
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        }) : 'Unknown',
+        metrics: metrics.map(metric => ({
+          name: metricDisplayNames()[metric.metric || ''] || (metric.metric || '').replace(/_/g, ' '),
+          value: metric.value || 0,
+          unit: metric.unit || '',
+          target: formatTargetRange(metric.metric || '')
+        })),
+        cues: swing.cues || [],
+        drill: drill ? {
+          name: drill.name || '',
+          instructions: drill.how_to || ''
+        } : undefined
+      };
+
+      // Call the edge function
+      const { error } = await supabase.functions.invoke('send-swing-details', {
+        body: {
+          toEmail: shareEmail.trim(),
+          fromName: shareName.trim() || undefined,
+          swingData,
+          message: shareMessage.trim() || undefined
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Swing details sent successfully!');
+      setIsShareDialogOpen(false);
+      setShareEmail('');
+      setShareName('');
+      setShareMessage('');
+      
+    } catch (err) {
+      console.error('Failed to share swing:', err);
+      toast.error('Failed to send swing details. Please try again.');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -234,7 +302,7 @@ export default function SwingDetail() {
         </div>
 
         <div className="space-y-6">
-          {/* Score & Timestamp */}
+          {/* Score & Timestamp - Updated with Share Button */}
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -254,16 +322,96 @@ export default function SwingDetail() {
                 </div>
               </div>
               
-              {swing.score_phase1 && (
-                <div className="text-center">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full text-white text-2xl font-bold ${getScoreColor(swing.score_phase1)}`}>
-                    {swing.score_phase1}
+              <div className="flex items-center gap-3">
+                {swing.score_phase1 && (
+                  <div className="text-center">
+                    <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full text-white text-2xl font-bold ${getScoreColor(swing.score_phase1)}`}>
+                      {swing.score_phase1}
+                    </div>
+                    <Badge variant="secondary" className="mt-2">
+                      {getScoreLabel(swing.score_phase1)}
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="mt-2">
-                    {getScoreLabel(swing.score_phase1)}
-                  </Badge>
-                </div>
-              )}
+                )}
+                
+                <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Mail className="w-5 h-5" />
+                        Share Swing Analysis
+                      </DialogTitle>
+                      <DialogDescription>
+                        Send this swing analysis to a coach or friend via email.
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="shareEmail">Email Address *</Label>
+                        <Input
+                          id="shareEmail"
+                          type="email"
+                          placeholder="coach@example.com"
+                          value={shareEmail}
+                          onChange={(e) => setShareEmail(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="shareName">Your Name (optional)</Label>
+                        <Input
+                          id="shareName"
+                          type="text"
+                          placeholder="Your name"
+                          value={shareName}
+                          onChange={(e) => setShareName(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="shareMessage">Personal Message (optional)</Label>
+                        <Textarea
+                          id="shareMessage"
+                          placeholder="Hey coach, here's my latest swing analysis..."
+                          value={shareMessage}
+                          onChange={(e) => setShareMessage(e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+
+                    <DialogFooter>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsShareDialogOpen(false)}
+                        disabled={isSending}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleShareSwing} disabled={isSending}>
+                        {isSending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4 mr-2" />
+                            Send Email
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </Card>
 
