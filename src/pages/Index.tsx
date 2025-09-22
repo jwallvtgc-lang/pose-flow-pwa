@@ -32,7 +32,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-lg">
         {/* Auth Status Header */}
         {user && (
@@ -57,52 +57,26 @@ const Index = () => {
 
         {/* Hero Section */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-anton font-black mb-4 text-black tracking-wider uppercase">
+          <h1 className="text-5xl font-anton font-black mb-4 tracking-wider uppercase" style={{ color: 'hsl(var(--sp-cyan))' }}>
             SWINGSENSE
           </h1>
           <p className="text-base text-gray-600 mb-8 max-w-sm mx-auto leading-relaxed">
-            Record your swing, get instant feedback, and improve your performance with AI-powered analysis
+            Level up your swing game ⚾
           </p>
-        </div>
-
-        {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="text-center">
-            <div className="w-12 h-12 bg-sp-green rounded-xl flex items-center justify-center mb-2 mx-auto">
-              <Activity className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-2xl font-bold text-black">68</div>
-            <div className="text-sm text-gray-600">Best Score</div>
-          </div>
-          
-          <div className="text-center">
-            <div className="w-12 h-12 bg-sp-royal-blue rounded-xl flex items-center justify-center mb-2 mx-auto">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-2xl font-bold text-black">12</div>
-            <div className="text-sm text-gray-600">Swings Today</div>
-          </div>
-          
-          <div className="text-center">
-            <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-2 mx-auto">
-              <Star className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-2xl font-bold text-black">47.9</div>
-            <div className="text-sm text-gray-600">Avg Score</div>
-          </div>
         </div>
 
         {/* Main Capture Card */}
         <Link to={user ? "/analysis" : "/auth"} className="block mb-6">
-          <Card className="p-8 text-center bg-sp-royal-blue rounded-3xl hover:scale-105 transition-all duration-200 cursor-pointer shadow-lg">
+          <Card className="p-8 text-center bg-gradient-to-br from-blue-500 to-cyan-400 rounded-3xl hover:scale-105 transition-all duration-200 cursor-pointer shadow-lg">
             <div className="w-16 h-16 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center mb-6 mx-auto">
               <Camera className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-2xl font-anton font-black mb-4 text-white uppercase tracking-wide">
-              CAPTURE YOUR SWING
+              RECORD YOUR SWING
             </h3>
             <p className="text-white text-sm mb-8 leading-relaxed">
-              Record your swing with AI pose detection for precise motion analysis and instant feedback on your mechanics
+              AI analyzes your form in real-time<br />
+              Get instant feedback & level up!
             </p>
             <Button className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-anton font-black uppercase text-lg h-12 px-8 rounded-xl border-0 w-full">
               {user ? 'START RECORDING' : 'SIGN IN TO START'} 
@@ -111,43 +85,68 @@ const Index = () => {
           </Card>
         </Link>
 
-        {/* Progress Card */}
-        <Link to={user ? "/progress" : "/auth"} className="block mb-6">
-          <Card className="p-6 bg-white rounded-3xl shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-sp-royal-blue bg-opacity-10 rounded-xl flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-sp-royal-blue" />
+        {/* Bottom Stats and Feedback Section */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          {/* Stats Section */}
+          <div className="bg-white rounded-3xl p-6 shadow-lg">
+            <h3 className="text-lg font-anton font-black mb-4 text-black uppercase text-center">Stats</h3>
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="w-8 h-8 bg-sp-green rounded-lg flex items-center justify-center mb-1 mx-auto">
+                  <Activity className="w-4 h-4 text-white" />
+                </div>
+                <div className="text-xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>68</div>
+                <div className="text-xs text-gray-600 uppercase font-bold">Best Score</div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-anton font-black mb-2 text-black uppercase">
-                  VIEW PROGRESS
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  Get detailed metrics and performance scores based on swing mechanics analysis and track your improvement over time
-                </p>
+              
+              <div className="text-center">
+                <div className="w-8 h-8 bg-sp-royal-blue rounded-lg flex items-center justify-center mb-1 mx-auto">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <div className="text-xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>12</div>
+                <div className="text-xs text-gray-600 uppercase font-bold">Today</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center mb-1 mx-auto">
+                  <Star className="w-4 h-4 text-white" />
+                </div>
+                <div className="text-xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>+6.7</div>
+                <div className="text-xs text-gray-600 uppercase font-bold">Trending</div>
               </div>
             </div>
-          </Card>
-        </Link>
+          </div>
 
-        {/* Recent Swings Card */}
-        <Link to={user ? "/recent-swings" : "/auth"} className="block mb-8">
-          <Card className="p-6 bg-white rounded-3xl shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-sp-green bg-opacity-10 rounded-xl flex items-center justify-center">
-                <Activity className="w-6 h-6 text-sp-green" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-anton font-black mb-2 text-black uppercase">
-                  RECENT SWINGS
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  Review your swing history and get personalized coaching tips to improve your technique
-                </p>
-              </div>
+          {/* Quick Actions Section */}
+          <div className="bg-white rounded-3xl p-6 shadow-lg">
+            <h3 className="text-lg font-anton font-black mb-4 text-black uppercase text-center">Quick Access</h3>
+            <div className="space-y-3">
+              <Link to={user ? "/progress" : "/auth"} className="block">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                  <div className="w-8 h-8 bg-sp-royal-blue bg-opacity-10 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 text-sp-royal-blue" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-black">Progress</div>
+                    <div className="text-xs text-gray-600">View metrics</div>
+                  </div>
+                </div>
+              </Link>
+              
+              <Link to={user ? "/recent-swings" : "/auth"} className="block">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                  <div className="w-8 h-8 bg-sp-green bg-opacity-10 rounded-lg flex items-center justify-center">
+                    <Activity className="w-4 h-4 text-sp-green" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-black">Recent</div>
+                    <div className="text-xs text-gray-600">Swing history</div>
+                  </div>
+                </div>
+              </Link>
             </div>
-          </Card>
-        </Link>
+          </div>
+        </div>
 
         {/* CTA Section */}
         {!user && (
