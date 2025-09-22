@@ -115,34 +115,38 @@ const Index = () => {
         {/* Bottom Progress and Swing History Section */}
         <div className="grid grid-cols-2 gap-6 mb-8">
           {/* Progress Section */}
-          <Card className="p-8 bg-white rounded-3xl shadow-lg border border-gray-100">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-                <BarChart3 className="w-8 h-8 text-blue-500" />
+          <Link to={user ? "/progress" : "/auth"} className="block">
+            <Card className="p-8 bg-white rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+                  <BarChart3 className="w-8 h-8 text-blue-500" />
+                </div>
+                <h3 className="text-xl font-anton font-black text-black uppercase mb-3">Progress</h3>
+                <div className="text-sm text-gray-600 mb-2 font-medium">Track Your</div>
+                <div className="text-sm text-gray-600 mb-4 font-medium">Improvement</div>
+                <div className="text-xs text-gray-500 leading-relaxed">
+                  View detailed metrics and performance trends over time
+                </div>
               </div>
-              <h3 className="text-xl font-anton font-black text-black uppercase mb-3">Progress</h3>
-              <div className="text-sm text-gray-600 mb-2 font-medium">Track Your</div>
-              <div className="text-sm text-gray-600 mb-4 font-medium">Improvement</div>
-              <div className="text-xs text-gray-500 leading-relaxed">
-                View detailed metrics and performance trends over time
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
           {/* Swing History Section */}
-          <Card className="p-8 bg-white rounded-3xl shadow-lg border border-gray-100">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-                <User className="w-8 h-8 text-green-500" />
+          <Link to={user ? "/recent-swings" : "/auth"} className="block">
+            <Card className="p-8 bg-white rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+                  <User className="w-8 h-8 text-green-500" />
+                </div>
+                <h3 className="text-xl font-anton font-black text-black uppercase mb-3">Swing</h3>
+                <h3 className="text-xl font-anton font-black text-black uppercase mb-3">History</h3>
+                <div className="text-sm text-gray-600 mb-2 font-medium">Review Past Swings</div>
+                <div className="text-xs text-gray-500 leading-relaxed">
+                  Access your swing history with personalized coaching feedback
+                </div>
               </div>
-              <h3 className="text-xl font-anton font-black text-black uppercase mb-3">Swing</h3>
-              <h3 className="text-xl font-anton font-black text-black uppercase mb-3">History</h3>
-              <div className="text-sm text-gray-600 mb-2 font-medium">Review Past Swings</div>
-              <div className="text-xs text-gray-500 leading-relaxed">
-                Access your swing history with personalized coaching feedback
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </Link>
         </div>
 
         {/* CTA Section */}
