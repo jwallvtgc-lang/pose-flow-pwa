@@ -1,12 +1,78 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Camera, BarChart3, TrendingUp, Activity, Star, User, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import AddToHomeScreen from "@/components/AddToHomeScreen";
 
 const Index = () => {
   const { user, signOut, loading } = useAuth();
+  const [stats, setStats] = useState({
+    bestScore: 0,
+    todayCount: 0,
+    trendingScore: 0,
+    isLoading: true
+  });
+
+  useEffect(() => {
+    if (user) {
+      loadStats();
+    } else {
+      // Show placeholder data for non-authenticated users
+      setStats({
+        bestScore: 68,
+        todayCount: 12,
+        trendingScore: 64.7,
+        isLoading: false
+      });
+    }
+  }, [user]);
+
+  const loadStats = async () => {
+    try {
+      // Get all user swings
+      const { data: swings, error: swingsError } = await supabase
+        .from('swings')
+        .select('id, created_at, score_phase1')
+        .order('created_at', { ascending: false });
+
+      if (swingsError) {
+        console.error('Error loading swings:', swingsError);
+        return;
+      }
+
+      const today = new Date().toDateString();
+      const validSwings = (swings || []).filter(swing => swing.score_phase1 && swing.score_phase1 > 0);
+      
+      // Calculate stats
+      const bestScore = validSwings.length > 0 
+        ? Math.max(...validSwings.map(swing => swing.score_phase1 || 0))
+        : 0;
+      
+      const todayCount = (swings || []).filter(swing => 
+        swing.created_at && new Date(swing.created_at).toDateString() === today
+      ).length;
+      
+      // Calculate trending score (average of last 7 swings)
+      const recent7Swings = validSwings.slice(0, 7);
+      const trendingScore = recent7Swings.length > 0
+        ? recent7Swings.reduce((sum, swing) => sum + (swing.score_phase1 || 0), 0) / recent7Swings.length
+        : 0;
+
+      setStats({
+        bestScore,
+        todayCount,
+        trendingScore,
+        isLoading: false
+      });
+
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+      setStats(prev => ({ ...prev, isLoading: false }));
+    }
+  };
 
   // Show loading state while authentication is being checked
   if (loading) {
@@ -73,7 +139,9 @@ const Index = () => {
             <div className="w-16 h-16 bg-sp-green rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg">
               <Activity className="w-8 h-8 text-white" />
             </div>
-            <div className="text-3xl font-bold text-black mb-1">68</div>
+            <div className="text-3xl font-bold text-black mb-1">
+              {stats.isLoading ? '...' : stats.bestScore}
+            </div>
             <div className="text-sm text-gray-500 uppercase font-medium tracking-wide">Best Score</div>
           </div>
           
@@ -81,7 +149,9 @@ const Index = () => {
             <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg">
               <TrendingUp className="w-8 h-8 text-white" />
             </div>
-            <div className="text-3xl font-bold text-black mb-1">12</div>
+            <div className="text-3xl font-bold text-black mb-1">
+              {stats.isLoading ? '...' : stats.todayCount}
+            </div>
             <div className="text-sm text-gray-500 uppercase font-medium tracking-wide">Today</div>
           </div>
           
@@ -89,7 +159,9 @@ const Index = () => {
             <div className="w-16 h-16 bg-purple-500 rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg">
               <Star className="w-8 h-8 text-white" />
             </div>
-            <div className="text-3xl font-bold text-black mb-1">64.7</div>
+            <div className="text-3xl font-bold text-black mb-1">
+              {stats.isLoading ? '...' : stats.trendingScore.toFixed(1)}
+            </div>
             <div className="text-sm text-gray-500 uppercase font-medium tracking-wide">Trending</div>
           </div>
         </div>
