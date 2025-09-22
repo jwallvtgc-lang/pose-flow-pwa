@@ -367,6 +367,7 @@ export default function Progress() {
                 average={chartData.averages['hip_shoulder_sep_deg']}
                 unit="deg"
                 targetRange="15-35°"
+                chartData={chartData}
               />
               
               <DetailedMetricCard
@@ -375,6 +376,7 @@ export default function Progress() {
                 average={chartData.averages['attack_angle_deg']}
                 unit="deg"
                 targetRange="5-20°"
+                chartData={chartData}
               />
               
               <DetailedMetricCard
@@ -383,6 +385,7 @@ export default function Progress() {
                 average={chartData.averages['head_drift_cm']}
                 unit="cm"
                 targetRange="0-6 cm (lower is better)"
+                chartData={chartData}
               />
               
               <DetailedMetricCard
@@ -391,6 +394,7 @@ export default function Progress() {
                 average={chartData.averages['contact_timing_frames']}
                 unit="frames"
                 targetRange="-3 to +3"
+                chartData={chartData}
               />
               
               <DetailedMetricCard
@@ -399,6 +403,7 @@ export default function Progress() {
                 average={chartData.averages['bat_lag_deg']}
                 unit="deg"
                 targetRange="50-70°"
+                chartData={chartData}
               />
               
               <DetailedMetricCard
@@ -407,6 +412,7 @@ export default function Progress() {
                 average={chartData.averages['torso_tilt_deg']}
                 unit="deg"
                 targetRange="20-35°"
+                chartData={chartData}
               />
               
               <DetailedMetricCard
@@ -415,6 +421,7 @@ export default function Progress() {
                 average={chartData.averages['finish_balance_idx']}
                 unit="index"
                 targetRange="0.0-0.3 (lower is better)"
+                chartData={chartData}
               />
             </div>
           </div>
@@ -466,21 +473,44 @@ interface DetailedMetricCardProps {
   average?: number;
   unit: string;
   targetRange: string;
+  chartData: {
+    scoreSeries: ChartPoint[];
+    allMetricsSeries: Record<string, ChartPoint[]>;
+    averages: Record<string, number>;
+  };
 }
 
-function DetailedMetricCard({ title, description, average, unit, targetRange }: DetailedMetricCardProps) {
-  const getProgressColor = (title: string, value?: number) => {
-    if (!value) return 'bg-muted';
-    
-    // Simple heuristic for color coding - would be better to use actual target ranges
-    if (title === "Head Drift" && value < 3) return 'bg-green-500';
-    if (title === "Attack Angle" && value > 0 && value < 25) return 'bg-green-500';
-    if (title === "Hip-Shoulder Separation" && value > 15) return 'bg-green-500';
-    if (title === "Finish Balance" && value < 0.3) return 'bg-green-500';
-    return 'bg-red-500';
+function DetailedMetricCard({ title, description, average, unit, targetRange, chartData }: DetailedMetricCardProps) {
+  // Get the metric name from title
+  const getMetricName = (title: string): string => {
+    const titleToMetric: Record<string, string> = {
+      "Hip-Shoulder Separation": "hip_shoulder_sep_deg",
+      "Attack Angle": "attack_angle_deg", 
+      "Head Drift": "head_drift_cm",
+      "Contact Timing": "contact_timing_frames",
+      "Bat Lag": "bat_lag_deg",
+      "Torso Tilt": "torso_tilt_deg",
+      "Finish Balance": "finish_balance_idx"
+    };
+    return titleToMetric[title] || '';
   };
 
-  const progressColor = getProgressColor(title, average);
+  const metricName = getMetricName(title);
+  const metricData = chartData.allMetricsSeries[metricName] || [];
+  const lastSevenValues = metricData.slice(-7);
+
+  const isInTargetRange = (value: number, title: string): boolean => {
+    switch (title) {
+      case "Head Drift": return value <= 6;
+      case "Attack Angle": return value >= 5 && value <= 20;
+      case "Hip-Shoulder Separation": return value >= 15 && value <= 35;
+      case "Contact Timing": return value >= -3 && value <= 3;
+      case "Bat Lag": return value >= 50 && value <= 70;
+      case "Torso Tilt": return value >= 20 && value <= 35;
+      case "Finish Balance": return value <= 0.3;
+      default: return false;
+    }
+  };
   
   return (
     <Card className="p-6">
@@ -503,17 +533,60 @@ function DetailedMetricCard({ title, description, average, unit, targetRange }: 
         </div>
       </div>
       
-      {/* Progress Bar */}
-      <div className="flex items-center gap-2">
-        {[...Array(7)].map((_, i) => (
-          <div 
-            key={i} 
-            className={`h-2 flex-1 rounded ${
-              i < 4 ? progressColor : 'bg-muted'
-            }`}
-          />
-        ))}
-        <div className="bg-blue-500 h-2 w-8 rounded ml-2" />
+      {/* Trend Bars - Last 7 swings */}
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-muted-foreground mr-2">Last 7:</span>
+        {[...Array(7)].map((_, i) => {
+          const dataPoint = lastSevenValues[i];
+          if (!dataPoint) {
+            return (
+              <div 
+                key={i} 
+                className="h-3 flex-1 rounded bg-muted min-w-[8px]"
+                title="No data"
+              />
+            );
+          }
+          
+          const isGood = isInTargetRange(dataPoint.value, title);
+          const intensity = Math.min(30 + (i * 10), 100); // Increasing opacity for recent swings
+          
+          return (
+            <div 
+              key={i} 
+              className={`h-3 flex-1 rounded transition-all hover:scale-110 min-w-[8px] ${
+                isGood ? 'bg-green-500' : 'bg-red-500'
+              }`}
+              style={{ opacity: intensity / 100 }}
+              title={`Swing ${i + 1}: ${dataPoint.value.toFixed(1)} ${unit} (${isGood ? 'Good' : 'Needs Work'})`}
+            />
+          );
+        })}
+        
+        {/* Trend Arrow */}
+        <div className="ml-3 flex items-center">
+          {lastSevenValues.length >= 2 && (() => {
+            const recent = lastSevenValues.slice(-3).map((p: ChartPoint) => p.value);
+            const older = lastSevenValues.slice(0, 3).map((p: ChartPoint) => p.value);
+            if (recent.length && older.length) {
+              const recentAvg = recent.reduce((a: number, b: number) => a + b, 0) / recent.length;
+              const olderAvg = older.reduce((a: number, b: number) => a + b, 0) / older.length;
+              
+              // For metrics where lower is better, flip the comparison
+              const lowerIsBetter = title === "Head Drift" || title === "Finish Balance";
+              const isImproving = lowerIsBetter ? recentAvg < olderAvg : recentAvg > olderAvg;
+              
+              return (
+                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${
+                  isImproving ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                }`}>
+                  {isImproving ? '↗' : '↘'}
+                </div>
+              );
+            }
+            return null;
+          })()}
+        </div>
       </div>
     </Card>
   );
