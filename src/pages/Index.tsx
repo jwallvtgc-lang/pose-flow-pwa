@@ -111,55 +111,50 @@ const Index = () => {
           </Card>
         </Link>
 
-        {/* Bottom Scores and Feedback Section */}
+        {/* Bottom Progress and Swing History Section */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-          {/* Scores Section */}
+          {/* Progress Section */}
           <Card className="p-6 bg-white rounded-3xl shadow-lg">
-            <h3 className="text-lg font-anton font-black mb-4 text-black uppercase text-center">Scores</h3>
+            <h3 className="text-lg font-anton font-black mb-4 text-black uppercase text-center">Progress</h3>
             <div className="space-y-3">
-              <div className="text-center">
-                <div className="text-2xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>68</div>
-                <div className="text-xs text-gray-600 uppercase font-bold">Best Score</div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <div className="w-8 h-8 bg-sp-royal-blue bg-opacity-10 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-sp-royal-blue" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-black">Track Your Improvement</div>
+                  <div className="text-xs text-gray-600">View detailed metrics and performance trends over time</div>
+                </div>
               </div>
               
-              <div className="text-center">
-                <div className="text-2xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>47.9</div>
-                <div className="text-xs text-gray-600 uppercase font-bold">Average</div>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-2xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>+6.7</div>
-                <div className="text-xs text-gray-600 uppercase font-bold">Last 7 Days</div>
-              </div>
+              <Link to={user ? "/progress" : "/auth"} className="block">
+                <Button className="w-full bg-sp-royal-blue hover:bg-sp-blue text-white font-anton font-black uppercase text-sm h-10 rounded-xl">
+                  View Progress
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
             </div>
           </Card>
 
-          {/* Feedback Section */}
+          {/* Swing History and Feedback Section */}
           <Card className="p-6 bg-white rounded-3xl shadow-lg">
-            <h3 className="text-lg font-anton font-black mb-4 text-black uppercase text-center">Feedback</h3>
+            <h3 className="text-lg font-anton font-black mb-4 text-black uppercase text-center">Swing History</h3>
             <div className="space-y-3">
-              <Link to={user ? "/progress" : "/auth"} className="block">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <div className="w-8 h-8 bg-sp-royal-blue bg-opacity-10 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="w-4 h-4 text-sp-royal-blue" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-black">Progress</div>
-                    <div className="text-xs text-gray-600">View metrics</div>
-                  </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <div className="w-8 h-8 bg-sp-green bg-opacity-10 rounded-lg flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-sp-green" />
                 </div>
-              </Link>
+                <div>
+                  <div className="text-sm font-bold text-black">Review Past Swings</div>
+                  <div className="text-xs text-gray-600">Access your swing history with personalized coaching feedback</div>
+                </div>
+              </div>
               
               <Link to={user ? "/recent-swings" : "/auth"} className="block">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <div className="w-8 h-8 bg-sp-green bg-opacity-10 rounded-lg flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-sp-green" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-black">Recent</div>
-                    <div className="text-xs text-gray-600">Swing history</div>
-                  </div>
-                </div>
+                <Button className="w-full bg-sp-green hover:bg-green-600 text-white font-anton font-black uppercase text-sm h-10 rounded-xl">
+                  View History
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </Link>
             </div>
           </Card>
