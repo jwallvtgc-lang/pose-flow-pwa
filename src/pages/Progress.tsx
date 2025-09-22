@@ -227,7 +227,7 @@ export default function Progress() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-2xl font-bold">Progress</h1>
+            <h1 className="text-2xl font-anton font-black">Progress</h1>
           </div>
           <div className="space-y-4">
             {[...Array(4)].map((_, i) => (
@@ -248,7 +248,7 @@ export default function Progress() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="p-6 text-center max-w-md">
-          <h3 className="text-lg font-semibold mb-2">Error Loading Progress</h3>
+          <h3 className="text-lg font-anton font-black mb-2">Error Loading Progress</h3>
           <p className="text-muted-foreground mb-4">{error}</p>
           <Button onClick={loadProgressData}>Try Again</Button>
         </Card>
@@ -269,11 +269,11 @@ export default function Progress() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold">Progress</h1>
+          <h1 className="text-2xl font-anton font-black">Progress</h1>
         </div>
           <Card className="p-8 text-center">
             <TrendingUp className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">No Swings Yet</h3>
+            <h3 className="text-lg font-anton font-black mb-2">No Swings Yet</h3>
             <p className="text-muted-foreground mb-4">
               Record your first swing to start tracking your progress and see improvement over time.
             </p>
@@ -300,7 +300,7 @@ export default function Progress() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-2xl font-bold">Progress</h1>
+            <h1 className="text-2xl font-anton font-black">Progress</h1>
           </div>
 
         <div className="space-y-6">
@@ -308,7 +308,7 @@ export default function Progress() {
           <Card className="relative p-6 overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold">Score Trend</h3>
+                <h3 className="text-lg font-anton font-black">Score Trend</h3>
                 <p className="text-blue-100 text-sm">
                   Last {swings.length} swings • Avg: {chartData.averages['score']?.toFixed(1) || '—'}
                 </p>
@@ -317,7 +317,7 @@ export default function Progress() {
                 <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
                   <div className="flex items-center gap-1">
                     <TrendingUp className="w-4 h-4" />
-                    <span className="text-2xl font-bold">{latestScore}</span>
+                    <span className="text-2xl font-anton font-black">{latestScore}</span>
                   </div>
                 </div>
               )}
@@ -341,25 +341,25 @@ export default function Progress() {
             <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="text-green-700 font-medium text-sm">Improving</span>
+                <span className="text-green-700 font-anton font-black text-sm">Improving</span>
               </div>
-              <div className="text-2xl font-bold text-green-800">{improvingMetrics.improving}</div>
+              <div className="text-2xl font-anton font-black text-green-800">{improvingMetrics.improving}</div>
               <div className="text-green-600 text-xs">metrics trending up</div>
             </Card>
             
             <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="w-4 h-4 text-orange-600" />
-                <span className="text-orange-700 font-medium text-sm">Focus Areas</span>
+                <span className="text-orange-700 font-anton font-black text-sm">Focus Areas</span>
               </div>
-              <div className="text-2xl font-bold text-orange-800">{improvingMetrics.needsWork}</div>
+              <div className="text-2xl font-anton font-black text-orange-800">{improvingMetrics.needsWork}</div>
               <div className="text-orange-600 text-xs">metrics need work</div>
             </Card>
           </div>
 
           {/* Swing Metrics Section */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Swing Metrics</h3>
+            <h3 className="text-lg font-anton font-black mb-4">Swing Metrics</h3>
             <div className="space-y-4">
               <DetailedMetricCard
                 title="Hip-Shoulder Separation"
@@ -516,11 +516,11 @@ function DetailedMetricCard({ title, description, average, unit, targetRange, ch
     <Card className="p-6">
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <h4 className="font-medium text-base mb-1">{title}</h4>
+          <h4 className="font-anton font-black text-base mb-1">{title}</h4>
           <p className="text-sm text-muted-foreground mb-3">{description}</p>
         </div>
         <div className="text-right ml-4">
-          <div className="text-lg font-bold">
+          <div className="text-lg font-anton font-black">
             {average ? `${average.toFixed(1)} ${unit}` : '—'}
           </div>
         </div>

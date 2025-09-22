@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        'great-vibes': ['Great Vibes', 'cursive'],
+        'fredoka': ['Fredoka One', 'cursive'],
         'anton': ['Anton', 'sans-serif'],
       },
       colors: {
