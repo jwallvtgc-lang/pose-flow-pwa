@@ -194,10 +194,8 @@ const Index = () => {
                   <BarChart3 className="w-8 h-8 text-blue-500" />
                 </div>
                 <h3 className="text-xl font-anton font-black text-black uppercase mb-3">Progress</h3>
-                <div className="text-sm text-gray-600 mb-2 font-medium">Track Your</div>
-                <div className="text-sm text-gray-600 mb-4 font-medium">Improvement</div>
-                <div className="text-xs text-gray-500 leading-relaxed">
-                  View detailed metrics and performance trends over time
+                <div className="text-sm text-gray-600 font-medium">
+                  Get detailed performance scores based on swing mechanics
                 </div>
               </div>
             </Card>
