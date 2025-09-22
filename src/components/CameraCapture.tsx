@@ -299,15 +299,18 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
 
     trackCapture.started();
     
-    const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
-        ? 'video/webm;codecs=vp9'
-        : MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
-        ? 'video/webm;codecs=vp8'
-        : MediaRecorder.isTypeSupported('video/webm')
-        ? 'video/webm'
-        : 'video/mp4',
-    });
+    // Determine the best supported mimeType
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
+      ? 'video/webm;codecs=vp9'
+      : MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
+      ? 'video/webm;codecs=vp8'
+      : MediaRecorder.isTypeSupported('video/webm')
+      ? 'video/webm'
+      : 'video/mp4';
+    
+    console.log('Using mimeType for recording:', mimeType);
+    
+    const mediaRecorder = new MediaRecorder(stream, { mimeType });
     mediaRecorderRef.current = mediaRecorder;
     
     const chunks: Blob[] = [];
@@ -316,11 +319,21 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
     mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         chunks.push(event.data);
+        console.log('Chunk received:', event.data.size, 'bytes');
       }
     };
     
     mediaRecorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'video/webm' });
+      console.log('Recording stopped, creating blob with', chunks.length, 'chunks');
+      const blob = new Blob(chunks, { type: mimeType });
+      console.log('Created video blob:', { size: blob.size, type: blob.type });
+      
+      // Validate the blob before passing it along
+      if (blob.size === 0) {
+        console.error('Created empty video blob!');
+        return;
+      }
+      
       onCapture?.(blob);
     };
     
