@@ -134,6 +134,22 @@ export class PoseWorkerClient {
 
   private async extractVideoFrames(videoBlob: Blob, targetFps: number, onProgress?: (message: string) => void): Promise<FrameData[]> {
     return new Promise((resolve, reject) => {
+      // Validate video blob first
+      if (!videoBlob || videoBlob.size === 0) {
+        reject(new Error('Invalid video: Video file is empty or corrupted'));
+        return;
+      }
+
+      if (!videoBlob.type.startsWith('video/')) {
+        reject(new Error('Invalid video: File is not a video format'));
+        return;
+      }
+
+      console.log('Video blob info:', {
+        size: videoBlob.size,
+        type: videoBlob.type
+      });
+
       const video = document.createElement('video');
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -143,15 +159,18 @@ export class PoseWorkerClient {
         return;
       }
 
-      console.log('Video blob info:', {
-        size: videoBlob.size,
-        type: videoBlob.type
-      });
-
       // Add timeout for video loading
       const loadTimeout = setTimeout(() => {
-        reject(new Error('Video loading timeout - check video format or blob'));
-      }, 10000);
+        cleanup();
+        reject(new Error('Video loading timeout - please try recording again'));
+      }, 15000);
+
+      const cleanup = () => {
+        clearTimeout(loadTimeout);
+        if (video.src) {
+          URL.revokeObjectURL(video.src);
+        }
+      };
 
       video.onloadedmetadata = async () => {
         clearTimeout(loadTimeout);
@@ -159,18 +178,27 @@ export class PoseWorkerClient {
           console.log('Video metadata loaded:', {
             duration: video.duration,
             videoWidth: video.videoWidth,
-            videoHeight: video.videoHeight
+            videoHeight: video.videoHeight,
+            readyState: video.readyState
           });
 
           const duration = video.duration;
           
-          if (!duration || duration === 0) {
-            reject(new Error('Video has no duration - invalid video file'));
+          if (!duration || duration === 0 || !isFinite(duration)) {
+            cleanup();
+            reject(new Error('Invalid video: Recording may be too short or corrupted. Please try recording again.'));
             return;
           }
 
           if (video.videoWidth === 0 || video.videoHeight === 0) {
-            reject(new Error('Video has no dimensions - invalid video file'));
+            cleanup();
+            reject(new Error('Invalid video: Video has no dimensions. Please check camera permissions and try again.'));
+            return;
+          }
+
+          if (duration < 1) {
+            cleanup();
+            reject(new Error('Video too short: Please record for at least 1 second'));
             return;
           }
 
@@ -190,18 +218,25 @@ export class PoseWorkerClient {
             
             await new Promise<void>((resolve, reject) => {
               const seekTimeout = setTimeout(() => {
-                reject(new Error(`Seek timeout at frame ${i}`));
-              }, 1000);
+                reject(new Error(`Video processing failed: Unable to read frame ${i}. The video may be corrupted.`));
+              }, 3000); // Increased timeout
 
-              video.onseeked = () => {
+              const handleSeeked = () => {
                 clearTimeout(seekTimeout);
+                video.removeEventListener('seeked', handleSeeked);
+                video.removeEventListener('error', handleError);
                 resolve();
               };
 
-              video.onerror = () => {
+              const handleError = () => {
                 clearTimeout(seekTimeout);
-                reject(new Error(`Video error during seek at frame ${i}`));
+                video.removeEventListener('seeked', handleSeeked);
+                video.removeEventListener('error', handleError);
+                reject(new Error(`Video processing error at frame ${i}: Video may be corrupted`));
               };
+
+              video.addEventListener('seeked', handleSeeked);
+              video.addEventListener('error', handleError);
             });
             
             // Draw frame to canvas
@@ -234,23 +269,25 @@ export class PoseWorkerClient {
           }
           
           console.log(`Successfully processed ${frames.length} frames`);
+          cleanup();
           
           if (frames.length === 0) {
-            reject(new Error('No frames could be processed from video'));
+            reject(new Error('No valid frames found: Video may be corrupted or too short'));
             return;
           }
           
           resolve(frames);
         } catch (error) {
           console.error('Video processing error:', error);
+          cleanup();
           reject(error);
         }
       };
       
       video.onerror = (event) => {
-        clearTimeout(loadTimeout);
+        cleanup();
         console.error('Video load error:', event);
-        reject(new Error('Failed to load video - check video format'));
+        reject(new Error('Video format not supported: Please try recording again with a different device or browser'));
       };
 
       video.onloadstart = () => {
@@ -261,13 +298,18 @@ export class PoseWorkerClient {
       video.preload = 'metadata';
       video.muted = true;
       video.playsInline = true;
+      video.crossOrigin = 'anonymous';
       
       try {
-        video.src = URL.createObjectURL(videoBlob);
+        const url = URL.createObjectURL(videoBlob);
+        video.src = url;
         console.log('Video src set, waiting for metadata...');
+        
+        // Force load the video
+        video.load();
       } catch (error) {
-        clearTimeout(loadTimeout);
-        reject(new Error(`Failed to create video URL: ${error}`));
+        cleanup();
+        reject(new Error(`Failed to create video: ${error instanceof Error ? error.message : 'Unknown error'}`));
       }
     });
   }

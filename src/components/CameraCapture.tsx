@@ -325,19 +325,44 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
     
     mediaRecorder.onstop = () => {
       console.log('Recording stopped, creating blob with', chunks.length, 'chunks');
+      
+      if (chunks.length === 0) {
+        console.error('No video chunks recorded!');
+        setWorkerError('Recording failed - no video data captured');
+        return;
+      }
+      
       const blob = new Blob(chunks, { type: mimeType });
       console.log('Created video blob:', { size: blob.size, type: blob.type });
       
       // Validate the blob before passing it along
       if (blob.size === 0) {
         console.error('Created empty video blob!');
+        setWorkerError('Recording failed - empty video file');
+        return;
+      }
+      
+      if (blob.size < 1000) { // Less than 1KB is probably invalid
+        console.error('Video blob too small:', blob.size);
+        setWorkerError('Recording failed - video file too small');
         return;
       }
       
       onCapture?.(blob);
     };
+
+    mediaRecorder.onerror = (event) => {
+      console.error('MediaRecorder error:', event);
+      setWorkerError('Recording failed - please try again');
+    };
     
-    mediaRecorder.start(100); // Record in 100ms chunks for smooth recording
+    try {
+      mediaRecorder.start(250); // Record in 250ms chunks for better compatibility
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      setWorkerError('Failed to start recording - please try again');
+      return;
+    }
     setIsRecording(true);
     
     // Update duration display
