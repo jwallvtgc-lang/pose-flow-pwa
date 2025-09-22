@@ -208,11 +208,9 @@ const Index = () => {
                 <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
                   <User className="w-8 h-8 text-green-500" />
                 </div>
-                <h3 className="text-xl font-anton font-black text-black uppercase mb-3">Swing</h3>
                 <h3 className="text-xl font-anton font-black text-black uppercase mb-3">History</h3>
-                <div className="text-sm text-gray-600 mb-2 font-medium">Review Past Swings</div>
-                <div className="text-xs text-gray-500 leading-relaxed">
-                  Access your swing history with personalized coaching feedback
+                <div className="text-sm text-gray-600 font-medium">
+                  Review your swing history and get personalized coaching tips
                 </div>
               </div>
             </Card>
