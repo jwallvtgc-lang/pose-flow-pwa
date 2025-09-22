@@ -61,8 +61,35 @@ const Index = () => {
             SWINGSENSE
           </h1>
           <p className="text-base text-gray-600 mb-8 max-w-sm mx-auto leading-relaxed">
-            Level up your swing game ⚾
+            Record your swing, get instant feedback, and improve your performance!
           </p>
+        </div>
+
+        {/* Stats Row - Above main capture card */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-sp-green rounded-xl flex items-center justify-center mb-2 mx-auto">
+              <Activity className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-2xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>68</div>
+            <div className="text-sm text-gray-600 uppercase font-bold">Best Score</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-12 h-12 bg-sp-royal-blue rounded-xl flex items-center justify-center mb-2 mx-auto">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-2xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>12</div>
+            <div className="text-sm text-gray-600 uppercase font-bold">Today</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-2 mx-auto">
+              <Star className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-2xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>+6.7</div>
+            <div className="text-sm text-gray-600 uppercase font-bold">Trending</div>
+          </div>
         </div>
 
         {/* Main Capture Card */}
@@ -75,8 +102,7 @@ const Index = () => {
               RECORD YOUR SWING
             </h3>
             <p className="text-white text-sm mb-8 leading-relaxed">
-              AI analyzes your form in real-time<br />
-              Get instant feedback & level up!
+              Record your swing with AI pose detection for precise motion analysis
             </p>
             <Button className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-anton font-black uppercase text-lg h-12 px-8 rounded-xl border-0 w-full">
               {user ? 'START RECORDING' : 'SIGN IN TO START'} 
@@ -85,41 +111,32 @@ const Index = () => {
           </Card>
         </Link>
 
-        {/* Bottom Stats and Feedback Section */}
+        {/* Bottom Scores and Feedback Section */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-          {/* Stats Section */}
-          <div className="bg-white rounded-3xl p-6 shadow-lg">
-            <h3 className="text-lg font-anton font-black mb-4 text-black uppercase text-center">Stats</h3>
-            <div className="space-y-4">
+          {/* Scores Section */}
+          <Card className="p-6 bg-white rounded-3xl shadow-lg">
+            <h3 className="text-lg font-anton font-black mb-4 text-black uppercase text-center">Scores</h3>
+            <div className="space-y-3">
               <div className="text-center">
-                <div className="w-8 h-8 bg-sp-green rounded-lg flex items-center justify-center mb-1 mx-auto">
-                  <Activity className="w-4 h-4 text-white" />
-                </div>
-                <div className="text-xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>68</div>
+                <div className="text-2xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>68</div>
                 <div className="text-xs text-gray-600 uppercase font-bold">Best Score</div>
               </div>
               
               <div className="text-center">
-                <div className="w-8 h-8 bg-sp-royal-blue rounded-lg flex items-center justify-center mb-1 mx-auto">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
-                <div className="text-xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>12</div>
-                <div className="text-xs text-gray-600 uppercase font-bold">Today</div>
+                <div className="text-2xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>47.9</div>
+                <div className="text-xs text-gray-600 uppercase font-bold">Average</div>
               </div>
               
               <div className="text-center">
-                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center mb-1 mx-auto">
-                  <Star className="w-4 h-4 text-white" />
-                </div>
-                <div className="text-xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>+6.7</div>
-                <div className="text-xs text-gray-600 uppercase font-bold">Trending</div>
+                <div className="text-2xl font-bold" style={{ color: 'hsl(var(--sp-cyan))' }}>+6.7</div>
+                <div className="text-xs text-gray-600 uppercase font-bold">Last 7 Days</div>
               </div>
             </div>
-          </div>
+          </Card>
 
-          {/* Quick Actions Section */}
-          <div className="bg-white rounded-3xl p-6 shadow-lg">
-            <h3 className="text-lg font-anton font-black mb-4 text-black uppercase text-center">Quick Access</h3>
+          {/* Feedback Section */}
+          <Card className="p-6 bg-white rounded-3xl shadow-lg">
+            <h3 className="text-lg font-anton font-black mb-4 text-black uppercase text-center">Feedback</h3>
             <div className="space-y-3">
               <Link to={user ? "/progress" : "/auth"} className="block">
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
@@ -145,7 +162,7 @@ const Index = () => {
                 </div>
               </Link>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* CTA Section */}
