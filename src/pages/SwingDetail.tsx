@@ -32,7 +32,7 @@ interface SwingMetric {
 }
 
 interface DrillInfo {
-  id: string;
+  id: string | null; // Allow null for embedded drills
   name: string | null;
   how_to: string | null;
   equipment: string | null;
@@ -214,7 +214,7 @@ export default function SwingDetail() {
       // Fetch swing data
       const { data: swingData, error: swingError } = await supabase
         .from('swings')
-        .select('id, created_at, score_phase1, cues, drill_id, video_url')
+        .select('id, created_at, score_phase1, cues, drill_id, drill_data, video_url')
         .eq('id', swingId)
         .single();
 
@@ -224,7 +224,7 @@ export default function SwingDetail() {
         created_at: swingData.created_at || '',
         cues: Array.isArray(swingData.cues) ? swingData.cues.filter((cue): cue is string => typeof cue === 'string') : 
               swingData.cues ? [String(swingData.cues)] : null
-      } as SwingData;
+      } as SwingData & { drill_data?: any };
       setSwing(processedSwing);
 
       // Fetch swing metrics
@@ -246,8 +246,9 @@ export default function SwingDetail() {
       // Generate AI coaching
       await generateAICoaching(processedMetrics);
 
-      // Fetch drill info if drill_id exists
+      // Handle drill information - check both drill_id and embedded drill_data
       if (processedSwing.drill_id) {
+        // Fetch drill from drills table
         const { data: drillData, error: drillError } = await supabase
           .from('drills')
           .select('id, name, how_to, equipment')
@@ -258,6 +259,18 @@ export default function SwingDetail() {
           const processedDrill = {
             ...drillData,
             name: drillData.name || ''
+          } as DrillInfo;
+          setDrill(processedDrill);
+        }
+      } else if (processedSwing.drill_data) {
+        // Use embedded drill data from fallback coaching
+        const drillData = processedSwing.drill_data;
+        if (drillData && drillData.name) {
+          const processedDrill = {
+            id: null, // No ID for embedded drills
+            name: drillData.name || '',
+            how_to: drillData.how_to || '',
+            equipment: drillData.equipment || ''
           } as DrillInfo;
           setDrill(processedDrill);
         }

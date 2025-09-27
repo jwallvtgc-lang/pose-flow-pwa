@@ -114,11 +114,23 @@ export async function saveSwing({
 }): Promise<string> {
   try {
     console.log('=== SAVE SWING DEBUG ===');
+    
+    // Handle drill information - either use drill_id or save drill_data
+    const firstCard = cards[0];
+    const drillId = (firstCard?.drill && typeof firstCard.drill === 'object' && 'id' in firstCard.drill) 
+      ? firstCard.drill.id : null;
+    const drillData = (!drillId && firstCard?.drill) ? {
+      name: firstCard.drill.name,
+      how_to: firstCard.drill.how_to,
+      equipment: firstCard.drill.equipment
+    } : null;
+    
     console.log('Payload:', {
       session_id,
       score_phase1: score,
       cues: cards.map(c => c.cue),
-      drill_id: (cards[0]?.drill && typeof cards[0].drill === 'object' && 'id' in cards[0].drill) ? cards[0].drill.id : null,
+      drill_id: drillId,
+      drill_data: drillData,
       video_url: videoUrl,
       client_request_id
     });
@@ -130,7 +142,8 @@ export async function saveSwing({
         session_id,
         score_phase1: score,
         cues: cards.map(c => c.cue),
-        drill_id: (cards[0]?.drill && typeof cards[0].drill === 'object' && 'id' in cards[0].drill) ? cards[0].drill.id : null,
+        drill_id: drillId,
+        drill_data: drillData,
         video_url: videoUrl,
         client_request_id
       })

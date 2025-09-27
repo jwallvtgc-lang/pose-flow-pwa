@@ -197,6 +197,7 @@ export type Database = {
           client_request_id: string | null
           created_at: string | null
           cues: Json | null
+          drill_data: Json | null
           drill_id: string | null
           id: string
           score_phase1: number | null
@@ -207,6 +208,7 @@ export type Database = {
           client_request_id?: string | null
           created_at?: string | null
           cues?: Json | null
+          drill_data?: Json | null
           drill_id?: string | null
           id?: string
           score_phase1?: number | null
@@ -217,6 +219,7 @@ export type Database = {
           client_request_id?: string | null
           created_at?: string | null
           cues?: Json | null
+          drill_data?: Json | null
           drill_id?: string | null
           id?: string
           score_phase1?: number | null
