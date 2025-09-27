@@ -30,9 +30,9 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   const navigate = useNavigate();
 
   useEffect(() => {
-    const setupCameraAndWorker = async () => {
+    const setupWorkerOnly = async () => {
       try {
-        // Initialize pose detection worker
+        // Initialize pose detection worker (but not camera yet)
         poseWorkerRef.current = new Worker('/poseWorker.js');
         
         poseWorkerRef.current.onmessage = (e) => {
@@ -44,7 +44,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
               break;
               
             case 'initialized':
-              setWorkerStatus('Pose detection ready');
+              setWorkerStatus('Ready to record');
               setIsInitialized(true);
               break;
               
@@ -68,83 +68,15 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
 
         // Initialize the worker
         poseWorkerRef.current.postMessage({ type: 'initialize' });
-
-        // Get camera stream with better error handling and fallbacks
-        try {
-          // Try back camera first
-          const mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: { 
-              facingMode: 'environment',
-              width: { ideal: 720, min: 480 },
-              height: { ideal: 1280, min: 640 },
-              frameRate: { ideal: 60, min: 15 }
-            },
-            audio: false
-          });
-          
-          setStream(mediaStream);
-          
-          if (videoRef.current) {
-            videoRef.current.srcObject = mediaStream;
-            videoRef.current.onloadedmetadata = () => {
-              startPoseDetectionLoop();
-            };
-          }
-        } catch (cameraError) {
-          console.error('Back camera setup failed:', cameraError);
-          // Try front camera as fallback
-          try {
-            const fallbackStream = await navigator.mediaDevices.getUserMedia({
-              video: { 
-                facingMode: 'user',
-                width: { ideal: 720, min: 480 },
-                height: { ideal: 1280, min: 640 },
-                frameRate: { ideal: 60, min: 15 }
-              },
-              audio: false
-            });
-            setStream(fallbackStream);
-            if (videoRef.current) {
-              videoRef.current.srcObject = fallbackStream;
-              // Apply mirroring for front camera
-              videoRef.current.style.transform = 'scaleX(-1)';
-              if (overlayCanvasRef.current) {
-                overlayCanvasRef.current.style.transform = 'scaleX(-1)';
-              }
-              videoRef.current.onloadedmetadata = () => {
-                startPoseDetectionLoop();
-              };
-            }
-          } catch (frontCameraError) {
-            console.error('Front camera fallback failed:', frontCameraError);
-            // Try with minimal constraints as last resort
-            try {
-              const minimalStream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-              });
-              setStream(minimalStream);
-              if (videoRef.current) {
-                videoRef.current.srcObject = minimalStream;
-                videoRef.current.onloadedmetadata = () => {
-                  startPoseDetectionLoop();
-                };
-              }
-            } catch (finalError) {
-              setWorkerError('Camera access denied or not available');
-              setWorkerStatus('Camera setup failed');
-            }
-          }
-        }
         
       } catch (error) {
-        console.error('Setup failed:', error);
+        console.error('Worker setup failed:', error);
         setWorkerError('Failed to initialize pose detection');
         setWorkerStatus('Setup failed');
       }
     };
 
-    setupCameraAndWorker();
+    setupWorkerOnly();
 
     return () => {
       if (stream) {
@@ -292,10 +224,99 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
     ctx.stroke();
   };
 
-  const startRecording = useCallback(() => {
-    if (!stream || !videoRef.current) return;
+  const setupCamera = useCallback(async () => {
+    if (stream) return; // Already have camera stream
+    
+    try {
+      console.log('Setting up camera...');
+      // Try back camera first
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 720, min: 480 },
+          height: { ideal: 1280, min: 640 },
+          frameRate: { ideal: 60, min: 15 }
+        },
+        audio: false
+      });
+      
+      console.log('Camera stream obtained');
+      setStream(mediaStream);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata loaded, starting pose detection');
+          startPoseDetectionLoop();
+        };
+      }
+    } catch (cameraError) {
+      console.error('Back camera setup failed:', cameraError);
+      // Try front camera as fallback
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: 'user',
+            width: { ideal: 720, min: 480 },
+            height: { ideal: 1280, min: 640 },
+            frameRate: { ideal: 60, min: 15 }
+          },
+          audio: false
+        });
+        setStream(fallbackStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+          // Apply mirroring for front camera
+          videoRef.current.style.transform = 'scaleX(-1)';
+          if (overlayCanvasRef.current) {
+            overlayCanvasRef.current.style.transform = 'scaleX(-1)';
+          }
+          videoRef.current.onloadedmetadata = () => {
+            startPoseDetectionLoop();
+          };
+        }
+      } catch (frontCameraError) {
+        console.error('Front camera fallback failed:', frontCameraError);
+        // Try with minimal constraints as last resort
+        try {
+          const minimalStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+          setStream(minimalStream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = minimalStream;
+            videoRef.current.onloadedmetadata = () => {
+              startPoseDetectionLoop();
+            };
+          }
+        } catch (finalError) {
+          console.error('All camera setup attempts failed:', finalError);
+          setWorkerError('Camera access denied or not available');
+          setWorkerStatus('Camera setup failed');
+        }
+      }
+    }
+  }, [stream, startPoseDetectionLoop]);
+
+  const startRecording = useCallback(async () => {
+    console.log('Start recording requested');
+    
+    // Setup camera first if not already done
+    if (!stream) {
+      await setupCamera();
+      // Wait a moment for camera to stabilize
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    if (!stream || !videoRef.current) {
+      console.error('No camera stream available for recording');
+      setWorkerError('Camera not available - please allow camera access');
+      return;
+    }
 
     trackCapture.started();
+    console.log('Recording started');
     
     // Determine the best supported mimeType
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
@@ -322,7 +343,8 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
     };
     
     mediaRecorder.onstop = () => {
-      console.log('Recording stopped, creating blob with', chunks.length, 'chunks');
+      const recordingDuration = Date.now() - recordingStartTimeRef.current;
+      console.log(`Recording stopped after ${recordingDuration}ms, creating blob with`, chunks.length, 'chunks');
       
       if (chunks.length === 0) {
         console.error('No video chunks recorded!');
@@ -331,18 +353,23 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
       }
       
       const blob = new Blob(chunks, { type: mimeType });
-      console.log('Created video blob:', { size: blob.size, type: blob.type });
+      console.log('Created video blob:', { 
+        size: blob.size, 
+        type: blob.type, 
+        duration: recordingDuration 
+      });
       
-      // Validate the blob before passing it along
+      // More lenient validation
       if (blob.size === 0) {
         console.error('Created empty video blob!');
         setWorkerError('Recording failed - empty video file');
         return;
       }
       
-      if (blob.size < 1000) { // Less than 1KB is probably invalid
-        console.error('Video blob too small:', blob.size);
-        setWorkerError('Recording failed - video file too small');
+      // Lower threshold for minimum size and ensure minimum recording duration
+      if (blob.size < 100 || recordingDuration < 500) {
+        console.error('Video blob too small or recording too short:', { size: blob.size, duration: recordingDuration });
+        setWorkerError('Recording too short - please record for at least 1 second');
         return;
       }
       
@@ -383,7 +410,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   }, [isRecording, stream]);
 
   const toggleRecording = () => {
-    if (!isRecording && isInitialized && !workerError) {
+    if (!isRecording && (isInitialized || !workerError)) {
       startRecording();
     } else if (isRecording) {
       stopRecording();
@@ -407,34 +434,31 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
 
       {/* Video Recording Area */}
       <div className="relative bg-slate-800 rounded-2xl overflow-hidden mb-6" style={{ height: '240px' }}>
-        {!isInitialized || workerError ? (
+        {(!stream && !isInitialized) || workerError ? (
           <div className="flex items-center justify-center h-full text-white">
-            {!isInitialized ? (
-              <div className="flex flex-col items-center">
-                <div className="bg-gray-600 rounded-full p-6 mb-4">
-                  <Camera className="w-8 h-8 text-white" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">
-                    {isRecording ? "Recording..." : "Ready to Record"}
-                  </h3>
-                  <p className="text-sm text-gray-300">
-                    {isRecording ? "AI analyzing your swing mechanics" : "Position yourself and tap the record button"}
-                  </p>
-                  {!isInitialized && (
-                    <div className="flex items-center justify-center mt-4">
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      <span className="text-sm">{workerStatus}</span>
-                    </div>
-                  )}
-                </div>
+            <div className="flex flex-col items-center">
+              <div className="bg-gray-600 rounded-full p-6 mb-4">
+                <Camera className="w-8 h-8 text-white" />
               </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
-                <p className="text-center text-sm">{workerError}</p>
+              <div className="text-center">
+                <h3 className="text-lg font-semibold mb-2">Ready to Record</h3>
+                <p className="text-sm text-gray-300">
+                  Tap the record button to start your swing analysis
+                </p>
+                {!isInitialized && !workerError && (
+                  <div className="flex items-center justify-center mt-4">
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <span className="text-sm">{workerStatus}</span>
+                  </div>
+                )}
+                {workerError && (
+                  <div className="flex flex-col items-center mt-4">
+                    <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
+                    <p className="text-center text-sm text-red-400">{workerError}</p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         ) : (
           <>
@@ -465,9 +489,9 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
               </div>
             )}
             
-            {/* Status overlay for recording state */}
+            {/* Status overlay for recording state - semi-transparent */}
             {isRecording && (
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                 <div className="text-center text-white">
                   <h3 className="text-xl font-semibold mb-2">Recording...</h3>
                   <p className="text-sm opacity-80">AI analyzing your swing mechanics</p>
@@ -506,7 +530,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
               ? 'bg-red-500 hover:bg-red-600 text-white' 
               : 'bg-blue-500 hover:bg-blue-600 text-white'
           }`}
-          disabled={!isInitialized || !!workerError}
+          disabled={!isInitialized && !workerError}
           onClick={toggleRecording}
         >
           {isRecording ? (

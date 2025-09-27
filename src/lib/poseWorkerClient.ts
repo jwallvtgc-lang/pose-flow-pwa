@@ -184,7 +184,14 @@ export class PoseWorkerClient {
 
           const duration = video.duration;
           
-          if (!duration || duration === 0 || !isFinite(duration)) {
+          console.log('Video validation:', {
+            duration,
+            isFinite: isFinite(duration),
+            width: video.videoWidth,
+            height: video.videoHeight
+          });
+          
+          if (!duration || duration <= 0 || !isFinite(duration)) {
             cleanup();
             reject(new Error('Invalid video: Recording may be too short or corrupted. Please try recording again.'));
             return;
@@ -196,7 +203,8 @@ export class PoseWorkerClient {
             return;
           }
 
-          if (duration < 1) {
+          // More lenient duration check - allow 0.5 seconds minimum
+          if (duration < 0.5) {
             cleanup();
             reject(new Error('Video too short: Please record for at least 1 second'));
             return;
