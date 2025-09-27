@@ -14,7 +14,12 @@ interface SwingSMSRequest {
     score: number;
     date: string;
     metrics: Array<{ name: string; value: number; unit: string; target: string }>;
-    cues: string[];
+    coachingFeedback?: {
+      cues: string[];
+      explanations?: string[];
+      encouragement?: string;
+      focusAreas?: string[];
+    };
     drill?: { name: string; instructions: string };
   };
   message?: string;
@@ -54,7 +59,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Create a concise SMS message
     const topMetrics = swingData.metrics.slice(0, 3);
-    const topCues = swingData.cues.slice(0, 2);
+    const topCues = swingData.coachingFeedback?.cues?.slice(0, 2) || [];
     
     let smsMessage = `🏏 Swing Analysis from ${fromName || 'teammate'}\n\n`;
     smsMessage += `Score: ${swingData.score}/100 (${scoreLabel})\n`;
@@ -62,7 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (topCues.length > 0) {
       smsMessage += `Focus Areas:\n`;
-      topCues.forEach((cue, index) => {
+      topCues.forEach((cue: string) => {
         smsMessage += `• ${cue}\n`;
       });
       smsMessage += `\n`;
