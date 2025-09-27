@@ -30,8 +30,10 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('DEBUG: CameraCapture component mounted');
     const setupWorkerOnly = async () => {
       try {
+        console.log('DEBUG: Starting worker initialization...');
         // Initialize pose detection worker (but not camera yet)
         poseWorkerRef.current = new Worker('/poseWorker.js');
         
@@ -513,6 +515,13 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   }, [isRecording, stream]);
 
   const toggleRecording = () => {
+    console.log('DEBUG: Toggle recording clicked', {
+      isRecording,
+      isInitialized,
+      workerError,
+      hasStream: !!stream
+    });
+    
     if (!isRecording && (isInitialized || !workerError)) {
       startRecording();
     } else if (isRecording) {
@@ -633,7 +642,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
               ? 'bg-red-500 hover:bg-red-600 text-white' 
               : 'bg-blue-500 hover:bg-blue-600 text-white'
           }`}
-          disabled={!isInitialized && !workerError}
+          disabled={(!isInitialized && !workerError) || (!stream && !workerError)}
           onClick={toggleRecording}
         >
           {isRecording ? (
