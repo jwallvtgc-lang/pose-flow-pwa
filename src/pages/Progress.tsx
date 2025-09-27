@@ -377,7 +377,7 @@ export default function Progress() {
             
             {/* Trend Line Visualization */}
             <div className="mb-4">
-              <TrendLineVisual data={chartData.scoreSeries} />
+              <ScoreBarChart data={chartData.scoreSeries} />
             </div>
             
             <div className="flex items-center justify-between">
@@ -494,26 +494,75 @@ export default function Progress() {
   );
 }
 
-// Trend Line Visual Component (simple dots for trend display)
-function TrendLineVisual({ data }: { data: ChartPoint[] }) {
+// Score Bar Chart Component - Much more intuitive than dots!
+function ScoreBarChart({ data }: { data: ChartPoint[] }) {
   if (!data.length) {
     return (
-      <div className="flex items-center justify-center h-8">
-        <span className="text-blue-200 text-xs">No trend data</span>
+      <div className="flex items-center justify-center h-16">
+        <span className="text-blue-200 text-xs">No score data available</span>
       </div>
     );
   }
 
-  const points = data.slice(-7); // Show last 7 points
-  
+  const recentScores = data.slice(-8); // Show last 8 scores for better trend view
+  const maxScore = Math.max(...recentScores.map(point => point.value), 60); // Min scale of 60 for better visualization
+  const minScore = Math.min(...recentScores.map(point => point.value), 0);
+  const scoreRange = maxScore - minScore || 60;
+
   return (
-    <div className="flex items-center justify-between h-8">
-      {points.map((_, index) => (
-        <div 
-          key={index} 
-          className="w-3 h-3 bg-white/60 rounded-full flex-shrink-0"
-        />
-      ))}
+    <div className="space-y-2">
+      {/* Bar Chart */}
+      <div className="flex items-end justify-between h-16 gap-1">
+        {recentScores.map((point, index) => {
+          const height = Math.max(((point.value - minScore) / scoreRange) * 100, 10); // Min 10% height
+          const isRecent = index >= recentScores.length - 3; // Last 3 are "recent"
+          const isImproving = index > 0 && point.value >= recentScores[index - 1].value;
+          
+          return (
+            <div 
+              key={point.t} 
+              className="flex-1 flex flex-col items-center group relative"
+            >
+              {/* Score value on hover/focus */}
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-white bg-black/60 rounded px-1 py-0.5 mb-1 whitespace-nowrap">
+                {point.value}
+              </div>
+              
+              {/* Bar */}
+              <div 
+                className={`w-full rounded-sm transition-all duration-300 ${
+                  isRecent 
+                    ? (isImproving ? 'bg-green-300 hover:bg-green-200' : 'bg-yellow-300 hover:bg-yellow-200')
+                    : 'bg-white/60 hover:bg-white/80'
+                }`}
+                style={{ height: `${height}%` }}
+                title={`Swing ${index + 1}: ${point.value} points`}
+              />
+              
+              {/* Swing number */}
+              <div className="text-xs text-blue-200 mt-1">
+                {index + 1}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 text-xs text-blue-200">
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 bg-white/60 rounded"></div>
+          <span>Older</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 bg-green-300 rounded"></div>
+          <span>Recent ↗</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 bg-yellow-300 rounded"></div>
+          <span>Recent ↘</span>
+        </div>
+      </div>
     </div>
   );
 }
