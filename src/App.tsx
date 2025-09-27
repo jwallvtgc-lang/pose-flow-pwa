@@ -14,6 +14,7 @@ import RecentSwings from "./pages/RecentSwings";
 import Debug from "./pages/Debug";
 import MetricsDebug from "./pages/MetricsDebug";
 import NotFound from "./pages/NotFound";
+import Leaderboard from "./pages/Leaderboard";
 import Achievements from "./pages/Achievements";
 import Profile from "./pages/Profile";
 import { initPosthog } from "./lib/analytics";
@@ -56,6 +57,7 @@ const App = () => {
             <Route path="/swing/:id" element={<SwingDetail />} />
             <Route path="/recent-swings" element={<RecentSwings />} />
             <Route path="/achievements" element={<Achievements />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/debug" element={<Debug />} />
             <Route path="/metrics-debug" element={<MetricsDebug />} />

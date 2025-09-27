@@ -20,7 +20,7 @@ export function HamburgerMenu() {
     { icon: Video, label: 'Record Swing', path: '/score' },
     { icon: BarChart3, label: 'Analytics', path: '/progress' },
     { icon: History, label: 'Swing History', path: '/recent-swings' },
-    { icon: Trophy, label: 'Achievements', path: '/achievements' },
+    { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
