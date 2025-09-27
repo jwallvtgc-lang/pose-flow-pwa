@@ -1,9 +1,8 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { trackCapture } from '@/lib/analytics';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Video, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2, Play, Square, Star, Camera } from 'lucide-react';
 
 interface CameraCaptureProps {
   onPoseDetected?: (poses: any[]) => void;
@@ -23,7 +22,6 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   const [isRecording, setIsRecording] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
   const [badAngle, setBadAngle] = useState(false);
   const [currentPoses, setCurrentPoses] = useState<any[]>([]);
   const [workerStatus, setWorkerStatus] = useState<string>('Initializing...');
@@ -364,16 +362,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
       return;
     }
     setIsRecording(true);
-    
-    // Update duration display
-    const updateDuration = () => {
-      if (isRecording) {
-        setRecordingDuration(Date.now() - recordingStartTimeRef.current);
-        requestAnimationFrame(updateDuration);
-      }
-    };
-    updateDuration();
-  }, [stream, navigate, currentPoses, onCapture, isRecording]);
+  }, [stream, navigate, currentPoses, onCapture]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -401,109 +390,142 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
     }
   };
 
-  const formatDuration = (ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes}:${(seconds % 60).toString().padStart(2, '0')}`;
-  };
-
   return (
-    <div className="relative h-screen bg-black flex flex-col">
-      {/* Camera Preview */}
-      <div className="relative flex-1 overflow-hidden">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover"
-          // Back camera doesn't need mirroring
-        />
-        
-        {/* Hidden canvas for frame processing */}
-        <canvas
-          ref={canvasRef}
-          className="hidden"
-        />
-        
-        {/* Pose Overlay Canvas */}
-        <canvas
-          ref={overlayCanvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
-          // Back camera overlay doesn't need mirroring
-        />
-        
-        {/* Worker Status */}
-        {!isInitialized && (
-          <div className="absolute top-4 left-4 right-4">
-            <Badge variant="secondary" className="w-full justify-center py-2">
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              {workerStatus}
-            </Badge>
+    <div className="min-h-screen bg-background flex flex-col p-4">
+      {/* Video Recording Area */}
+      <div className="relative bg-slate-800 rounded-2xl overflow-hidden mb-6" style={{ height: '240px' }}>
+        {!isInitialized || workerError ? (
+          <div className="flex items-center justify-center h-full text-white">
+            {!isInitialized ? (
+              <div className="flex flex-col items-center">
+                <div className="bg-gray-600 rounded-full p-6 mb-4">
+                  <Camera className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-2">
+                    {isRecording ? "Recording..." : "Ready to Record"}
+                  </h3>
+                  <p className="text-sm text-gray-300">
+                    {isRecording ? "AI analyzing your swing mechanics" : "Position yourself and tap the record button"}
+                  </p>
+                  {!isInitialized && (
+                    <div className="flex items-center justify-center mt-4">
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <span className="text-sm">{workerStatus}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
+                <p className="text-center text-sm">{workerError}</p>
+              </div>
+            )}
           </div>
-        )}
-        
-        {/* Worker Error */}
-        {workerError && (
-          <div className="absolute top-4 left-4 right-4">
-            <Badge variant="destructive" className="w-full justify-center py-2">
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              {workerError}
-            </Badge>
-          </div>
-        )}
-        
-        {/* Bad Angle Warning */}
-        {badAngle && isInitialized && !workerError && (
-          <div className="absolute top-16 left-4 right-4">
-            <Badge variant="destructive" className="w-full justify-center py-2">
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              Bad angle - Turn sideways for better swing analysis
-            </Badge>
-          </div>
-        )}
-        
-        {/* Guidance Text */}
-        <div className="absolute top-20 left-4 right-4 text-center">
-          <p className="text-white text-sm bg-black/50 rounded px-3 py-1">
-            {isRecording 
-              ? "Recording swing - tap to stop when complete!" 
-              : "Stand sideways and tap to start recording your swing"
-            }
-          </p>
-        </div>
-        
-        {/* Recording Status */}
-        {isRecording && (
-          <div className="absolute top-4 right-4">
-            <Badge variant="destructive" className="animate-pulse">
-              <Video className="w-4 h-4 mr-1" />
-              REC {formatDuration(recordingDuration)}
-            </Badge>
-          </div>
+        ) : (
+          <>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+            />
+            
+            {/* Hidden canvas for frame processing */}
+            <canvas ref={canvasRef} className="hidden" />
+            
+            {/* Pose Overlay Canvas */}
+            <canvas
+              ref={overlayCanvasRef}
+              className="absolute top-0 left-0 w-full h-full pointer-events-none"
+            />
+            
+            {/* Recording indicator */}
+            {isRecording && (
+              <div className="absolute top-4 left-4">
+                <div className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                  <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse" />
+                  REC
+                </div>
+              </div>
+            )}
+            
+            {/* Status overlay for recording state */}
+            {isRecording && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <h3 className="text-xl font-semibold mb-2">Recording...</h3>
+                  <p className="text-sm opacity-80">AI analyzing your swing mechanics</p>
+                  <div className="flex justify-center mt-4 space-x-1">
+                    {[...Array(5)].map((_, i) => (
+                      <div 
+                        key={i} 
+                        className="w-2 h-6 bg-blue-400 rounded animate-pulse"
+                        style={{ animationDelay: `${i * 0.1}s` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Bad Angle Warning */}
+            {badAngle && !isRecording && (
+              <div className="absolute bottom-4 left-4 right-4">
+                <div className="bg-red-500/90 text-white px-3 py-2 rounded-lg text-xs flex items-center">
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Turn sideways for better swing analysis
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
-      
-      {/* Controls - Fixed bottom section */}
-      <div className="flex-shrink-0 p-8 flex flex-col items-center">
+
+      {/* Recording Button */}
+      <div className="flex justify-center mb-8">
         <Button
           size="lg"
-          className={`w-24 h-24 rounded-full text-white font-bold text-sm ${
+          className={`w-20 h-20 rounded-full transition-all duration-200 ${
             isRecording 
-              ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-              : 'bg-primary hover:bg-primary/90'
+              ? 'bg-red-500 hover:bg-red-600 text-white' 
+              : 'bg-blue-500 hover:bg-blue-600 text-white'
           }`}
-          disabled={!isInitialized || !stream || !!workerError}
+          disabled={!isInitialized || !!workerError}
           onClick={toggleRecording}
         >
-          {isRecording ? 'TAP TO STOP' : 'TAP TO RECORD'}
+          {isRecording ? (
+            <Square className="w-6 h-6" fill="currentColor" />
+          ) : (
+            <Play className="w-8 h-8 ml-1" fill="currentColor" />
+          )}
         </Button>
-        
-        {!isInitialized && !workerError && (
-          <p className="text-white text-sm text-center mt-2">
-            {workerStatus}
-          </p>
-        )}
+      </div>
+
+      {/* Pro Recording Tips */}
+      <div className="bg-blue-50 rounded-2xl p-6">
+        <div className="flex items-center mb-4">
+          <div className="bg-blue-100 rounded-lg p-2 mr-3">
+            <Star className="w-5 h-5 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Pro Recording Tips</h3>
+        </div>
+        <ul className="space-y-3">
+          <li className="flex items-start">
+            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0" />
+            <span className="text-gray-700">Position camera at waist height, 10 feet away</span>
+          </li>
+          <li className="flex items-start">
+            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0" />
+            <span className="text-gray-700">Ensure your entire body is visible in frame</span>
+          </li>
+          <li className="flex items-start">
+            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0" />
+            <span className="text-gray-700">Record in good lighting for best AI analysis</span>
+          </li>
+        </ul>
       </div>
     </div>
   );
