@@ -8,9 +8,9 @@ const corsHeaders = {
 }
 
 function createS3Client() {
-  const region = Deno.env.get('STORAGE_REGION')!
-  const accessKeyId = Deno.env.get('STORAGE_ACCESS_KEY')!
-  const secretAccessKey = Deno.env.get('STORAGE_SECRET_KEY')!
+  const region = Deno.env.get('STORAGE_REGION')
+  const accessKeyId = Deno.env.get('STORAGE_ACCESS_KEY')
+  const secretAccessKey = Deno.env.get('STORAGE_SECRET_KEY')
   const endpoint = Deno.env.get('STORAGE_ENDPOINT')
 
   const config: any = {
@@ -44,7 +44,10 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== UPLOAD URL GENERATION STARTED ===')
+    
     if (req.method !== 'POST') {
+      console.log('Invalid method:', req.method)
       return new Response('Method Not Allowed', { 
         status: 405, 
         headers: corsHeaders 
@@ -52,8 +55,10 @@ serve(async (req) => {
     }
 
     const { filename, contentType, folder = 'videos' } = await req.json()
+    console.log('Request payload:', { filename, contentType, folder })
 
     if (!filename) {
+      console.log('Missing filename')
       return new Response(JSON.stringify({ error: 'filename required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -61,18 +66,39 @@ serve(async (req) => {
     }
 
     if (!contentType) {
+      console.log('Missing contentType')
       return new Response(JSON.stringify({ error: 'contentType required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const bucket = Deno.env.get('STORAGE_BUCKET')!
-    const cdnBase = Deno.env.get('STORAGE_CDN_URL')!
+    // Check environment variables
+    const bucket = Deno.env.get('STORAGE_BUCKET')
+    const cdnBase = Deno.env.get('STORAGE_CDN_URL')
+    const region = Deno.env.get('STORAGE_REGION')
+    const accessKeyId = Deno.env.get('STORAGE_ACCESS_KEY')
+    const secretAccessKey = Deno.env.get('STORAGE_SECRET_KEY')
+    
+    console.log('Environment check:', {
+      bucket: !!bucket,
+      cdnBase: !!cdnBase,
+      region: !!region,
+      accessKeyId: !!accessKeyId,
+      secretAccessKey: !!secretAccessKey
+    })
 
     if (!bucket || !cdnBase) {
       console.error('Missing storage configuration:', { bucket: !!bucket, cdnBase: !!cdnBase })
       return new Response(JSON.stringify({ error: 'Missing storage configuration' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (!region || !accessKeyId || !secretAccessKey) {
+      console.error('Missing AWS credentials:', { region: !!region, accessKeyId: !!accessKeyId, secretAccessKey: !!secretAccessKey })
+      return new Response(JSON.stringify({ error: 'Missing AWS credentials' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -85,7 +111,10 @@ serve(async (req) => {
 
     console.log('Generating upload URL for key:', key)
 
+    console.log('Creating S3 client...')
     const client = createS3Client()
+    
+    console.log('Creating PutObjectCommand...')
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
@@ -93,6 +122,7 @@ serve(async (req) => {
       ACL: 'private', // Keep objects private, serve via CDN
     })
 
+    console.log('Generating presigned URL...')
     // Generate presigned URL with 10 minute expiry
     const uploadUrl = await getSignedUrl(client, command, { expiresIn: 600 })
 
@@ -100,6 +130,8 @@ serve(async (req) => {
     const publicUrl = `${cdnBase.replace(/\/+$/, '')}/${key}`
 
     console.log('Generated upload URL successfully')
+    console.log('Upload URL length:', uploadUrl.length)
+    console.log('Public URL:', publicUrl)
 
     return new Response(JSON.stringify({ uploadUrl, publicUrl, key }), {
       status: 200,
@@ -107,7 +139,14 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Upload URL generation error:', error)
+    console.error('=== UPLOAD URL GENERATION ERROR ===')
+    if (error instanceof Error) {
+      console.error('Error type:', error.constructor.name)
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    } else {
+      console.error('Unknown error:', error)
+    }
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Internal server error' 
     }), {
