@@ -496,8 +496,6 @@ export default function Progress() {
 
 // Score Bar Chart Component - Much more intuitive than dots!
 function ScoreBarChart({ data }: { data: ChartPoint[] }) {
-  console.log('ScoreBarChart data:', data); // Debug log
-  
   if (!data.length) {
     return (
       <div className="flex items-center justify-center h-16">
@@ -507,29 +505,38 @@ function ScoreBarChart({ data }: { data: ChartPoint[] }) {
   }
 
   const recentScores = data.slice(-8); // Show last 8 scores for better trend view
-  const maxScore = Math.max(...recentScores.map(point => point.value), 60); // Min scale of 60 for better visualization
-  const minScore = Math.min(...recentScores.map(point => point.value), 0);
-  const scoreRange = maxScore - minScore || 60;
-
-  console.log('Bar chart stats:', { recentScores: recentScores.length, maxScore, minScore, scoreRange }); // Debug log
+  const maxScore = Math.max(...recentScores.map(point => point.value));
+  const minScore = Math.min(...recentScores.map(point => point.value));
+  const scoreRange = maxScore - minScore || 1; // Prevent division by zero
+  
+  // Use fixed height for the chart area
+  const maxBarHeight = 64; // 64px max height
 
   return (
     <div className="space-y-2">
       {/* Bar Chart */}
-      <div className="flex items-end justify-between h-20 gap-1 bg-white/10 rounded p-2">
+      <div className="flex items-end justify-between gap-1 bg-white/10 rounded p-3" style={{ height: `${maxBarHeight + 20}px` }}>
         {recentScores.map((point, index) => {
-          const height = Math.max(((point.value - minScore) / scoreRange) * 100, 15); // Min 15% height for visibility
+          // Calculate height in pixels with better scaling
+          let barHeight;
+          if (scoreRange === 0) {
+            barHeight = maxBarHeight / 2; // All same scores, use middle height
+          } else {
+            barHeight = Math.max(
+              ((point.value - minScore) / scoreRange) * maxBarHeight,
+              8 // Minimum 8px height for visibility
+            );
+          }
+          
           const isRecent = index >= recentScores.length - 3; // Last 3 are "recent"
           const isImproving = index > 0 && point.value >= recentScores[index - 1].value;
-          
-          console.log(`Bar ${index}: value=${point.value}, height=${height}%`); // Debug log
           
           return (
             <div 
               key={`bar-${point.t}-${index}`} 
               className="flex-1 flex flex-col items-center group relative min-w-[12px]"
             >
-              {/* Score value on hover/focus */}
+              {/* Score value on hover */}
               <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-white bg-black/80 rounded px-2 py-1 mb-1 whitespace-nowrap absolute -top-8 z-10">
                 {point.value}
               </div>
@@ -542,8 +549,7 @@ function ScoreBarChart({ data }: { data: ChartPoint[] }) {
                     : 'bg-white/70 border-white/80 hover:bg-white/90'
                 }`}
                 style={{ 
-                  height: `${height}%`,
-                  minHeight: '12px' // Ensure minimum visible height
+                  height: `${Math.round(barHeight)}px`
                 }}
                 title={`Swing ${index + 1}: ${point.value} points`}
               />
