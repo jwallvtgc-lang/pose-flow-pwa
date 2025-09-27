@@ -19,12 +19,14 @@ const Index = () => {
   
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; current_streak: number | null } | null>(null);
   const [latestSwing, setLatestSwing] = useState<any>(null);
+  const [topDrills, setTopDrills] = useState<Array<{name: string; count: number; description: string}>>([]);
 
   useEffect(() => {
     if (user) {
       loadStats();
       loadUserProfile();
       loadLatestSwing();
+      loadTopDrills();
     } else {
       // Show placeholder data for non-authenticated users
       setStats({
@@ -33,6 +35,10 @@ const Index = () => {
         trendingScore: 64.7,
         isLoading: false
       });
+      setTopDrills([
+        { name: 'Hip Rotation Drill', count: 12, description: 'Fire hips first, hands last' },
+        { name: 'Head Still Drill', count: 8, description: 'Keep your head stable for consistent contact' }
+      ]);
     }
   }, [user]);
 
@@ -118,6 +124,73 @@ const Index = () => {
       setLatestSwing(swing);
     } catch (error) {
       console.error('Failed to load latest swing:', error);
+    }
+  };
+
+  const loadTopDrills = async () => {
+    try {
+      // Get swings from the last week
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
+      const { data: swings, error } = await supabase
+        .from('swings')
+        .select('drill_id, drill_data')
+        .gte('created_at', oneWeekAgo.toISOString())
+        .not('drill_id', 'is', null)
+        .or('drill_data.is.not.null');
+
+      if (error) {
+        console.error('Error loading drill data:', error);
+        return;
+      }
+
+      // Count drill occurrences
+      const drillCount: Record<string, {count: number; description: string}> = {};
+      
+      for (const swing of swings || []) {
+        let drillName = '';
+        let description = '';
+        
+        if (swing.drill_data && typeof swing.drill_data === 'object' && swing.drill_data !== null) {
+          // Use embedded drill data - type guard for drill_data
+          const drillData = swing.drill_data as { name?: string; how_to?: string };
+          if (drillData.name) {
+            drillName = drillData.name;
+            description = drillData.how_to || 'Improve your swing mechanics';
+          }
+        } else if (swing.drill_id) {
+          // For drill_id, we'd need to join with drills table
+          // For now, we'll focus on embedded drill_data since that's what fallback coaching uses
+          continue;
+        }
+        
+        if (drillName) {
+          if (drillCount[drillName]) {
+            drillCount[drillName].count++;
+          } else {
+            drillCount[drillName] = {
+              count: 1,
+              description: description.length > 50 ? description.substring(0, 50) + '...' : description
+            };
+          }
+        }
+      }
+      
+      // Sort by count and take top 2
+      const sortedDrills = Object.entries(drillCount)
+        .map(([name, data]) => ({
+          name,
+          count: data.count,
+          description: data.description
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 2);
+      
+      setTopDrills(sortedDrills);
+      
+    } catch (error) {
+      console.error('Failed to load top drills:', error);
     }
   };
 
@@ -209,7 +282,7 @@ const Index = () => {
             <Link to={user ? "/analysis" : "/auth"}>
               <Button className="w-full bg-white/15 hover:bg-white/25 text-white border-0 rounded-2xl h-16 backdrop-blur-sm transition-all duration-300 hover:scale-105 shadow-lg">
                 <Camera className="w-6 h-6 mr-3" />
-                <span className="font-semibold">Quick Record</span>
+                <span className="font-semibold">Record</span>
               </Button>
             </Link>
             <Link to={user ? "/progress" : "/auth"}>
@@ -343,6 +416,63 @@ const Index = () => {
                 <Link to="/analysis">
                   <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm">
                     Record Swing
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          )}
+        </div>
+
+        {/* Top Drills Section */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-5">
+            <h3 className="text-2xl font-black text-gray-900">Top Drills</h3>
+            <div className="text-gray-500 text-sm">This week</div>
+          </div>
+          
+          {topDrills.length > 0 ? (
+            <div className="space-y-4">
+              {topDrills.map((drill, index) => (
+                <Card key={drill.name} className="p-5 bg-white rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md ${
+                      index === 0 
+                        ? 'bg-gradient-to-br from-purple-400 to-purple-600' 
+                        : 'bg-gradient-to-br from-pink-400 to-pink-600'
+                    }`}>
+                      <span className="text-white font-bold text-lg">
+                        #{index + 1}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-lg font-bold text-gray-900">
+                          {drill.name}
+                        </h4>
+                        <div className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full font-medium">
+                          {drill.count} recommendations
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        {drill.description}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="p-6 bg-white rounded-3xl border-0 shadow-lg">
+              <div className="text-center py-6">
+                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Activity className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-gray-600 text-sm mb-4">
+                  {user ? 'No drill recommendations yet. Record more swings to see your top recommended drills!' : 'Sign up to see your personalized drill recommendations'}
+                </p>
+                <Link to={user ? "/analysis" : "/auth"}>
+                  <Button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm">
+                    {user ? 'Record Swing' : 'Get Started'}
                   </Button>
                 </Link>
               </div>
