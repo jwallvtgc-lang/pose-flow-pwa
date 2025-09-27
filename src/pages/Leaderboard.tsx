@@ -39,21 +39,14 @@ export default function Leaderboard() {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      // Query for leaderboard data
+      // Query for leaderboard data - work directly with user data
       const { data: swingData, error } = await supabase
         .from('swings')
         .select(`
           id,
           score_phase1,
           created_at,
-          session_id,
-          sessions!inner(
-            athlete_id,
-            athletes(
-              user_id,
-              name
-            )
-          )
+          session_id
         `)
         .gte('created_at', thirtyDaysAgo.toISOString())
         .not('score_phase1', 'is', null)
@@ -64,15 +57,19 @@ export default function Leaderboard() {
         return;
       }
 
-      // Also get user profiles for team/position info
+      // Get all user profiles for team/position info
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('id, full_name, current_team, primary_position');
 
       if (profileError) {
-        console.error('Error loading profiles:', error);
+        console.error('Error loading profiles:', profileError);
       }
 
+      // Since we don't have proper athlete-user linkage, we'll show the current user's swings
+      // This is a temporary solution until the athlete linking is fixed  
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // Process the data to create leaderboards
       const userStats = new Map<string, {
         user_id: string;
@@ -81,27 +78,27 @@ export default function Leaderboard() {
         primary_position?: string;
         scores: number[];
       }>();
+      
+      if (!user) {
+        console.log('No authenticated user found');
+        return;
+      }
 
-      // Group swings by user
-      swingData?.forEach((swing: any) => {
-        if (!swing.sessions?.athletes?.user_id) return;
+      const currentUserProfile = profiles?.find(p => p.id === user.id);
+      
+      if (currentUserProfile && swingData && swingData.length > 0) {
+        // For now, attribute all swings to the current authenticated user
+        // since we can't properly link swings to users through athletes table
+        const validScores = swingData.map(swing => swing.score_phase1).filter((score): score is number => score !== null);
         
-        const userId = swing.sessions.athletes.user_id;
-        const profile = profiles?.find(p => p.id === userId);
-        const userName = profile?.full_name || swing.sessions.athletes.name || 'Unknown Player';
-        
-        if (!userStats.has(userId)) {
-          userStats.set(userId, {
-            user_id: userId,
-            full_name: userName,
-            current_team: profile?.current_team || undefined,
-            primary_position: profile?.primary_position || undefined,
-            scores: []
-          });
-        }
-        
-        userStats.get(userId)!.scores.push(swing.score_phase1);
-      });
+        userStats.set(user.id, {
+          user_id: user.id,
+          full_name: currentUserProfile.full_name || 'Unknown Player',
+          current_team: currentUserProfile?.current_team || undefined,
+          primary_position: currentUserProfile?.primary_position || undefined,
+          scores: validScores
+        });
+      }
 
       // Create leaderboard entries
       const entries: LeaderboardEntry[] = Array.from(userStats.values()).map(user => ({
