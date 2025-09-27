@@ -572,16 +572,14 @@ export default function SwingDetail() {
               </div>
               
               <div className="bg-blue-50 rounded-2xl p-4 mb-4">
-                <p className="text-blue-800 font-medium text-sm leading-relaxed">
-                  {aiCoaching.encouragement.length > 100 ? 
-                    `${aiCoaching.encouragement.substring(0, 100)}...` : 
-                    aiCoaching.encouragement}
+                <p className="text-blue-800 font-medium text-xs leading-relaxed">
+                  {aiCoaching.encouragement}
                 </p>
               </div>
 
               <div className="space-y-3">
                 <h4 className="font-anton font-black text-gray-900 mb-2">Focus Areas:</h4>
-                {aiCoaching.cues.slice(0, 2).map((cue, index) => (
+                {aiCoaching.cues.map((cue, index) => (
                   <div key={index} className="bg-white rounded-2xl p-3 border border-gray-200">
                     <div className="flex items-start gap-3">
                       <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -589,10 +587,8 @@ export default function SwingDetail() {
                       </div>
                       <div>
                         <h5 className="font-bold text-gray-900 mb-1">{cue}</h5>
-                        <p className="text-gray-600 text-sm leading-relaxed">
-                          {aiCoaching.explanations[index] && aiCoaching.explanations[index].length > 80 ? 
-                            `${aiCoaching.explanations[index].substring(0, 80)}...` : 
-                            aiCoaching.explanations[index]}
+                        <p className="text-gray-600 text-xs leading-relaxed">
+                          {aiCoaching.explanations[index]}
                         </p>
                       </div>
                     </div>
