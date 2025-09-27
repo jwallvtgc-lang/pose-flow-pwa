@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@4.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -154,16 +153,30 @@ const handler = async (req: Request): Promise<Response> => {
     const fromName = requestData.fromName || 'SwingSense User';
     const htmlContent = formatSwingAnalysisEmail(requestData);
 
-    const emailResponse = await resend.emails.send({
-      from: "SwingSense <analysis@resend.dev>",
-      to: [requestData.toEmail],
-      subject: `🏟️ ${fromName}'s Swing Analysis Report - Score: ${requestData.swingData.score}/100`,
-      html: htmlContent,
+    const emailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: "SwingSense <analysis@resend.dev>",
+        to: [requestData.toEmail],
+        subject: `🏟️ ${fromName}'s Swing Analysis Report - Score: ${requestData.swingData.score}/100`,
+        html: htmlContent,
+      }),
     });
 
-    console.log("Swing analysis email sent successfully:", emailResponse);
+    if (!emailResponse.ok) {
+      const errorData = await emailResponse.text();
+      throw new Error(`Resend API error: ${emailResponse.status} - ${errorData}`);
+    }
 
-    return new Response(JSON.stringify({ success: true, emailId: emailResponse.data?.id }), {
+    const responseData = await emailResponse.json();
+
+    console.log("Swing analysis email sent successfully:", responseData);
+
+    return new Response(JSON.stringify({ success: true, emailId: responseData.id }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
