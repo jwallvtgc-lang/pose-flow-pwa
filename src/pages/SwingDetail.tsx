@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Play, Loader2, Target, TrendingUp, AlertCircle, Zap, Award, Share2, Mail, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
@@ -496,84 +495,7 @@ export default function SwingDetail() {
             </div>
           </Card>
 
-          {/* AI Coach Feedback */}
-          {isLoadingCoaching ? (
-            <Card className="p-6 rounded-3xl">
-              <div className="flex items-center gap-3 mb-4">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                <h3 className="text-lg font-anton font-black">Getting your coach feedback...</h3>
-              </div>
-            </Card>
-          ) : aiCoaching && (
-            <Card className="p-6 rounded-3xl border-l-4 border-primary">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-anton font-black text-gray-900">Your Coach Says</h3>
-                  <p className="text-sm text-gray-600">AI-powered feedback just for you</p>
-                </div>
-              </div>
-              
-              <div className="bg-blue-50 rounded-2xl p-4 mb-4">
-                <p className="text-blue-800 font-medium text-sm leading-relaxed">
-                  {aiCoaching.encouragement}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-anton font-black text-gray-900 mb-3">Focus Areas:</h4>
-                {aiCoaching.cues.map((cue, index) => (
-                  <div key={index} className="bg-white rounded-2xl p-4 border border-gray-200">
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-white text-xs font-bold">{index + 1}</span>
-                      </div>
-                      <div>
-                        <h5 className="font-bold text-gray-900 mb-1">{cue}</h5>
-                        <p className="text-gray-600 text-sm leading-relaxed">
-                          {aiCoaching.explanations[index]}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {/* Recommended Drill */}
-          {drill && (
-            <Card className="p-6 rounded-3xl border-l-4 border-green-500">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-green-500 rounded-2xl flex items-center justify-center">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-anton font-black text-gray-900">Practice Drill</h3>
-                  <p className="text-sm text-gray-600">Recommended for you</p>
-                </div>
-              </div>
-              
-              <div className="bg-green-50 rounded-2xl p-4">
-                <h4 className="font-bold text-green-900 mb-2">{drill.name}</h4>
-                {drill.how_to && (
-                  <p className="text-green-800 text-sm leading-relaxed mb-2">{drill.how_to}</p>
-                )}
-                {drill.equipment && (
-                  <div className="flex items-center gap-2">
-                    <Award className="w-4 h-4 text-green-600" />
-                    <span className="text-green-700 text-xs font-medium">
-                      Equipment: {drill.equipment}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </Card>
-          )}
-
-          {/* Video Playback */}
+          {/* Video Playback - Move to top */}
           {swing.video_url && (
             <Card className="p-6 rounded-3xl">
               <h3 className="text-lg font-anton font-black text-gray-900 mb-4">Your Swing Video</h3>
@@ -629,27 +551,106 @@ export default function SwingDetail() {
             </Card>
           )}
 
-          {/* Swing Metrics */}
-          <Card className="p-6 rounded-3xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-purple-500 rounded-2xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
+          {/* AI Coach Feedback - Shortened */}
+          {isLoadingCoaching ? (
+            <Card className="p-6 rounded-3xl">
+              <div className="flex items-center gap-3 mb-4">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <h3 className="text-lg font-anton font-black">Getting your coach feedback...</h3>
               </div>
-              <div>
-                <h3 className="text-lg font-anton font-black text-gray-900">Your Numbers</h3>
-                <p className="text-sm text-gray-600">How you're performing</p>
+            </Card>
+          ) : aiCoaching && (
+            <Card className="p-6 rounded-3xl border-l-4 border-primary">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-anton font-black text-gray-900">Your Coach Says</h3>
+                  <p className="text-sm text-gray-600">AI-powered feedback just for you</p>
+                </div>
               </div>
+              
+              <div className="bg-blue-50 rounded-2xl p-4 mb-4">
+                <p className="text-blue-800 font-medium text-sm leading-relaxed">
+                  {aiCoaching.encouragement.length > 100 ? 
+                    `${aiCoaching.encouragement.substring(0, 100)}...` : 
+                    aiCoaching.encouragement}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-anton font-black text-gray-900 mb-2">Focus Areas:</h4>
+                {aiCoaching.cues.slice(0, 2).map((cue, index) => (
+                  <div key={index} className="bg-white rounded-2xl p-3 border border-gray-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-white text-xs font-bold">{index + 1}</span>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-gray-900 mb-1">{cue}</h5>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                          {aiCoaching.explanations[index] && aiCoaching.explanations[index].length > 80 ? 
+                            `${aiCoaching.explanations[index].substring(0, 80)}...` : 
+                            aiCoaching.explanations[index]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Recommended Drill */}
+          {drill && (
+            <Card className="p-6 rounded-3xl border-l-4 border-green-500">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-green-500 rounded-2xl flex items-center justify-center">
+                  <Target className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-anton font-black text-gray-900">Practice Drill</h3>
+                  <p className="text-sm text-gray-600">Recommended for you</p>
+                </div>
+              </div>
+              
+              <div className="bg-green-50 rounded-2xl p-4">
+                <h4 className="font-bold text-green-900 mb-2">{drill.name}</h4>
+                {drill.how_to && (
+                  <p className="text-green-800 text-sm leading-relaxed mb-2">{drill.how_to}</p>
+                )}
+                {drill.equipment && (
+                  <div className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-green-600" />
+                    <span className="text-green-700 text-xs font-medium">
+                      Equipment: {drill.equipment}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+
+          {/* Swing Metrics - Compact Version */}
+          <Card className="p-4 rounded-3xl">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 bg-purple-500 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-base font-anton font-black text-gray-900">Your Numbers</h3>
             </div>
             
             {metrics.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <TrendingUp className="w-8 h-8 text-gray-400" />
+              <div className="text-center py-4">
+                <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-2">
+                  <TrendingUp className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-gray-600">No metrics available for this swing</p>
+                <p className="text-gray-600 text-sm">No metrics available for this swing</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-2">
                 {Object.entries(metricSpecs).map(([metricKey]) => {
                   const metric = metrics.find(m => m.metric === metricKey);
                   const displayName = metricDisplayNames()[metricKey] || metricKey.replace(/_/g, ' ');
@@ -661,30 +662,26 @@ export default function SwingDetail() {
                   const status = getMetricStatus(metricKey, value);
                   
                   return (
-                    <div key={metricKey} className="bg-white rounded-2xl p-4 border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-bold text-gray-900 text-sm">{displayName}</h4>
+                    <div key={metricKey} className="bg-white rounded-xl p-3 border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 text-sm">{displayName}</h4>
+                          <div className="flex items-baseline gap-2 mt-1">
+                            <span className="text-lg font-anton font-black text-gray-900">
+                              {value.toFixed(1)}{unit}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Target: {formatTargetRange(metricKey)}
+                            </span>
+                          </div>
+                        </div>
                         <Badge 
                           variant="outline" 
-                          className={`${status.color} border-current rounded-full text-xs`}
+                          className={`${status.color} border-current rounded-full text-xs ml-2`}
                         >
                           {status.status}
                         </Badge>
                       </div>
-                      
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-2xl font-anton font-black text-gray-900">
-                          {value.toFixed(1)} {unit}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          Target: {formatTargetRange(metricKey)}
-                        </span>
-                      </div>
-                      
-                      <Progress 
-                        value={status.progress} 
-                        className="h-2 bg-gray-200"
-                      />
                     </div>
                   );
                 })}
