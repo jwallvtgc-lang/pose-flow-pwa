@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
 
+type TimeFilter = 'week' | 'month' | 'all';
+
 interface Swing {
   id: string;
   created_at: string | null;
@@ -33,22 +35,42 @@ export default function Progress() {
   const [metrics, setMetrics] = useState<SwingMetric[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
 
   useEffect(() => {
     loadProgressData();
-  }, []);
+  }, [timeFilter]);
 
   const loadProgressData = async () => {
     try {
       setIsLoading(true);
       setError('');
 
-      // Fetch recent swings
-      const { data: swingsData, error: swingsError } = await supabase
+      // Calculate date filter
+      const now = new Date();
+      let dateFilter: string | null = null;
+      
+      if (timeFilter === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        dateFilter = weekAgo.toISOString();
+      } else if (timeFilter === 'month') {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        dateFilter = monthAgo.toISOString();
+      }
+
+      // Fetch swings with date filter
+      let query = supabase
         .from('swings')
         .select('id, created_at, score_phase1, cues, drill_id')
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .order('created_at', { ascending: false });
+
+      if (dateFilter) {
+        query = query.gte('created_at', dateFilter);
+      } else {
+        query = query.limit(50); // Limit for 'all' to avoid performance issues
+      }
+
+      const { data: swingsData, error: swingsError } = await query;
 
       if (swingsError) throw swingsError;
       const processedSwings = (swingsData || []).map(swing => ({
@@ -222,7 +244,7 @@ export default function Progress() {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/')}
               className="h-8 w-8 p-0"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -260,17 +282,17 @@ export default function Progress() {
     return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 max-w-2xl">
-        <div className="flex items-center gap-3 mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate(-1)}
-            className="h-8 w-8 p-0"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-anton font-black">Progress</h1>
-        </div>
+          <div className="flex items-center gap-3 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/')}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-2xl font-anton font-black">Progress</h1>
+          </div>
           <Card className="p-8 text-center">
             <TrendingUp className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-anton font-black mb-2">No Swings Yet</h3>
@@ -295,12 +317,42 @@ export default function Progress() {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/')}
               className="h-8 w-8 p-0"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <h1 className="text-2xl font-anton font-black">Progress</h1>
+          </div>
+
+          {/* Time Filter Buttons */}
+          <div className="flex justify-center mb-6">
+            <div className="bg-muted rounded-lg p-1 flex gap-1">
+              <Button
+                variant={timeFilter === 'week' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setTimeFilter('week')}
+                className="text-sm px-4"
+              >
+                Week
+              </Button>
+              <Button
+                variant={timeFilter === 'month' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setTimeFilter('month')}
+                className="text-sm px-4"
+              >
+                Month
+              </Button>
+              <Button
+                variant={timeFilter === 'all' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setTimeFilter('all')}
+                className="text-sm px-4"
+              >
+                All
+              </Button>
+            </div>
           </div>
 
         <div className="space-y-6">
