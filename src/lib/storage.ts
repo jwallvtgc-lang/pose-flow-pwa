@@ -1,49 +1,59 @@
-import { supabase } from '@/integrations/supabase/client';
-
-interface UploadVideoResult {
-  urlOrPath: string;
-}
+// src/lib/storage.ts
+/**
+ * Upload a video Blob by:
+ *  1) asking our API for a presigned PUT URL (signed with the same Content-Type we will send)
+ *  2) PUT the Blob to that URL
+ *  3) return a public URL to save alongside the swing
+ */
 
 export async function uploadVideo({
   blob,
-  athlete_id,
-  client_request_id
+  client_request_id,
+  preferredName = 'swing',
 }: {
   blob: Blob;
-  athlete_id?: string;
   client_request_id: string;
-}): Promise<UploadVideoResult> {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  
-  const athleteFolder = athlete_id || 'anon';
-  const path = `swings/${athleteFolder}/${year}/${month}/${client_request_id}.mp4`;
+  preferredName?: string;
+}) {
+  // Decide Content-Type: iOS often gives video/quicktime; both are fine if signed the same way.
+  // If your bucket lifecycle needs MP4, you can transcode later; for upload just pass through.
+  const contentType = blob.type || 'video/mp4';
 
-  const { data, error } = await supabase.storage
-    .from('swings')
-    .upload(path, blob, {
-      contentType: 'video/mp4',
-      upsert: false
-    });
+  // 1) Ask API for presigned URL
+  const resp = await fetch('/api/upload-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      filename: `${preferredName}-${client_request_id}`,
+      contentType,
+      // optional: folder hint
+      folder: 'videos',
+    }),
+  });
 
-  if (error) {
-    throw new Error(`Video upload failed: ${error.message}`);
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`Failed to get upload URL (${resp.status}): ${text}`);
   }
 
-  // Since the bucket is private, we return the path for later signed URL generation
-  // If bucket was public, we'd use: supabase.storage.from('swings').getPublicUrl(path)
-  return { urlOrPath: data.path };
-}
+  const { uploadUrl, publicUrl, key } = (await resp.json()) as {
+    uploadUrl: string;
+    publicUrl: string;
+    key: string;
+  };
 
-export async function getVideoSignedUrl(path: string): Promise<string> {
-  const { data, error } = await supabase.storage
-    .from('swings')
-    .createSignedUrl(path, 3600); // 1 hour expiry
+  // 2) PUT the blob with the SAME Content-Type used for signing
+  const put = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: blob,
+  });
 
-  if (error) {
-    throw new Error(`Failed to get signed URL: ${error.message}`);
+  if (!put.ok) {
+    const text = await put.text().catch(() => '');
+    throw new Error(`Upload failed (${put.status}): ${text}`);
   }
 
-  return data.signedUrl;
+  // 3) Return the public URL (via CDN if configured)
+  return { urlOrPath: publicUrl, key };
 }
