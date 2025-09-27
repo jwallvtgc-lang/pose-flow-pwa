@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Loader2, Target, TrendingUp, AlertCircle, Zap, Award, Share2, Send } from 'lucide-react';
+import { ArrowLeft, Play, Loader2, Target, TrendingUp, AlertCircle, Zap, Award, Share2, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -62,7 +62,7 @@ export default function SwingDetail() {
   
   // Share functionality state
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [sharePhoneNumber, setSharePhoneNumber] = useState('');
+  const [shareEmail, setShareEmail] = useState('');
   const [shareName, setShareName] = useState('');
   const [shareMessage, setShareMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -89,8 +89,15 @@ export default function SwingDetail() {
   };
 
   const handleShareSwing = async () => {
-    if (!sharePhoneNumber.trim()) {
-      toast.error('Please enter a phone number');
+    if (!shareEmail.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(shareEmail.trim())) {
+      toast.error('Please enter a valid email address');
       return;
     }
 
@@ -119,9 +126,9 @@ export default function SwingDetail() {
       };
 
       // Call the edge function
-      const { error } = await supabase.functions.invoke('send-swing-details', {
+      const { error } = await supabase.functions.invoke('send-swing-email', {
         body: {
-          toPhoneNumber: sharePhoneNumber.trim(),
+          toEmail: shareEmail.trim(),
           fromName: shareName.trim() || undefined,
           swingData,
           message: shareMessage.trim() || undefined
@@ -130,15 +137,15 @@ export default function SwingDetail() {
 
       if (error) throw error;
 
-      toast.success('Swing analysis sent via SMS!');
+      toast.success('Swing analysis sent via email!');
       setIsShareDialogOpen(false);
-      setSharePhoneNumber('');
+      setShareEmail('');
       setShareName('');
       setShareMessage('');
       
     } catch (err) {
       console.error('Failed to share swing:', err);
-      toast.error('Failed to send SMS. Please try again.');
+      toast.error('Failed to send email. Please try again.');
     } finally {
       setIsSending(false);
     }
@@ -437,19 +444,19 @@ export default function SwingDetail() {
                         Share Swing Analysis
                       </DialogTitle>
                       <DialogDescription>
-                        Send this detailed swing analysis to a coach, parent, or friend via text message.
+                        Send this detailed swing analysis to a coach, parent, or friend via email.
                       </DialogDescription>
                     </DialogHeader>
                     
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="sharePhoneNumber" className="font-medium">Phone Number *</Label>
+                        <Label htmlFor="shareEmail" className="font-medium">Email Address *</Label>
                         <Input
-                          id="sharePhoneNumber"
-                          type="tel"
-                          placeholder="+1 (555) 123-4567"
-                          value={sharePhoneNumber}
-                          onChange={(e) => setSharePhoneNumber(e.target.value)}
+                          id="shareEmail"
+                          type="email"
+                          placeholder="coach@example.com"
+                          value={shareEmail}
+                          onChange={(e) => setShareEmail(e.target.value)}
                           className="rounded-2xl mt-1"
                         />
                       </div>
@@ -495,10 +502,10 @@ export default function SwingDetail() {
                             Sending...
                           </>
                         ) : (
-                          <>
-                            <Send className="w-4 h-4 mr-2" />
-                            Send SMS
-                          </>
+                        <>
+                          <Mail className="w-4 h-4 mr-2" />
+                          Send Email
+                        </>
                         )}
                       </Button>
                     </DialogFooter>
