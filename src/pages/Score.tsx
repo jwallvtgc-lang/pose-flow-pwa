@@ -267,7 +267,6 @@ export default function Score() {
         try {
           const { urlOrPath } = await uploadVideo({
             blob: videoBlob,
-            athlete_id: undefined,
             client_request_id: clientRequestId
           });
           videoUrl = urlOrPath;

@@ -84,7 +84,6 @@ export default function SwingAnalysis() {
           addDebugLog('Uploading video...');
           const uploadResult = await uploadVideo({
             blob: videoBlob,
-            athlete_id: user?.id,
             client_request_id: clientRequestId
           });
           videoUrl = uploadResult.urlOrPath;

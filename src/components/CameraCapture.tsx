@@ -69,7 +69,7 @@ export function CameraCapture({
         URL.revokeObjectURL(url);
         resolve(v.duration || 0);
       };
-      v.onerror = (e) => {
+      v.onerror = () => {
         URL.revokeObjectURL(url);
         reject(new Error('Could not read video metadata'));
       };
