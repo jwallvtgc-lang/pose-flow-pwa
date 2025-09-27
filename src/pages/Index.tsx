@@ -300,7 +300,7 @@ const Index = () => {
                     </div>
                   )}
                   
-                  <Link to={user ? "/recent-swings" : "/auth"} className="inline-flex items-center text-blue-600 text-sm font-medium mt-3 hover:text-blue-700">
+                  <Link to={user ? `/swing/${latestSwing.id}` : "/auth"} className="inline-flex items-center text-blue-600 text-sm font-medium mt-3 hover:text-blue-700">
                     View Detailed Analysis →
                   </Link>
                 </div>
