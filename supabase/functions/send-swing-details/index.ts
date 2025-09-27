@@ -6,8 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface SwingShareRequest {
-  toEmail: string;
+interface SwingSMSRequest {
+  toPhoneNumber: string;
   fromName?: string;
   swingData: {
     id: string;
@@ -27,121 +27,100 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { toEmail, fromName, swingData, message }: SwingShareRequest = await req.json();
+    const { toPhoneNumber, fromName, swingData, message }: SwingSMSRequest = await req.json();
+
+    // Validate phone number format (basic validation)
+    if (!toPhoneNumber || !/^\+?[1-9]\d{1,14}$/.test(toPhoneNumber.replace(/[\s\-\(\)]/g, ''))) {
+      throw new Error("Invalid phone number format");
+    }
 
     const getScoreLabel = (score: number) => {
-      if (score >= 80) return { label: 'Excellent', color: '#22c55e' };
-      if (score >= 60) return { label: 'Good', color: '#eab308' };
-      return { label: 'Needs Work', color: '#ef4444' };
+      if (score >= 80) return 'Excellent';
+      if (score >= 60) return 'Good';
+      return 'Needs Work';
     };
 
-    const scoreInfo = getScoreLabel(swingData.score);
+    const scoreLabel = getScoreLabel(swingData.score);
 
-    const metricsHtml = swingData.metrics.map(metric => `
-      <tr style="border-bottom: 1px solid #e5e7eb;">
-        <td style="padding: 8px; font-weight: 500;">${metric.name}</td>
-        <td style="padding: 8px; text-align: right;">${metric.value.toFixed(1)} ${metric.unit}</td>
-        <td style="padding: 8px; text-align: right; color: #6b7280; font-size: 12px;">${metric.target}</td>
-      </tr>
-    `).join('');
+    // Create a concise SMS message
+    const topMetrics = swingData.metrics.slice(0, 3);
+    const topCues = swingData.cues.slice(0, 2);
+    
+    let smsMessage = `🏏 Swing Analysis from ${fromName || 'teammate'}\n\n`;
+    smsMessage += `Score: ${swingData.score}/100 (${scoreLabel})\n`;
+    smsMessage += `Date: ${swingData.date}\n\n`;
+    
+    if (topCues.length > 0) {
+      smsMessage += `Focus Areas:\n`;
+      topCues.forEach((cue, index) => {
+        smsMessage += `• ${cue}\n`;
+      });
+      smsMessage += `\n`;
+    }
+    
+    if (topMetrics.length > 0) {
+      smsMessage += `Key Metrics:\n`;
+      topMetrics.forEach((metric) => {
+        smsMessage += `• ${metric.name}: ${metric.value.toFixed(1)} ${metric.unit}\n`;
+      });
+      smsMessage += `\n`;
+    }
 
-    const cuesHtml = swingData.cues.map(cue => `
-      <li style="margin-bottom: 4px; color: #374151;">${cue}</li>
-    `).join('');
+    if (swingData.drill) {
+      smsMessage += `Recommended Drill: ${swingData.drill.name}\n\n`;
+    }
 
-    const drillHtml = swingData.drill ? `
-      <div style="margin-top: 24px; padding: 16px; background-color: #f9fafb; border-radius: 8px; border-left: 4px solid #3b82f6;">
-        <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">Recommended Drill</h3>
-        <h4 style="margin: 0 0 8px 0; font-weight: 600; color: #374151;">${swingData.drill.name}</h4>
-        <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">${swingData.drill.instructions}</p>
-      </div>
-    ` : '';
+    if (message) {
+      smsMessage += `Personal note: "${message}"\n\n`;
+    }
 
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Swing Analysis Results</title>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background-color: #f3f4f6;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-            
-            <!-- Header -->
-            <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 24px; text-align: center;">
-              <h1 style="margin: 0; font-size: 24px; font-weight: bold;">Swing Analysis Results</h1>
-              <p style="margin: 8px 0 0 0; opacity: 0.9;">Shared by ${fromName || 'A teammate'}</p>
-            </div>
+    smsMessage += `Keep swinging! 🥎`;
 
-            <!-- Content -->
-            <div style="padding: 24px;">
-              
-              <!-- Personal Message -->
-              ${message ? `
-                <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
-                  <p style="margin: 0; color: #92400e; font-style: italic;">"${message}"</p>
-                </div>
-              ` : ''}
+    // Format phone number for Twilio (ensure it starts with +)
+    let formattedPhoneNumber = toPhoneNumber.replace(/[\s\-\(\)]/g, '');
+    if (!formattedPhoneNumber.startsWith('+')) {
+      // Assume US number if no country code
+      formattedPhoneNumber = '+1' + formattedPhoneNumber;
+    }
 
-              <!-- Score Section -->
-              <div style="text-align: center; margin-bottom: 32px;">
-                <div style="display: inline-block; background-color: ${scoreInfo.color}; color: white; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; margin-bottom: 8px;">
-                  ${swingData.score}
-                </div>
-                <div style="color: ${scoreInfo.color}; font-weight: 600; font-size: 18px;">${scoreInfo.label}</div>
-                <div style="color: #6b7280; font-size: 14px; margin-top: 4px;">${swingData.date}</div>
-              </div>
+    // Send SMS using Twilio
+    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const fromPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
 
-              <!-- Focus Areas -->
-              ${swingData.cues.length > 0 ? `
-                <div style="margin-bottom: 32px;">
-                  <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">Focus Areas</h3>
-                  <ul style="margin: 0; padding-left: 20px; color: #374151;">
-                    ${cuesHtml}
-                  </ul>
-                </div>
-              ` : ''}
+    if (!accountSid || !authToken || !fromPhoneNumber) {
+      throw new Error('Missing Twilio configuration');
+    }
 
-              <!-- Metrics Table -->
-              <div style="margin-bottom: 32px;">
-                <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">Swing Metrics</h3>
-                <table style="width: 100%; border-collapse: collapse; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                  <thead>
-                    <tr style="background-color: #f9fafb;">
-                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Metric</th>
-                      <th style="padding: 12px; text-align: right; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Value</th>
-                      <th style="padding: 12px; text-align: right; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Target</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${metricsHtml}
-                  </tbody>
-                </table>
-              </div>
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const credentials = btoa(`${accountSid}:${authToken}`);
 
-              <!-- Drill Recommendation -->
-              ${drillHtml}
+    const twilioResponse = await fetch(twilioUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        To: formattedPhoneNumber,
+        From: fromPhoneNumber,
+        Body: smsMessage,
+      }),
+    });
 
-              <!-- Footer -->
-              <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
-                <p style="margin: 0;">This analysis was generated by your swing analysis app.</p>
-                <p style="margin: 8px 0 0 0;">Keep practicing and improving your swing!</p>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    const twilioData = await twilioResponse.json();
 
-    // Since Resend is not available, we'll return a success response
-    // In production, you would implement actual email sending
-    console.log("Email would be sent to:", toEmail);
-    console.log("Email content prepared successfully");
+    if (!twilioResponse.ok) {
+      console.error('Twilio error:', twilioData);
+      throw new Error(`Twilio error: ${twilioData.message || 'Failed to send SMS'}`);
+    }
+
+    console.log('SMS sent successfully:', twilioData.sid);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "Email functionality not configured. In production, this would send the email." 
+      message: "SMS sent successfully!",
+      messageSid: twilioData.sid
     }), {
       status: 200,
       headers: {

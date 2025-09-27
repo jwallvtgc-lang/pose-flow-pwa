@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Loader2, Target, TrendingUp, AlertCircle, Zap, Award, Share2, Mail, Send } from 'lucide-react';
+import { ArrowLeft, Play, Loader2, Target, TrendingUp, AlertCircle, Zap, Award, Share2, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -62,7 +62,7 @@ export default function SwingDetail() {
   
   // Share functionality state
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [shareEmail, setShareEmail] = useState('');
+  const [sharePhoneNumber, setSharePhoneNumber] = useState('');
   const [shareName, setShareName] = useState('');
   const [shareMessage, setShareMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -89,8 +89,8 @@ export default function SwingDetail() {
   };
 
   const handleShareSwing = async () => {
-    if (!shareEmail.trim()) {
-      toast.error('Please enter an email address');
+    if (!sharePhoneNumber.trim()) {
+      toast.error('Please enter a phone number');
       return;
     }
 
@@ -119,9 +119,9 @@ export default function SwingDetail() {
       };
 
       // Call the edge function
-      const { error } = await supabase.functions.invoke('send-swing-analysis', {
+      const { error } = await supabase.functions.invoke('send-swing-details', {
         body: {
-          toEmail: shareEmail.trim(),
+          toPhoneNumber: sharePhoneNumber.trim(),
           fromName: shareName.trim() || undefined,
           swingData,
           message: shareMessage.trim() || undefined
@@ -130,15 +130,15 @@ export default function SwingDetail() {
 
       if (error) throw error;
 
-      toast.success('Swing analysis sent successfully!');
+      toast.success('Swing analysis sent via SMS!');
       setIsShareDialogOpen(false);
-      setShareEmail('');
+      setSharePhoneNumber('');
       setShareName('');
       setShareMessage('');
       
     } catch (err) {
       console.error('Failed to share swing:', err);
-      toast.error('Failed to send swing analysis. Please try again.');
+      toast.error('Failed to send SMS. Please try again.');
     } finally {
       setIsSending(false);
     }
@@ -420,23 +420,23 @@ export default function SwingDetail() {
                   <DialogContent className="sm:max-w-md rounded-3xl">
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-2 font-anton font-black">
-                        <Mail className="w-5 h-5" />
+                        <Share2 className="w-5 h-5" />
                         Share Swing Analysis
                       </DialogTitle>
                       <DialogDescription>
-                        Send this detailed swing analysis to a coach, parent, or friend via email.
+                        Send this detailed swing analysis to a coach, parent, or friend via text message.
                       </DialogDescription>
                     </DialogHeader>
                     
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="shareEmail" className="font-medium">Email Address *</Label>
+                        <Label htmlFor="sharePhoneNumber" className="font-medium">Phone Number *</Label>
                         <Input
-                          id="shareEmail"
-                          type="email"
-                          placeholder="coach@example.com"
-                          value={shareEmail}
-                          onChange={(e) => setShareEmail(e.target.value)}
+                          id="sharePhoneNumber"
+                          type="tel"
+                          placeholder="+1 (555) 123-4567"
+                          value={sharePhoneNumber}
+                          onChange={(e) => setSharePhoneNumber(e.target.value)}
                           className="rounded-2xl mt-1"
                         />
                       </div>
@@ -484,7 +484,7 @@ export default function SwingDetail() {
                         ) : (
                           <>
                             <Send className="w-4 h-4 mr-2" />
-                            Send Email
+                            Send SMS
                           </>
                         )}
                       </Button>
