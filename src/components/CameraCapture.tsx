@@ -225,10 +225,32 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   };
 
   const setupCamera = useCallback(async () => {
-    if (stream) return; // Already have camera stream
+    if (stream) {
+      console.log('DEBUG: Camera stream already exists, skipping setup');
+      return; // Already have camera stream
+    }
     
     try {
-      console.log('Setting up camera...');
+      console.log('DEBUG: Starting camera setup...');
+      console.log('DEBUG: Checking media devices support...');
+      
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Media devices not supported in this browser');
+      }
+      
+      console.log('DEBUG: Media devices supported, checking permissions...');
+      
+      // Check current permission state
+      if (navigator.permissions) {
+        try {
+          const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+          console.log('DEBUG: Camera permission state:', permission.state);
+        } catch (permError) {
+          console.log('DEBUG: Could not check permission state:', permError);
+        }
+      }
+      
+      console.log('DEBUG: Attempting to get back camera stream...');
       // Try back camera first
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { 
@@ -240,20 +262,40 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
         audio: false
       });
       
-      console.log('Camera stream obtained');
+      console.log('DEBUG: Back camera stream obtained successfully:', {
+        tracks: mediaStream.getVideoTracks().length,
+        active: mediaStream.active,
+        settings: mediaStream.getVideoTracks()[0]?.getSettings()
+      });
+      
       setStream(mediaStream);
+      setWorkerError(''); // Clear any previous errors
       
       if (videoRef.current) {
+        console.log('DEBUG: Setting video source...');
         videoRef.current.srcObject = mediaStream;
         videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded, starting pose detection');
+          console.log('DEBUG: Video metadata loaded, dimensions:', {
+            videoWidth: videoRef.current?.videoWidth,
+            videoHeight: videoRef.current?.videoHeight
+          });
           startPoseDetectionLoop();
         };
+        videoRef.current.onerror = (error) => {
+          console.error('DEBUG: Video element error:', error);
+          setWorkerError('Video playback failed');
+        };
       }
-    } catch (cameraError) {
-      console.error('Back camera setup failed:', cameraError);
+    } catch (cameraError: any) {
+      console.error('DEBUG: Back camera setup failed:', {
+        name: cameraError?.name,
+        message: cameraError?.message,
+        stack: cameraError?.stack
+      });
+      
       // Try front camera as fallback
       try {
+        console.log('DEBUG: Attempting front camera fallback...');
         const fallbackStream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: 'user',
@@ -263,7 +305,16 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
           },
           audio: false
         });
+        
+        console.log('DEBUG: Front camera stream obtained:', {
+          tracks: fallbackStream.getVideoTracks().length,
+          active: fallbackStream.active,
+          settings: fallbackStream.getVideoTracks()[0]?.getSettings()
+        });
+        
         setStream(fallbackStream);
+        setWorkerError(''); // Clear any previous errors
+        
         if (videoRef.current) {
           videoRef.current.srcObject = fallbackStream;
           // Apply mirroring for front camera
@@ -272,27 +323,64 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
             overlayCanvasRef.current.style.transform = 'scaleX(-1)';
           }
           videoRef.current.onloadedmetadata = () => {
+            console.log('DEBUG: Front camera video metadata loaded');
             startPoseDetectionLoop();
           };
+          videoRef.current.onerror = (error) => {
+            console.error('DEBUG: Front camera video element error:', error);
+            setWorkerError('Video playback failed');
+          };
         }
-      } catch (frontCameraError) {
-        console.error('Front camera fallback failed:', frontCameraError);
+      } catch (frontCameraError: any) {
+        console.error('DEBUG: Front camera fallback failed:', {
+          name: frontCameraError?.name,
+          message: frontCameraError?.message
+        });
+        
         // Try with minimal constraints as last resort
         try {
+          console.log('DEBUG: Attempting minimal constraints fallback...');
           const minimalStream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false
           });
+          
+          console.log('DEBUG: Minimal constraints stream obtained:', {
+            tracks: minimalStream.getVideoTracks().length,
+            active: minimalStream.active
+          });
+          
           setStream(minimalStream);
+          setWorkerError(''); // Clear any previous errors
+          
           if (videoRef.current) {
             videoRef.current.srcObject = minimalStream;
             videoRef.current.onloadedmetadata = () => {
+              console.log('DEBUG: Minimal constraints video metadata loaded');
               startPoseDetectionLoop();
             };
+            videoRef.current.onerror = (error) => {
+              console.error('DEBUG: Minimal constraints video element error:', error);
+              setWorkerError('Video playback failed');
+            };
           }
-        } catch (finalError) {
-          console.error('All camera setup attempts failed:', finalError);
-          setWorkerError('Camera access denied or not available');
+        } catch (finalError: any) {
+          console.error('DEBUG: All camera setup attempts failed:', {
+            name: finalError?.name,
+            message: finalError?.message,
+            stack: finalError?.stack
+          });
+          
+          let errorMessage = 'Camera access denied or not available';
+          if (finalError?.name === 'NotAllowedError') {
+            errorMessage = 'Camera access denied - please allow camera permissions and refresh';
+          } else if (finalError?.name === 'NotFoundError') {
+            errorMessage = 'No camera found on this device';
+          } else if (finalError?.name === 'NotReadableError') {
+            errorMessage = 'Camera is being used by another application';
+          }
+          
+          setWorkerError(errorMessage);
           setWorkerStatus('Camera setup failed');
         }
       }
@@ -300,20 +388,35 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
   }, [stream, startPoseDetectionLoop]);
 
   const startRecording = useCallback(async () => {
-    console.log('Start recording requested');
+    console.log('DEBUG: Start recording requested');
+    console.log('DEBUG: Current stream state:', stream ? 'exists' : 'null');
+    console.log('DEBUG: Current video ref state:', videoRef.current ? 'exists' : 'null');
+    console.log('DEBUG: Worker initialized:', isInitialized);
+    console.log('DEBUG: Worker error:', workerError);
     
     // Setup camera first if not already done
     if (!stream) {
+      console.log('DEBUG: No stream exists, setting up camera...');
       await setupCamera();
       // Wait a moment for camera to stabilize
+      console.log('DEBUG: Waiting for camera to stabilize...');
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
+    console.log('DEBUG: After setup - stream:', stream ? 'exists' : 'null');
+    console.log('DEBUG: After setup - video ref:', videoRef.current ? 'exists' : 'null');
+    
     if (!stream || !videoRef.current) {
-      console.error('No camera stream available for recording');
-      setWorkerError('Camera not available - please allow camera access');
+      console.error('DEBUG: No camera stream available for recording after setup');
+      setWorkerError('Camera not available - please allow camera access and refresh the page');
       return;
     }
+    
+    console.log('DEBUG: Video element ready state:', videoRef.current.readyState);
+    console.log('DEBUG: Video element dimensions:', {
+      videoWidth: videoRef.current.videoWidth,
+      videoHeight: videoRef.current.videoHeight
+    });
 
     trackCapture.started();
     console.log('Recording started');
