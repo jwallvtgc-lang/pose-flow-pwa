@@ -78,38 +78,47 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          current_streak: number | null
           current_team: string | null
           email: string | null
           full_name: string | null
-          height_cm: number | null
+          height_feet: number | null
+          height_inches: number | null
           id: string
+          last_session_date: string | null
           primary_position: string | null
           updated_at: string
-          weight_kg: number | null
+          weight_lbs: number | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          current_streak?: number | null
           current_team?: string | null
           email?: string | null
           full_name?: string | null
-          height_cm?: number | null
+          height_feet?: number | null
+          height_inches?: number | null
           id: string
+          last_session_date?: string | null
           primary_position?: string | null
           updated_at?: string
-          weight_kg?: number | null
+          weight_lbs?: number | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          current_streak?: number | null
           current_team?: string | null
           email?: string | null
           full_name?: string | null
-          height_cm?: number | null
+          height_feet?: number | null
+          height_inches?: number | null
           id?: string
+          last_session_date?: string | null
           primary_position?: string | null
           updated_at?: string
-          weight_kg?: number | null
+          weight_lbs?: number | null
         }
         Relationships: []
       }
@@ -229,7 +238,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_user_streak: {
+        Args: { user_id_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

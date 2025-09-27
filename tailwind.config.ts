@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         'fredoka': ['Fredoka One', 'cursive'],
         'anton': ['Anton', 'sans-serif'],
+        'sans': ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       colors: {
         'hunters-green': '#355E3B',

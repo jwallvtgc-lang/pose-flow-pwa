@@ -17,7 +17,7 @@ const Index = () => {
     isLoading: true
   });
   
-  const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ full_name: string | null; current_streak: number | null } | null>(null);
   const [latestSwing, setLatestSwing] = useState<any>(null);
 
   useEffect(() => {
@@ -86,7 +86,7 @@ const Index = () => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, current_streak')
         .eq('id', user.id)
         .single();
 
@@ -226,7 +226,7 @@ const Index = () => {
               </div>
             </div>
             <div className="text-2xl font-bold text-gray-900 mb-1">
-              {stats.isLoading ? '...' : stats.todayCount}
+              {stats.isLoading ? '...' : (userProfile?.current_streak || 0)}
             </div>
             <div className="text-sm text-gray-600 mb-1">Current Streak</div>
             <div className="text-xs text-gray-500">consecutive sessions</div>

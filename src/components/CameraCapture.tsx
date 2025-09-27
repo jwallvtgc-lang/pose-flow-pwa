@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { trackCapture } from '@/lib/analytics';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Loader2, Play, Square, Star, Camera } from 'lucide-react';
+import { AlertTriangle, Loader2, Play, Square, Star, Camera, ArrowLeft } from 'lucide-react';
 
 interface CameraCaptureProps {
   onPoseDetected?: (poses: any[]) => void;
@@ -392,6 +392,19 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
 
   return (
     <div className="min-h-screen bg-background flex flex-col p-4">
+      {/* Header with Back Button */}
+      <div className="flex items-center mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/')}
+          className="mr-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <h1 className="text-2xl font-bold text-gray-900">Record Your Swing</h1>
+      </div>
+
       {/* Video Recording Area */}
       <div className="relative bg-slate-800 rounded-2xl overflow-hidden mb-6" style={{ height: '240px' }}>
         {!isInitialized || workerError ? (

@@ -83,11 +83,6 @@ export function HamburgerMenu() {
                     </div>
                     <span className="text-gray-800 font-medium text-lg">{item.label}</span>
                   </div>
-                  {item.badge && (
-                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                      {item.badge}
-                    </span>
-                  )}
                 </button>
               </li>
             ))}

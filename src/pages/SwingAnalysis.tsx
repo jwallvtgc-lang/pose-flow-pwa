@@ -11,6 +11,7 @@ import { saveSwing, saveMetrics, ensureSession } from '@/lib/persistence';
 import { uploadVideo } from '@/lib/storage';
 import { computePhase1Metrics } from '@/lib/metrics';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { PoseAnalysisResult } from '@/lib/poseWorkerClient';
 import type { CoachingCard } from '@/lib/cues';
@@ -113,6 +114,18 @@ export default function SwingAnalysis() {
         client_request_id: clientRequestId
       });
       addDebugLog(`Swing saved with ID: ${swingId}`);
+
+      // Update user streak after successful swing analysis
+      if (user?.id) {
+        try {
+          addDebugLog('Updating user streak...');
+          await supabase.rpc('update_user_streak', { user_id_param: user.id });
+          addDebugLog('User streak updated successfully');
+        } catch (error) {
+          addDebugLog(`Failed to update user streak: ${error}`);
+          console.error('Failed to update user streak:', error);
+        }
+      }
 
       // Save metrics
       if (Object.keys(validMetrics).length > 0) {
