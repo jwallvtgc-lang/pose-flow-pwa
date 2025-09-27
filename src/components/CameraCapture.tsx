@@ -193,42 +193,46 @@ export function CameraCapture({
     <div className="space-y-4">
       {/* iPhone-safe primary path */}
       <div>
-        <label className="block text-sm font-medium mb-1">Quick capture (most reliable on iPhone)</label>
+        <label className="block text-lg font-bold mb-3 text-gray-900">Upload or Record Video</label>
         <input
           type="file"
           accept="video/*;capture=camera"
           onChange={onPick}
-          className="w-full rounded border p-2"
+          className="w-full rounded-2xl border-2 border-gray-200 p-4 text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors"
         />
-        <p className="mt-1 text-xs text-muted-foreground">
-          Tip: Record ~10–15 seconds from the side. You can also enable a live preview below.
+        <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+          <strong>Tip:</strong> Record ~10–15 seconds from the side view. You can upload an existing video or use the live camera below.
         </p>
       </div>
 
       {/* Optional live preview (desktop/Android; iOS only if camera permission granted) */}
-      <div className="space-y-2">
+      <div className="space-y-4 bg-gray-50 rounded-2xl p-4">
         <video
           ref={videoRef}
           playsInline
           muted
           autoPlay
-          className="w-full rounded bg-black"
+          className="w-full rounded-2xl bg-black shadow-lg"
           style={{ aspectRatio: '16 / 9' }}
         />
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={enablePreview}
-            className="px-3 py-2 rounded bg-black text-white"
+            className={`px-6 py-3 rounded-2xl font-semibold transition-all shadow-md ${
+              previewOn 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-800 hover:bg-gray-700 text-white'
+            }`}
           >
-            {previewOn ? 'Preview On' : 'Enable Preview'}
+            {previewOn ? 'Preview On' : 'Enable Live Camera'}
           </button>
           {!recording ? (
             <button
               type="button"
               onClick={startRecording}
               disabled={!previewOn}
-              className="px-3 py-2 rounded bg-green-600 text-white disabled:bg-gray-300"
+              className="px-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-semibold disabled:bg-gray-300 disabled:text-gray-500 transition-all shadow-md"
             >
               Start Recording
             </button>
@@ -236,9 +240,9 @@ export function CameraCapture({
             <button
               type="button"
               onClick={stopRecording}
-              className="px-3 py-2 rounded bg-red-600 text-white"
+              className="px-6 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-semibold transition-all shadow-md animate-pulse"
             >
-              Stop
+              Stop Recording
             </button>
           )}
         </div>

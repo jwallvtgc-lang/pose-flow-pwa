@@ -5,7 +5,6 @@ import { CoachingFeedback } from '@/components/CoachingFeedback';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Camera, BarChart3, Target } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { evaluateSwing } from '@/lib/swing-evaluation';
 import { saveSwing, saveMetrics, ensureSession } from '@/lib/persistence';
 import { uploadVideo } from '@/lib/storage';
@@ -19,7 +18,6 @@ import type { CoachingCard } from '@/lib/cues';
 type FlowStep = 'capture' | 'score' | 'feedback';
 
 export default function SwingAnalysis() {
-  const isMobile = useIsMobile();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<FlowStep>('capture');
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -132,15 +130,20 @@ export default function SwingAnalysis() {
       case 'capture':
         return (
           <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-2">Record Your Swing</h1>
-              <p className="text-muted-foreground">
-                Position yourself sideways and record your baseball swing
-              </p>
+            <div className="bg-white rounded-3xl p-8 shadow-lg border-0">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <Camera className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-3xl font-black text-gray-900 mb-3">Record Your Swing</h2>
+                <p className="text-gray-600 text-lg leading-relaxed">
+                  Position yourself sideways and record your baseball swing
+                </p>
+              </div>
+              <CameraCapture 
+                onCapture={handleCapture}
+              />
             </div>
-            <CameraCapture 
-              onCapture={handleCapture}
-            />
           </div>
         );
       
@@ -152,11 +155,20 @@ export default function SwingAnalysis() {
             onComplete={handleAnalysisComplete}
           />
         ) : (
-          <div className="text-center">
-            <p className="text-muted-foreground">No video recorded</p>
-            <Button onClick={handleRetake} className="mt-4">
-              Try Again
-            </Button>
+          <div className="bg-white rounded-3xl p-8 shadow-lg border-0">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Camera className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">No Video Recorded</h2>
+              <p className="text-gray-600 mb-6">Please record a video to continue with analysis.</p>
+              <Button 
+                onClick={handleRetake} 
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-2xl shadow-lg"
+              >
+                Try Again
+              </Button>
+            </div>
           </div>
         );
       
@@ -164,12 +176,17 @@ export default function SwingAnalysis() {
         if (isSaving) {
           return (
             <div className="space-y-6">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold mb-2">Saving Analysis</h1>
-                <p className="text-muted-foreground">
-                  Processing your swing data...
-                </p>
-                <Progress value={75} className="mt-4" />
+              <div className="bg-white rounded-3xl p-8 shadow-lg border-0">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <BarChart3 className="w-8 h-8 text-white animate-pulse" />
+                  </div>
+                  <h2 className="text-3xl font-black text-gray-900 mb-3">Saving Analysis</h2>
+                  <p className="text-gray-600 text-lg mb-6">
+                    Processing your swing data...
+                  </p>
+                  <Progress value={75} className="mt-4" />
+                </div>
               </div>
             </div>
           );
@@ -177,26 +194,34 @@ export default function SwingAnalysis() {
         
         return (
           <div className="space-y-6">
-            <div className="text-center space-y-4">
-              <div>
-                <h1 className="text-2xl font-bold mb-2">Analysis Complete!</h1>
-                <p className="text-muted-foreground">
-                  Swing analysis completed successfully. Your score: {swingScore}/100
-                </p>
-              </div>
-              
-              {/* Coaching Feedback */}
-              {analysisResult && coachingCards.length > 0 && (
-                <CoachingFeedback 
-                  score={swingScore}
-                  cards={coachingCards}
-                />
-              )}
-              
-              <div className="flex gap-4 justify-center">
-                <Button onClick={handleRetake}>
-                  Record Another Swing
-                </Button>
+            <div className="bg-white rounded-3xl p-8 shadow-lg border-0">
+              <div className="text-center space-y-6">
+                <div>
+                  <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <span className="text-white font-black text-2xl">{swingScore}</span>
+                  </div>
+                  <h2 className="text-3xl font-black text-gray-900 mb-3">Analysis Complete!</h2>
+                  <p className="text-gray-600 text-lg">
+                    Swing analysis completed successfully. Your score: <span className="font-bold text-green-600">{swingScore}/100</span>
+                  </p>
+                </div>
+                
+                {/* Coaching Feedback */}
+                {analysisResult && coachingCards.length > 0 && (
+                  <CoachingFeedback 
+                    score={swingScore}
+                    cards={coachingCards}
+                  />
+                )}
+                
+                <div className="flex gap-4 justify-center">
+                  <Button 
+                    onClick={handleRetake}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-2xl shadow-lg"
+                  >
+                    Record Another Swing
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -208,10 +233,10 @@ export default function SwingAnalysis() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+      <div className="container mx-auto px-6 py-6 max-w-lg">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center justify-between mb-8">
           {currentStep !== 'capture' && (
             <Button
               variant="ghost"
@@ -220,69 +245,57 @@ export default function SwingAnalysis() {
                 if (currentStep === 'score') setCurrentStep('capture');
                 if (currentStep === 'feedback') setCurrentStep('score');
               }}
+              className="text-gray-600 hover:text-gray-900"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
             </Button>
           )}
           
-          {/* Progress indicator */}
-          <div className="flex-1">
-            {isMobile ? (
-              // Mobile: Simple progress bar with current step
-              <div className="space-y-2">
-                <div className="flex items-center justify-center gap-2">
-                  {currentStep === 'capture' && <Camera className="w-4 h-4 text-primary" />}
-                  {currentStep === 'score' && <BarChart3 className="w-4 h-4 text-primary" />}
-                  {currentStep === 'feedback' && <Target className="w-4 h-4 text-primary" />}
-                  <span className="text-sm font-medium">
-                    {currentStep === 'capture' && 'Record'}
-                    {currentStep === 'score' && 'Analyze'}
-                    {currentStep === 'feedback' && 'Results'}
-                  </span>
-                </div>
-                <Progress 
-                  value={
-                    currentStep === 'capture' ? 33 : 
-                    currentStep === 'score' ? 66 : 100
-                  } 
-                  className="h-1"
-                />
+          <div className="flex items-center gap-3 flex-1 justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-lg">S</span>
+            </div>
+            <h1 className="text-2xl font-black text-black tracking-tight" style={{ fontFamily: 'Poppins, sans-serif' }}>SwingSense</h1>
+          </div>
+          
+          <div className="w-10"></div> {/* Spacer for centering */}
+        </div>
+
+        {/* Progress indicator */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-md ${
+                currentStep === 'capture' ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : 'bg-gray-200'
+              }`}>
+                <Camera className={`w-5 h-5 ${currentStep === 'capture' ? 'text-white' : 'text-gray-500'}`} />
               </div>
-            ) : (
-              // Desktop: Full step indicator
-              <div className="flex items-center justify-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full flex items-center justify-center ${
-                    currentStep === 'capture' ? 'bg-primary' : 'bg-muted'
-                  }`}>
-                    <Camera className="w-2 h-2 text-background" />
-                  </div>
-                  <span className={`text-sm ${
-                    currentStep === 'capture' ? 'text-primary font-medium' : 'text-muted-foreground'
-                  }`}>Record</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full flex items-center justify-center ${
-                    currentStep === 'score' ? 'bg-primary' : 'bg-muted'
-                  }`}>
-                    <BarChart3 className="w-2 h-2 text-background" />
-                  </div>
-                  <span className={`text-sm ${
-                    currentStep === 'score' ? 'text-primary font-medium' : 'text-muted-foreground'
-                  }`}>Analyze</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full flex items-center justify-center ${
-                    currentStep === 'feedback' ? 'bg-primary' : 'bg-muted'
-                  }`}>
-                    <Target className="w-2 h-2 text-background" />
-                  </div>
-                  <span className={`text-sm ${
-                    currentStep === 'feedback' ? 'text-primary font-medium' : 'text-muted-foreground'
-                  }`}>Results</span>
-                </div>
+              <span className={`text-sm font-semibold ${
+                currentStep === 'capture' ? 'text-blue-600' : 'text-gray-500'
+              }`}>Record</span>
+            </div>
+            <div className={`w-8 h-0.5 rounded ${currentStep === 'score' || currentStep === 'feedback' ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+            <div className="flex items-center gap-2">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-md ${
+                currentStep === 'score' ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : (currentStep === 'feedback' ? 'bg-green-500' : 'bg-gray-200')
+              }`}>
+                <BarChart3 className={`w-5 h-5 ${currentStep === 'score' || currentStep === 'feedback' ? 'text-white' : 'text-gray-500'}`} />
               </div>
-            )}
+              <span className={`text-sm font-semibold ${
+                currentStep === 'score' ? 'text-blue-600' : (currentStep === 'feedback' ? 'text-green-600' : 'text-gray-500')
+              }`}>Analyze</span>
+            </div>
+            <div className={`w-8 h-0.5 rounded ${currentStep === 'feedback' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+            <div className="flex items-center gap-2">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-md ${
+                currentStep === 'feedback' ? 'bg-gradient-to-br from-green-500 to-green-600' : 'bg-gray-200'
+              }`}>
+                <Target className={`w-5 h-5 ${currentStep === 'feedback' ? 'text-white' : 'text-gray-500'}`} />
+              </div>
+              <span className={`text-sm font-semibold ${
+                currentStep === 'feedback' ? 'text-green-600' : 'text-gray-500'
+              }`}>Results</span>
+            </div>
           </div>
         </div>
 
