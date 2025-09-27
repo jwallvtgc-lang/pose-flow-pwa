@@ -3,8 +3,6 @@ import { CameraCapture } from '@/components/CameraCapture';
 import { SwingAnalysisResults } from '@/components/SwingAnalysisResults';
 import { CoachingFeedback } from '@/components/CoachingFeedback';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Camera, BarChart3, Target } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -179,58 +177,28 @@ export default function SwingAnalysis() {
         
         return (
           <div className="space-y-6">
-            {/* Video Display */}
-            {videoBlob && (
-              <div className="space-y-4">
-                <div className="text-center">
-                  <h1 className="text-2xl font-bold mb-2">Your Swing Analysis</h1>
-                  <p className="text-muted-foreground">
-                    Here's your recorded swing with AI coaching feedback
-                  </p>
-                </div>
-                
-                <Card className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-blue-900">Your Swing Video</h3>
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                        Score: {swingScore}/100
-                      </Badge>
-                    </div>
-                    
-                    <video
-                      src={URL.createObjectURL(videoBlob)}
-                      controls
-                      className="w-full rounded-lg shadow-lg"
-                      muted
-                      style={{ maxHeight: '400px' }}
-                    />
-                  </div>
-                </Card>
+            <div className="text-center space-y-4">
+              <div>
+                <h1 className="text-2xl font-bold mb-2">Analysis Complete!</h1>
+                <p className="text-muted-foreground">
+                  Swing analysis completed successfully. Your score: {swingScore}/100
+                </p>
               </div>
-            )}
-
-            {/* Coaching Feedback */}
-            {analysisResult && coachingCards.length > 0 ? (
-              <CoachingFeedback 
-                score={swingScore}
-                cards={coachingCards}
-              />
-            ) : (
-              <div className="text-center space-y-4">
-                <div>
-                  <h1 className="text-2xl font-bold mb-2">Analysis Complete!</h1>
-                  <p className="text-muted-foreground">
-                    Swing analysis completed successfully
-                  </p>
-                </div>
-                <div className="flex gap-4 justify-center">
-                  <Button onClick={handleRetake}>
-                    Record Another Swing
-                  </Button>
-                </div>
+              
+              {/* Coaching Feedback */}
+              {analysisResult && coachingCards.length > 0 && (
+                <CoachingFeedback 
+                  score={swingScore}
+                  cards={coachingCards}
+                />
+              )}
+              
+              <div className="flex gap-4 justify-center">
+                <Button onClick={handleRetake}>
+                  Record Another Swing
+                </Button>
               </div>
-            )}
+            </div>
           </div>
         );
       

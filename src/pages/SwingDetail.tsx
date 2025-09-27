@@ -208,7 +208,6 @@ export default function SwingDetail() {
 
   const loadSwingDetail = async (swingId: string) => {
     try {
-      console.log('Loading swing detail for ID:', swingId);
       setIsLoading(true);
       setError('');
 
@@ -219,8 +218,6 @@ export default function SwingDetail() {
         .eq('id', swingId)
         .single();
 
-      console.log('Swing data:', swingData, 'Error:', swingError);
-
       if (swingError) throw swingError;
       const processedSwing = {
         ...swingData,
@@ -228,7 +225,6 @@ export default function SwingDetail() {
         cues: Array.isArray(swingData.cues) ? swingData.cues.filter((cue): cue is string => typeof cue === 'string') : 
               swingData.cues ? [String(swingData.cues)] : null
       } as SwingData;
-      console.log('Processed swing:', processedSwing);
       setSwing(processedSwing);
 
       // Fetch swing metrics
@@ -370,8 +366,6 @@ export default function SwingDetail() {
   }
 
   const swingDate = swing.created_at ? new Date(swing.created_at) : new Date();
-
-  console.log('Rendering SwingDetail. Swing:', swing, 'Has video_url:', !!swing.video_url);
 
   return (
     <div className="min-h-screen bg-gray-50">
