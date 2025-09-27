@@ -58,6 +58,9 @@ verify_jwt = false
 [functions.send-swing-analysis]
 verify_jwt = false
 
+[functions.generate-upload-url]
+verify_jwt = false
+
 [edge_runtime]
 policy = "per_worker"
 inspector_port = 8083

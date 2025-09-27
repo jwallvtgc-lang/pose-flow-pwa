@@ -71,10 +71,13 @@ export async function uploadVideo({
   const contentType = blob.type || 'video/mp4';
   const safeName = `${preferredName}-${client_request_id}.${extFromMime(contentType)}`;
 
-  // 1) Ask for presigned URL
-  const presign = await fetch('/api/upload-url', {
+  // 1) Ask for presigned URL from Supabase edge function
+  const presign = await fetch(`https://xdurzrndnpxhdrbtqqnz.supabase.co/functions/v1/generate-upload-url`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkdXJ6cm5kbnB4aGRyYnRxcW56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNzQ0MjMsImV4cCI6MjA3MzY1MDQyM30.ammqHLKHJjY3ynwgbuV0M9Q8jEKwcXELoWi8rMnkPxI'}`
+    },
     body: JSON.stringify({
       filename: safeName.replace(/\s+/g, '-'),
       contentType,
