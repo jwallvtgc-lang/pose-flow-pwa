@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AddToHomeScreen from "@/components/AddToHomeScreen";
-import HamburgerMenu from "@/components/HamburgerMenu";
+import { HamburgerMenu } from "@/components/HamburgerMenu";
 
 const Index = () => {
   const { user, loading } = useAuth();

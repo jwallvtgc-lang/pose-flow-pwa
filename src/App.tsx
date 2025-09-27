@@ -14,6 +14,8 @@ import RecentSwings from "./pages/RecentSwings";
 import Debug from "./pages/Debug";
 import MetricsDebug from "./pages/MetricsDebug";
 import NotFound from "./pages/NotFound";
+import Achievements from "./pages/Achievements";
+import Profile from "./pages/Profile";
 import { initPosthog } from "./lib/analytics";
 import { initTf } from "./lib/tf";
 
@@ -53,6 +55,8 @@ const App = () => {
             <Route path="/progress" element={<Progress />} />
             <Route path="/swing/:id" element={<SwingDetail />} />
             <Route path="/recent-swings" element={<RecentSwings />} />
+            <Route path="/achievements" element={<Achievements />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/debug" element={<Debug />} />
             <Route path="/metrics-debug" element={<MetricsDebug />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
