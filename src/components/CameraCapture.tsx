@@ -642,7 +642,7 @@ export function CameraCapture({ onPoseDetected, onCapture }: CameraCaptureProps)
               ? 'bg-red-500 hover:bg-red-600 text-white' 
               : 'bg-blue-500 hover:bg-blue-600 text-white'
           }`}
-          disabled={(!isInitialized && !workerError) || (!stream && !workerError)}
+          disabled={!isInitialized && !!workerError}
           onClick={toggleRecording}
         >
           {isRecording ? (
