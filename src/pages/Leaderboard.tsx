@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Trophy, Medal, Award, TrendingUp, Target, Activity } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, Target, Activity, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -19,6 +21,7 @@ interface LeaderboardEntry {
 type LeaderboardType = 'total_swings' | 'average_score' | 'max_score';
 
 export default function Leaderboard() {
+  const navigate = useNavigate();
   const [leaderboards, setLeaderboards] = useState<Record<LeaderboardType, LeaderboardEntry[]>>({
     total_swings: [],
     average_score: [],
@@ -245,18 +248,31 @@ export default function Leaderboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       <div className="container mx-auto px-6 py-8 max-w-4xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-              <Trophy className="w-7 h-7 text-white" />
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/')}
+              className="text-gray-600 hover:text-gray-900 p-2 rounded-xl"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Trophy className="w-7 h-7 text-white" />
+              </div>
+              <h1 className="text-3xl font-black text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Leaderboard
+              </h1>
             </div>
-            <h1 className="text-3xl font-black text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Leaderboard
-            </h1>
+            <div className="w-10"></div> {/* Spacer for centering */}
           </div>
-          <p className="text-lg text-gray-600">
-            Top performers from the last 30 days
-          </p>
+          <div className="text-center">
+            <p className="text-lg text-gray-600">
+              Top performers from the last 30 days
+            </p>
+          </div>
         </div>
 
         {/* Tabs */}
