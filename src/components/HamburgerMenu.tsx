@@ -18,7 +18,7 @@ export function HamburgerMenu() {
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Video, label: 'Record Swing', path: '/score' },
-    { icon: BarChart3, label: 'Analytics', path: '/progress', badge: 'New' },
+    { icon: BarChart3, label: 'Analytics', path: '/progress' },
     { icon: History, label: 'Swing History', path: '/recent-swings' },
     { icon: Trophy, label: 'Achievements', path: '/achievements' },
     { icon: User, label: 'Profile', path: '/profile' },
