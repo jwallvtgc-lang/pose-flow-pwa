@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { CameraCapture } from '@/components/CameraCapture';
 import { SwingAnalysisResults } from '@/components/SwingAnalysisResults';
-import { CoachingFeedback } from '@/components/CoachingFeedback';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Camera, BarChart3, Target } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { evaluateSwing } from '@/lib/swing-evaluation';
 import { saveSwing, saveMetrics, ensureSession } from '@/lib/persistence';
 import { uploadVideo } from '@/lib/storage';
@@ -13,17 +13,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { PoseAnalysisResult } from '@/lib/poseWorkerClient';
-import type { CoachingCard } from '@/lib/cues';
 
 type FlowStep = 'capture' | 'score' | 'feedback';
 
 export default function SwingAnalysis() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<FlowStep>('capture');
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<PoseAnalysisResult | null>(null);
-  const [swingScore, setSwingScore] = useState<number>(0);
-  const [coachingCards, setCoachingCards] = useState<CoachingCard[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleCapture = (blob: Blob) => {
@@ -33,7 +30,6 @@ export default function SwingAnalysis() {
 
   const handleAnalysisComplete = async (result: PoseAnalysisResult) => {
     try {
-      setAnalysisResult(result);
       setIsSaving(true);
 
       // Generate metrics from pose analysis data
@@ -50,9 +46,6 @@ export default function SwingAnalysis() {
       
       // Evaluate the swing to get score and coaching cards
       const evaluation = await evaluateSwing(validMetrics);
-      
-      setSwingScore(evaluation.score);
-      setCoachingCards(evaluation.cards);
 
       // Save to database
       const clientRequestId = crypto.randomUUID();
@@ -106,12 +99,14 @@ export default function SwingAnalysis() {
       }
 
       toast.success('Swing analysis saved successfully!');
-      setCurrentStep('feedback');
+      
+      // Navigate to the detailed swing analysis page instead of showing basic feedback
+      navigate(`/swing/${swingId}`);
     } catch (error) {
       console.error('Analysis save error:', error);
       toast.error('Failed to save analysis. Please try again.');
-      // Still show feedback even if saving failed
-      setCurrentStep('feedback');
+      // On error, stay on the score step so user can try again
+      setCurrentStep('score');
     } finally {
       setIsSaving(false);
     }
@@ -119,9 +114,6 @@ export default function SwingAnalysis() {
 
   const handleRetake = () => {
     setVideoBlob(null);
-    setAnalysisResult(null);
-    setSwingScore(0);
-    setCoachingCards([]);
     setCurrentStep('capture');
   };
 
@@ -173,6 +165,7 @@ export default function SwingAnalysis() {
         );
       
       case 'feedback':
+        // Only show saving state - successful completion navigates to SwingDetail page
         if (isSaving) {
           return (
             <div className="space-y-6">
@@ -192,40 +185,8 @@ export default function SwingAnalysis() {
           );
         }
         
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-8 shadow-lg border-0">
-              <div className="text-center space-y-6">
-                <div>
-                  <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <span className="text-white font-black text-2xl">{swingScore}</span>
-                  </div>
-                  <h2 className="text-3xl font-black text-gray-900 mb-3">Analysis Complete!</h2>
-                  <p className="text-gray-600 text-lg">
-                    Swing analysis completed successfully. Your score: <span className="font-bold text-green-600">{swingScore}/100</span>
-                  </p>
-                </div>
-                
-                {/* Coaching Feedback */}
-                {analysisResult && coachingCards.length > 0 && (
-                  <CoachingFeedback 
-                    score={swingScore}
-                    cards={coachingCards}
-                  />
-                )}
-                
-                <div className="flex gap-4 justify-center">
-                  <Button 
-                    onClick={handleRetake}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-2xl shadow-lg"
-                  >
-                    Record Another Swing
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        // This case should not be reached in normal flow since we navigate away on success
+        return null;
       
       default:
         return null;
