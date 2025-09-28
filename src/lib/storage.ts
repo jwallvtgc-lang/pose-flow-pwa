@@ -1,12 +1,10 @@
-// src/lib/storage.ts
-
 /**
  * Storage helpers for uploading and reading swing videos.
- * - Client-side only (Vite). Uses R2 with AWS S3 SDK for proper authentication.
+ * - Client-side only (Vite). Uses R2 with simple PUT requests.
  * - Requires env: VITE_STORAGE_CDN_URL
  */
 
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getEnvVar } from '@/config/env';
 
 type PresignResponse = {
   uploadUrl: string;
@@ -27,15 +25,10 @@ type UploadArgs = {
   folder?: string;           // default "videos"
 };
 
-function env<T = string>(k: string, fallback?: T): T {
-  const v = (import.meta as any).env?.[k];
-  return (v ?? fallback) as T;
-}
-
 /** Base URL where files are served from (no trailing slash). */
 function cdnBase(): string {
   const fallbackCdn = 'https://swingsense-video.f654e3871f91d6cea64b343e353ea3b8.r2.dev';
-  return String(env('VITE_STORAGE_CDN_URL', fallbackCdn)).replace(/\/+$/, '');
+  return getEnvVar('VITE_STORAGE_CDN_URL') || fallbackCdn;
 }
 
 /** Very small mime → extension mapping; defaults to mp4. */
@@ -89,7 +82,7 @@ export async function uploadVideo({
   console.log('CDN base URL:', cdnBase());
 
   // 1) Ask for presigned URL from Supabase edge function
-  const presignUrl = `https://xdurzrndnpxhdrbtqqnz.supabase.co/functions/v1/generate-upload-url`;
+  const presignUrl = `${getEnvVar('VITE_SUPABASE_URL')}/functions/v1/generate-upload-url`;
   console.log('Requesting presigned URL from:', presignUrl);
   
   const requestBody = {
@@ -101,7 +94,7 @@ export async function uploadVideo({
   console.log('Request body:', requestBody);
   
   try {
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkdXJ6cm5kbnB4aGRyYnRxcW56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNzQ0MjMsImV4cCI6MjA3MzY1MDQyM30.ammqHLKHJjY3ynwgbuV0M9Q8jEKwcXELoWi8rMnkPxI';
+    const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY');
     console.log('Using Supabase anon key (first 10 chars):', supabaseAnonKey.substring(0, 10) + '...');
     
     const presign = await fetch(presignUrl, {
@@ -125,73 +118,33 @@ export async function uploadVideo({
     const presignData = await presign.json();
     console.log('Presign response data:', presignData);
     
-    const { uploadUrl, publicUrl, key, credentials, headers: uploadHeaders } = presignData as PresignResponse;
+    const { uploadUrl, publicUrl, key } = presignData as PresignResponse;
 
-    // 2) Upload using AWS S3 SDK for proper authentication
-    console.log('=== Starting authenticated upload to R2 ===');
+    // 2) Upload directly to R2 using simple PUT
+    console.log('=== Starting R2 upload with PUT ===');
     console.log('Upload URL (first 100 chars):', uploadUrl.substring(0, 100) + '...');
     
-    if (!credentials) {
-      console.warn('No credentials provided, falling back to simple PUT');
-      // Fall back to simple PUT if no credentials
-      const headers: Record<string, string> = uploadHeaders || { 'Content-Type': contentType };
-      console.log('Upload headers:', headers);
-      
-      const putRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers,
-        body: blob,
-      });
+    // Always use simple PUT - it works better with R2 CORS
+    const headers: Record<string, string> = {
+      'Content-Type': contentType,
+      // Don't add any other headers to avoid CORS issues
+    };
+    
+    console.log('Upload headers:', headers);
+    
+    const putRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers,
+      body: blob,
+    });
 
-      console.log('Simple upload response status:', putRes.status);
-      
-      if (!putRes.ok) {
-        const text = await putRes.text().catch(() => '');
-        console.error('Simple upload failed:', text);
-        throw new Error(`Upload failed (${putRes.status}): ${text}`);
-      }
-    } else {
-      // Use AWS S3 SDK for authenticated upload
-      console.log('Using AWS S3 SDK for authenticated upload');
-      
-      // Extract bucket and key from URL
-      const urlParts = uploadUrl.match(/https:\/\/([^.]+)\.r2\.cloudflarestorage\.com\/([^\/]+)\/(.+)/);
-      if (!urlParts) {
-        throw new Error('Invalid upload URL format');
-      }
-      
-      const [, accountId, bucket, s3Key] = urlParts;
-      console.log('Extracted - Account ID:', accountId, 'Bucket:', bucket, 'Key:', s3Key);
-      
-      // Configure S3 client for R2
-      const s3Client = new S3Client({
-        region: credentials.region,
-        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-        credentials: {
-          accessKeyId: credentials.accessKeyId,
-          secretAccessKey: credentials.secretAccessKey,
-        },
-        forcePathStyle: false,
-      });
-      
-      // Convert blob to ArrayBuffer for S3 compatibility
-      const arrayBuffer = await blob.arrayBuffer();
-      
-      // Create the put command
-      const putCommand = new PutObjectCommand({
-        Bucket: bucket,
-        Key: s3Key,
-        Body: new Uint8Array(arrayBuffer),
-        ContentType: contentType,
-      });
-      
-      try {
-        const result = await s3Client.send(putCommand);
-        console.log('S3 upload result:', result);
-      } catch (error) {
-        console.error('S3 upload error:', error);
-        throw new Error(`S3 upload failed: ${error}`);
-      }
+    console.log('Upload response status:', putRes.status);
+    console.log('Upload response headers:', Object.fromEntries(putRes.headers.entries()));
+    
+    if (!putRes.ok) {
+      const text = await putRes.text().catch(() => '');
+      console.error('Upload failed:', text);
+      throw new Error(`Upload failed (${putRes.status}): ${text}`);
     }
 
     console.log('=== Upload successful ===');
