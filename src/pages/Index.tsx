@@ -195,7 +195,7 @@ const Index = () => {
         .select('drill_id, drill_data')
         .gte('created_at', oneWeekAgo.toISOString())
         .not('drill_id', 'is', null)
-        .or('drill_data.is.not.null');
+        .or('drill_data.not.is.null');
 
       if (error) {
         console.error('Error loading drill data:', error);

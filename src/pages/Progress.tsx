@@ -70,7 +70,11 @@ export default function Progress() {
         query = query.limit(50); // Limit for 'all' to avoid performance issues
       }
 
+      console.log('Progress query filter:', timeFilter, 'dateFilter:', dateFilter);
       const { data: swingsData, error: swingsError } = await query;
+
+      console.log('Raw swings data returned:', swingsData?.length || 0, 'swings');
+      console.log('Swings error:', swingsError);
 
       if (swingsError) throw swingsError;
       const processedSwings = (swingsData || []).map(swing => ({
@@ -79,6 +83,8 @@ export default function Progress() {
         cues: Array.isArray(swing.cues) ? swing.cues.filter((cue): cue is string => typeof cue === 'string') : 
               swing.cues ? [String(swing.cues)] : null
       })) as Swing[];
+      
+      console.log('Processed swings:', processedSwings.length);
       setSwings(processedSwings);
 
       if (swingsData && swingsData.length > 0) {
