@@ -45,6 +45,8 @@ serve(async (req) => {
 
   try {
     console.log('=== UPLOAD URL GENERATION STARTED ===')
+    console.log('Request method:', req.method)
+    console.log('Timestamp:', new Date().toISOString())
     
     if (req.method !== 'POST') {
       console.log('Invalid method:', req.method)
@@ -54,7 +56,8 @@ serve(async (req) => {
       })
     }
 
-    const { filename, contentType, folder = 'videos' } = await req.json()
+    const requestBody = await req.json()
+    const { filename, contentType, folder = 'videos' } = requestBody
     console.log('Request payload:', { filename, contentType, folder })
 
     if (!filename) {
@@ -73,24 +76,31 @@ serve(async (req) => {
       })
     }
 
-    // Check environment variables
+    // Check environment variables with detailed logging
     const bucket = Deno.env.get('STORAGE_BUCKET')
     const cdnBase = Deno.env.get('STORAGE_CDN_URL')
     const region = Deno.env.get('STORAGE_REGION')
     const accessKeyId = Deno.env.get('STORAGE_ACCESS_KEY')
     const secretAccessKey = Deno.env.get('STORAGE_SECRET_KEY')
     
-    console.log('Environment check:', {
-      bucket: !!bucket,
-      cdnBase: !!cdnBase,
-      region: !!region,
-      accessKeyId: !!accessKeyId,
-      secretAccessKey: !!secretAccessKey
-    })
+    console.log('=== ENVIRONMENT VARIABLES CHECK ===')
+    console.log('STORAGE_BUCKET present:', !!bucket)
+    console.log('STORAGE_CDN_URL present:', !!cdnBase)
+    console.log('STORAGE_REGION present:', !!region)
+    console.log('STORAGE_ACCESS_KEY present:', !!accessKeyId)
+    console.log('STORAGE_SECRET_KEY present:', !!secretAccessKey)
+    
+    if (bucket) console.log('STORAGE_BUCKET value:', bucket)
+    if (cdnBase) console.log('STORAGE_CDN_URL value:', cdnBase)
+    if (region) console.log('STORAGE_REGION value:', region)
+    if (accessKeyId) console.log('STORAGE_ACCESS_KEY first 4 chars:', accessKeyId.substring(0, 4) + '...')
 
     if (!bucket || !cdnBase) {
       console.error('Missing storage configuration:', { bucket: !!bucket, cdnBase: !!cdnBase })
-      return new Response(JSON.stringify({ error: 'Missing storage configuration' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Missing storage configuration',
+        details: { bucket: !!bucket, cdnBase: !!cdnBase }
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -98,7 +108,10 @@ serve(async (req) => {
 
     if (!region || !accessKeyId || !secretAccessKey) {
       console.error('Missing AWS credentials:', { region: !!region, accessKeyId: !!accessKeyId, secretAccessKey: !!secretAccessKey })
-      return new Response(JSON.stringify({ error: 'Missing AWS credentials' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Missing AWS credentials',
+        details: { region: !!region, accessKeyId: !!accessKeyId, secretAccessKey: !!secretAccessKey }
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -109,30 +122,32 @@ serve(async (req) => {
     const randomId = crypto.randomUUID().slice(0, 8)
     const key = `${folder}/${new Date().toISOString().slice(0, 10)}/${timestamp}-${randomId}-${filename.replace(/\s+/g, '-')}.${extension}`
 
-    console.log('Generating upload URL for key:', key)
+    console.log('Generated S3 key:', key)
 
-    console.log('Creating S3 client...')
+    console.log('=== CREATING S3 CLIENT ===')
     const client = createS3Client()
+    console.log('S3 client created successfully')
     
-    console.log('Creating PutObjectCommand...')
+    console.log('=== CREATING PUT OBJECT COMMAND ===')
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
       ContentType: contentType,
       ACL: 'private', // Keep objects private, serve via CDN
     })
+    console.log('PutObjectCommand created successfully')
 
-    console.log('Generating presigned URL...')
+    console.log('=== GENERATING PRESIGNED URL ===')
     // Generate presigned URL with 10 minute expiry
     const uploadUrl = await getSignedUrl(client, command, { expiresIn: 600 })
+    console.log('Presigned URL generated successfully')
+    console.log('Upload URL length:', uploadUrl.length)
 
     // Public URL for accessing the file
     const publicUrl = `${cdnBase.replace(/\/+$/, '')}/${key}`
+    console.log('Public URL generated:', publicUrl)
 
-    console.log('Generated upload URL successfully')
-    console.log('Upload URL length:', uploadUrl.length)
-    console.log('Public URL:', publicUrl)
-
+    console.log('=== SUCCESS ===')
     return new Response(JSON.stringify({ uploadUrl, publicUrl, key }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
