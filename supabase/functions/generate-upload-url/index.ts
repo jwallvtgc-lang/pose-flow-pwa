@@ -1,17 +1,17 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.637.0'
-import { getSignedUrl } from 'https://esm.sh/@aws-sdk/s3-request-presigner@3.637.0'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { S3Client, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.637.0";
+import { getSignedUrl } from "https://esm.sh/@aws-sdk/s3-request-presigner@3.637.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 function createS3Client() {
-  const region = Deno.env.get('STORAGE_REGION')
-  const accessKeyId = Deno.env.get('STORAGE_ACCESS_KEY')
-  const secretAccessKey = Deno.env.get('STORAGE_SECRET_KEY')
-  const endpoint = Deno.env.get('STORAGE_ENDPOINT')
+  const region = Deno.env.get("STORAGE_REGION");
+  const accessKeyId = Deno.env.get("STORAGE_ACCESS_KEY");
+  const secretAccessKey = Deno.env.get("STORAGE_SECRET_KEY");
+  const endpoint = Deno.env.get("STORAGE_ENDPOINT");
 
   const config: any = {
     region,
@@ -19,22 +19,22 @@ function createS3Client() {
       accessKeyId,
       secretAccessKey,
     },
-  }
+  };
 
   // If using R2 or other S3-compatible service
   if (endpoint) {
-    config.endpoint = endpoint
-    config.forcePathStyle = true
+    config.endpoint = endpoint;
+    config.forcePathStyle = true;
   }
 
-  return new S3Client(config)
+  return new S3Client(config);
 }
 
 function getFileExtension(contentType: string): string {
-  if (contentType.includes('mp4')) return 'mp4'
-  if (contentType.includes('quicktime')) return 'mov'
-  if (contentType.includes('webm')) return 'webm'
-  return 'mp4'
+  if (contentType.includes("mp4")) return "mp4";
+  if (contentType.includes("quicktime")) return "mov";
+  if (contentType.includes("webm")) return "webm";
+  return "mp4";
 }
 
 serve(async (req) => {
@@ -117,10 +117,11 @@ serve(async (req) => {
       })
     }
 
-    const extension = getFileExtension(contentType)
-    const timestamp = Date.now()
-    const randomId = crypto.randomUUID().slice(0, 8)
-    const key = `${folder}/${new Date().toISOString().slice(0, 10)}/${timestamp}-${randomId}-${filename.replace(/\s+/g, '-')}.${extension}`
+    const extension = getFileExtension(contentType);
+    const timestamp = Date.now();
+    const randomId = crypto.randomUUID().slice(0, 8);
+    const sanitizedFilename = filename.replace(/\s+/g, "-");
+    const key = `${folder}/${new Date().toISOString().slice(0, 10)}/${timestamp}-${randomId}-${sanitizedFilename}.${extension}`;
 
     console.log('Generated S3 key:', key)
 
