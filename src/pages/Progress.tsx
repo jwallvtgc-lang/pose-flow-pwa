@@ -500,91 +500,148 @@ export default function Progress() {
   );
 }
 
-// Score Bar Chart Component - Shows up to 25 recent swings for trend analysis
+// Enhanced Score Bar Chart Component - Shows up to 25 recent swings with detailed analysis
 function ScoreBarChart({ data }: { data: ChartPoint[] }) {
   if (!data.length) {
     return (
-      <div className="flex items-center justify-center h-16">
-        <span className="text-blue-200 text-xs">No score data available</span>
+      <div className="flex items-center justify-center h-20">
+        <span className="text-blue-200 text-sm">No score data available</span>
       </div>
     );
   }
 
-  const recentScores = data.slice(-25); // Show last 25 scores for comprehensive trend view
-  const maxScore = Math.max(...recentScores.map(point => point.value));
-  const minScore = Math.min(...recentScores.map(point => point.value));
-  const scoreRange = maxScore - minScore || 1; // Prevent division by zero
+  const recentScores = data.slice(-25);
+  const average = recentScores.reduce((sum, point) => sum + point.value, 0) / recentScores.length;
   
-  // Use fixed height for the chart area
-  const maxBarHeight = 64; // 64px max height
+  // Fixed scale from 0-100 for consistency
+  const chartMin = 0;
+  const chartMax = 100;
+  const maxBarHeight = 80;
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'bg-green-500 border-green-600';
+    if (score >= 60) return 'bg-yellow-500 border-yellow-600';
+    if (score >= 40) return 'bg-orange-500 border-orange-600';
+    return 'bg-red-500 border-red-600';
+  };
+
+  const getPerformanceLevel = (score: number) => {
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Good';
+    if (score >= 40) return 'Fair';
+    return 'Needs Work';
+  };
 
   return (
-    <div className="space-y-2">
-      {/* Bar Chart */}
-      <div className="flex items-end justify-between gap-px bg-white/10 rounded p-3 overflow-x-auto" style={{ height: `${maxBarHeight + 20}px` }}>
-        {recentScores.map((point, index) => {
-          // Calculate height in pixels with better scaling
-          let barHeight;
-          if (scoreRange === 0) {
-            barHeight = maxBarHeight / 2; // All same scores, use middle height
-          } else {
-            barHeight = Math.max(
-              ((point.value - minScore) / scoreRange) * maxBarHeight,
-              8 // Minimum 8px height for visibility
+    <div className="space-y-3">
+      {/* Chart Container with Y-axis */}
+      <div className="relative">
+        {/* Y-axis labels */}
+        <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-blue-200 pr-2" style={{ width: '30px' }}>
+          <span>100</span>
+          <span>75</span>
+          <span>50</span>
+          <span>25</span>
+          <span>0</span>
+        </div>
+        
+        {/* Average line */}
+        <div 
+          className="absolute left-8 right-0 border-t border-dashed border-blue-300 z-10"
+          style={{ 
+            top: `${maxBarHeight - ((average - chartMin) / (chartMax - chartMin)) * maxBarHeight + 10}px`
+          }}
+        >
+          <span className="absolute -top-4 right-0 text-xs text-blue-200 bg-blue-600/80 px-2 py-1 rounded text-white">
+            Avg: {average.toFixed(0)}
+          </span>
+        </div>
+
+        {/* Bar Chart */}
+        <div 
+          className="ml-8 flex items-end gap-1 bg-white/10 rounded p-3 overflow-x-auto" 
+          style={{ height: `${maxBarHeight + 20}px` }}
+        >
+          {recentScores.map((point, index) => {
+            const barHeight = Math.max(
+              ((point.value - chartMin) / (chartMax - chartMin)) * maxBarHeight,
+              4
             );
-          }
-          
-          const isRecent = index >= recentScores.length - 3; // Last 3 are "recent"
-          const isImproving = index > 0 && point.value >= recentScores[index - 1].value;
-          
-          return (
-            <div 
-              key={`bar-${point.t}-${index}`} 
-              className="flex flex-col items-center group relative"
-              style={{ minWidth: recentScores.length > 15 ? '8px' : '12px', flex: '0 0 auto' }}
-            >
-              {/* Score value on hover */}
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-white bg-black/80 rounded px-2 py-1 mb-1 whitespace-nowrap absolute -top-8 z-10">
-                {point.value}
-              </div>
-              
-              {/* Bar */}
+            
+            const isLatest = index === recentScores.length - 1;
+            const swingNumber = recentScores.length - index; // Reverse numbering (most recent = 1)
+            
+            return (
               <div 
-                className={`w-full rounded-sm transition-all duration-300 border ${
-                  isRecent 
-                    ? (isImproving ? 'bg-green-400 border-green-500 hover:bg-green-300' : 'bg-yellow-400 border-yellow-500 hover:bg-yellow-300')
-                    : 'bg-white/70 border-white/80 hover:bg-white/90'
-                }`}
-                style={{ 
-                  height: `${Math.round(barHeight)}px`
-                }}
-                title={`Swing ${index + 1}: ${point.value} points`}
-              />
-              
-              {/* Swing number - only show every few numbers if there are many bars */}
-              {(recentScores.length <= 15 || index % Math.ceil(recentScores.length / 10) === 0 || index === recentScores.length - 1) && (
-                <div className="text-xs text-blue-200 mt-1 font-medium">
-                  {index + 1}
+                key={`bar-${point.t}-${index}`} 
+                className="flex flex-col items-center group relative"
+                style={{ minWidth: recentScores.length > 15 ? '12px' : '16px', flex: '0 0 auto' }}
+              >
+                {/* Tooltip on hover */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-16 left-1/2 transform -translate-x-1/2 z-20">
+                  <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
+                    <div className="font-medium">Swing #{swingNumber}</div>
+                    <div>Score: {point.value}</div>
+                    <div className="text-gray-300">{getPerformanceLevel(point.value)}</div>
+                  </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
+                
+                {/* Score value above bar */}
+                {(isLatest || recentScores.length <= 10) && (
+                  <div className="text-xs text-white font-medium mb-1" style={{ marginBottom: '2px' }}>
+                    {point.value}
+                  </div>
+                )}
+                
+                {/* Bar */}
+                <div 
+                  className={`w-full rounded-sm transition-all duration-300 border-2 ${
+                    isLatest 
+                      ? 'ring-2 ring-white/50 ' + getScoreColor(point.value)
+                      : getScoreColor(point.value) + ' opacity-80'
+                  } hover:opacity-100`}
+                  style={{ 
+                    height: `${Math.round(barHeight)}px`
+                  }}
+                />
+                
+                {/* Swing number */}
+                <div className={`text-xs mt-1 ${isLatest ? 'text-white font-bold' : 'text-blue-200'}`}>
+                  {swingNumber <= 5 || swingNumber % 5 === 0 || isLatest ? swingNumber : ''}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
       
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-4 text-xs text-blue-200">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-white/70 rounded border border-white/80"></div>
-          <span>Older</span>
+      {/* Enhanced Legend and Stats */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-green-500 rounded border border-green-600"></div>
+              <span className="text-blue-200">80+ Excellent</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-yellow-500 rounded border border-yellow-600"></div>
+              <span className="text-blue-200">60+ Good</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-orange-500 rounded border border-orange-600"></div>
+              <span className="text-blue-200">40+ Fair</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-red-500 rounded border border-red-600"></div>
+              <span className="text-blue-200">&lt;40 Needs Work</span>
+            </div>
+          </div>
+          <div className="text-blue-200">
+            <span className="font-medium">Latest swing highlighted</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-400 rounded border border-green-500"></div>
-          <span>Recent ↗</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-yellow-400 rounded border border-yellow-500"></div>
-          <span>Recent ↘</span>
+        <div className="text-center text-xs text-blue-200">
+          Numbers show most recent swings (1 = latest, {recentScores.length} = oldest shown)
         </div>
       </div>
     </div>
