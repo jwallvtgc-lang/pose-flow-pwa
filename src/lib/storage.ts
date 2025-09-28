@@ -174,11 +174,14 @@ export async function uploadVideo({
         forcePathStyle: false,
       });
       
+      // Convert blob to ArrayBuffer for S3 compatibility
+      const arrayBuffer = await blob.arrayBuffer();
+      
       // Create the put command
       const putCommand = new PutObjectCommand({
         Bucket: bucket,
         Key: s3Key,
-        Body: blob,
+        Body: new Uint8Array(arrayBuffer),
         ContentType: contentType,
       });
       
