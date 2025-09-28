@@ -78,10 +78,15 @@ export default function SwingDetail() {
     try {
       setIsVideoLoading(true);
       setVideoError('');
+      console.log('Loading video URL for path:', videoPath);
       const signedUrl = await getVideoSignedUrl(videoPath);
+      console.log('Got signed URL:', signedUrl);
       setVideoUrl(signedUrl);
     } catch (err) {
       console.error('Failed to load video URL:', err);
+      if (err instanceof Error && (err.message.includes('401') || err.toString().includes('401'))) {
+        console.error('401 Unauthorized error detected in video URL loading');
+      }
       setVideoError('Failed to load video');
     } finally {
       setIsVideoLoading(false);
@@ -195,16 +200,25 @@ export default function SwingDetail() {
 
       console.log('Processed AI metrics:', aiMetrics);
 
-      const { data, error } = await supabase.functions.invoke('generate-swing-coaching', {
+      console.log('Calling generate-swing-coaching with:', { metrics: aiMetrics, playerLevel: 'high_school', previousScore: swing?.score_phase1 });
+      
+      const response = await supabase.functions.invoke('generate-swing-coaching', {
         body: {
           metrics: aiMetrics,
           playerLevel: 'high_school', // 12-18 year olds
           previousScore: swing?.score_phase1
         }
       });
+      
+      console.log('Generate-swing-coaching response:', response);
+      
+      const { data, error } = response;
 
       if (error) {
         console.error('AI coaching API error:', error);
+        if (error.message?.includes('401') || error.status === 401) {
+          console.error('401 Unauthorized error detected in AI coaching call');
+        }
         throw error;
       }
       
@@ -232,6 +246,7 @@ export default function SwingDetail() {
       setIsLoading(true);
       setError('');
       console.log('Loading swing detail for ID:', swingId);
+      console.log('Current auth state:', { user: !!supabase.auth.getUser(), session: !!supabase.auth.getSession() });
 
       // Fetch swing data
       const { data: swingData, error: swingError } = await supabase

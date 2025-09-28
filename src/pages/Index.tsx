@@ -23,13 +23,16 @@ const Index = () => {
   const [leaderboardRank, setLeaderboardRank] = useState<{ rank: number; totalUsers: number; averageScore: number } | null>(null);
 
   useEffect(() => {
+    console.log('Index useEffect - user state:', { user: !!user, loading });
     if (user) {
-      loadStats();
-      loadUserProfile();
-      loadLatestSwing();
-      loadTopDrills();
-      loadLeaderboardRank();
-    } else {
+      console.log('User authenticated, loading data...');
+      loadStats().catch(err => console.error('loadStats failed:', err));
+      loadUserProfile().catch(err => console.error('loadUserProfile failed:', err));
+      loadLatestSwing().catch(err => console.error('loadLatestSwing failed:', err));
+      loadTopDrills().catch(err => console.error('loadTopDrills failed:', err));
+      loadLeaderboardRank().catch(err => console.error('loadLeaderboardRank failed:', err));
+    } else if (!loading) {
+      console.log('No user, showing placeholder data');
       // Show placeholder data for non-authenticated users
       setStats({
         bestScore: 68,
@@ -43,10 +46,11 @@ const Index = () => {
       ]);
       setLeaderboardRank({ rank: 1, totalUsers: 1, averageScore: 64.7 });
     }
-  }, [user]);
+  }, [user, loading]);
 
   const loadStats = async () => {
     try {
+      console.log('Loading stats...');
       // Get all user swings
       const { data: swings, error: swingsError } = await supabase
         .from('swings')
@@ -57,6 +61,8 @@ const Index = () => {
         console.error('Error loading swings:', swingsError);
         return;
       }
+
+      console.log('Loaded swings:', swings?.length || 0);
 
       const today = new Date().toDateString();
       const validSwings = (swings || []).filter(swing => swing.score_phase1 && swing.score_phase1 > 0);
