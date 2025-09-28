@@ -101,7 +101,7 @@ export async function uploadVideo({
   console.log('Request body:', requestBody);
   
   try {
-    const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkdXJ6cm5kbnB4aGRyYnRxcW56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNzQ0MjMsImV4cCI6MjA3MzY1MDQyM30.ammqHLKHJjY3ynwgbuV0M9Q8jEKwcXELoWi8rMnkPxI';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkdXJ6cm5kbnB4aGRyYnRxcW56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNzQ0MjMsImV4cCI6MjA3MzY1MDQyM30.ammqHLKHJjY3ynwgbuV0M9Q8jEKwcXELoWi8rMnkPxI';
     console.log('Using Supabase anon key (first 10 chars):', supabaseAnonKey.substring(0, 10) + '...');
     
     const presign = await fetch(presignUrl, {
