@@ -152,10 +152,14 @@ export default function SwingDetail() {
   };
 
   const generateAICoaching = async (metricsData: SwingMetric[]) => {
-    if (metricsData.length === 0) return;
+    if (metricsData.length === 0) {
+      console.log('No metrics data available for AI coaching');
+      return;
+    }
     
     try {
       setIsLoadingCoaching(true);
+      console.log('Generating AI coaching for metrics:', metricsData);
       
       // Transform metrics for AI coaching
       const aiMetrics = metricsData.map(metric => {
@@ -163,7 +167,10 @@ export default function SwingDetail() {
         const spec = metricSpecs[metricName as keyof typeof metricSpecs];
         const value = metric.value || 0;
         
-        if (!spec) return null;
+        if (!spec) {
+          console.log('No spec found for metric:', metricName);
+          return null;
+        }
         
         // Calculate percentile rank based on target range
         const [min, max] = spec.target;
@@ -186,6 +193,8 @@ export default function SwingDetail() {
         };
       }).filter(Boolean);
 
+      console.log('Processed AI metrics:', aiMetrics);
+
       const { data, error } = await supabase.functions.invoke('generate-swing-coaching', {
         body: {
           metrics: aiMetrics,
@@ -194,7 +203,12 @@ export default function SwingDetail() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('AI coaching API error:', error);
+        throw error;
+      }
+      
+      console.log('AI coaching response:', data);
       setAiCoaching(data);
     } catch (err) {
       console.error('Failed to generate AI coaching:', err);
@@ -571,7 +585,7 @@ export default function SwingDetail() {
             </Card>
           )}
 
-          {/* AI Coach Feedback - Shortened */}
+          {/* AI Coach Feedback - Enhanced with better error handling */}
           {isLoadingCoaching ? (
             <Card className="p-6 rounded-3xl">
               <div className="flex items-center gap-3 mb-4">
@@ -579,7 +593,7 @@ export default function SwingDetail() {
                 <h3 className="text-lg font-anton font-black">Getting your coach feedback...</h3>
               </div>
             </Card>
-          ) : aiCoaching && (
+          ) : aiCoaching ? (
             <Card className="p-6 rounded-3xl border-l-4 border-primary">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center">
@@ -591,29 +605,48 @@ export default function SwingDetail() {
                 </div>
               </div>
               
-              <div className="bg-blue-50 rounded-2xl p-4 mb-4">
-                <p className="text-blue-800 font-medium text-xs leading-relaxed">
-                  {aiCoaching.encouragement}
-                </p>
-              </div>
+              {aiCoaching.encouragement && (
+                <div className="bg-blue-50 rounded-2xl p-4 mb-4">
+                  <p className="text-blue-800 font-medium text-sm leading-relaxed">
+                    {aiCoaching.encouragement}
+                  </p>
+                </div>
+              )}
 
-              <div className="space-y-3">
-                <h4 className="font-anton font-black text-gray-900 mb-2">Focus Areas:</h4>
-                {aiCoaching.cues.map((cue, index) => (
-                  <div key={index} className="bg-white rounded-2xl p-3 border border-gray-200">
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-white text-xs font-bold">{index + 1}</span>
-                      </div>
-                      <div>
-                        <h5 className="font-bold text-gray-900 mb-1">{cue}</h5>
-                        <p className="text-gray-600 text-xs leading-relaxed">
-                          {aiCoaching.explanations[index]}
-                        </p>
+              {aiCoaching.cues && aiCoaching.cues.length > 0 ? (
+                <div className="space-y-3">
+                  <h4 className="font-anton font-black text-gray-900 mb-2">Focus Areas:</h4>
+                  {aiCoaching.cues.map((cue, index) => (
+                    <div key={index} className="bg-white rounded-2xl p-4 border border-gray-200">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-white text-sm font-bold">{index + 1}</span>
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-bold text-gray-900 mb-2 text-sm">{cue}</h5>
+                          {aiCoaching.explanations && aiCoaching.explanations[index] && (
+                            <p className="text-gray-600 text-sm leading-relaxed">
+                              {aiCoaching.explanations[index]}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-4">
+                  <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm">No specific coaching tips available</p>
+                </div>
+              )}
+            </Card>
+          ) : (
+            <Card className="p-6 rounded-3xl border border-dashed border-gray-300">
+              <div className="text-center text-gray-500 py-4">
+                <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">AI coaching not available for this swing</p>
+                <p className="text-xs text-gray-400 mt-1">Try recording a new swing for personalized feedback</p>
               </div>
             </Card>
           )}
