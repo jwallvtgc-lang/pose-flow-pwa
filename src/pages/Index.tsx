@@ -23,16 +23,22 @@ const Index = () => {
   const [leaderboardRank, setLeaderboardRank] = useState<{ rank: number; totalUsers: number; averageScore: number } | null>(null);
 
   useEffect(() => {
-    console.log('Index useEffect - user state:', { user: !!user, loading });
+    console.log('Index useEffect - auth state:', { 
+      hasUser: !!user, 
+      userEmail: user?.email,
+      userId: user?.id,
+      loading 
+    });
+    
     if (user) {
-      console.log('User authenticated, loading data...');
+      console.log('User authenticated, loading data for user:', user.email);
       loadStats().catch(err => console.error('loadStats failed:', err));
       loadUserProfile().catch(err => console.error('loadUserProfile failed:', err));
       loadLatestSwing().catch(err => console.error('loadLatestSwing failed:', err));
       loadTopDrills().catch(err => console.error('loadTopDrills failed:', err));
       loadLeaderboardRank().catch(err => console.error('loadLeaderboardRank failed:', err));
     } else if (!loading) {
-      console.log('No user, showing placeholder data');
+      console.log('No user detected, showing placeholder data (loading:', loading, ')');
       // Show placeholder data for non-authenticated users
       setStats({
         bestScore: 68,
@@ -45,6 +51,8 @@ const Index = () => {
         { name: 'Head Still Drill', count: 8, description: 'Keep your head stable for consistent contact' }
       ]);
       setLeaderboardRank({ rank: 1, totalUsers: 1, averageScore: 64.7 });
+    } else {
+      console.log('Auth is still loading...');
     }
   }, [user, loading]);
 

@@ -49,7 +49,17 @@ interface AICoaching {
 export default function SwingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, session, loading } = useAuth();
+  
+  console.log('SwingDetail render - auth state:', {
+    hasUser: !!user,
+    userEmail: user?.email,
+    userId: user?.id,
+    hasSession: !!session,
+    sessionValid: !!(session?.access_token),
+    authLoading: loading,
+    swingId: id
+  });
   
   const [swing, setSwing] = useState<SwingData | null>(null);
   const [metrics, setMetrics] = useState<SwingMetric[]>([]);
@@ -269,7 +279,9 @@ export default function SwingDetail() {
       if (swingError) {
         console.error('Error loading swing:', swingError);
         if (swingError.message?.includes('401') || swingError.code === '401') {
-          setError('Please log in to view swing analysis');
+          console.log('401 error detected, redirecting to auth...');
+          navigate('/auth');
+          return;
         } else {
           setError('Failed to load swing data');
         }
@@ -302,7 +314,9 @@ export default function SwingDetail() {
       if (metricsError) {
         console.error('Error loading metrics:', metricsError);
         if (metricsError.message?.includes('401') || metricsError.code === '401') {
-          setError('Please log in to view swing metrics');
+          console.log('401 error detected on metrics, redirecting to auth...');
+          navigate('/auth');
+          return;
         } else {
           setError('Failed to load swing metrics');
         }

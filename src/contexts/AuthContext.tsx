@@ -31,8 +31,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_, session) => {
-        console.log('Auth state changed:', { session: session?.user?.email, loading });
+      (event, session) => {
+        console.log('Auth state changed:', { 
+          event, 
+          hasSession: !!session, 
+          userEmail: session?.user?.email, 
+          userId: session?.user?.id,
+          loading 
+        });
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -44,7 +50,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Got existing session:', { session: session?.user?.email });
+      console.log('Got existing session:', { 
+        hasSession: !!session, 
+        userEmail: session?.user?.email,
+        userId: session?.user?.id 
+      });
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -60,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     timeoutId = setTimeout(() => {
       console.warn('Auth timeout - setting loading to false');
       setLoading(false);
-    }, 5000);
+    }, 3000); // Reduced timeout to 3 seconds
 
     return () => {
       subscription.unsubscribe();
