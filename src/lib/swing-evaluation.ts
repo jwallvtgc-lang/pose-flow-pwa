@@ -50,8 +50,15 @@ export async function evaluateSwing(values: Record<string, number>) {
 
     if (error) {
       console.error('AI coaching failed, using fallback:', error);
-      throw error;
+      console.error('Error details:', JSON.stringify(error, null, 2));
     }
+
+    if (error || !aiCoaching) {
+      console.log('Using fallback coaching due to error or missing data');
+      throw new Error('AI coaching unavailable');
+    }
+
+    console.log('AI coaching response received:', JSON.stringify(aiCoaching, null, 2));
 
     // Transform AI response into coaching cards format
     const cards = aiCoaching.cues.map((cue: string, index: number) => ({

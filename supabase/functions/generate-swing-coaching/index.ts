@@ -89,14 +89,14 @@ Return a JSON response with this exact structure:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'o4-mini-2025-04-16', // Using the fast reasoning model
+        model: 'gpt-4o-mini', // Temporarily switch back to test
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_completion_tokens: 500, // o4-mini uses max_completion_tokens instead of max_tokens
+        temperature: 0.7,
+        max_tokens: 500,
         response_format: { type: "json_object" }
-        // Note: o4-mini doesn't support temperature parameter
       }),
     });
 
@@ -110,6 +110,12 @@ Return a JSON response with this exact structure:
     const coachingData = JSON.parse(data.choices[0].message.content);
 
     console.log('Generated coaching:', coachingData);
+
+    // Validate the response structure
+    if (!coachingData.cues || !Array.isArray(coachingData.cues) || coachingData.cues.length === 0) {
+      console.error('Invalid coaching response structure:', coachingData);
+      throw new Error('Invalid coaching response format');
+    }
 
     return new Response(JSON.stringify(coachingData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
