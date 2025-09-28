@@ -189,9 +189,9 @@ export default function Leaderboard() {
     const tabInfo = getTabInfo(type);
     
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {entries.map((entry) => (
-          <Card key={entry.user_id} className="p-4 hover:shadow-md transition-shadow">
+          <Card key={entry.user_id} className="p-6 hover:shadow-lg transition-all duration-200 rounded-3xl bg-white">
             <div className="flex items-center gap-4">
               {/* Rank */}
               <div className="flex-shrink-0">
@@ -200,28 +200,31 @@ export default function Leaderboard() {
               
               {/* Player Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-semibold text-gray-900 truncate">
+                <div className="mb-2">
+                  <h3 className="text-lg font-anton font-black text-gray-900 leading-tight">
                     {entry.full_name}
                   </h3>
+                </div>
+                <div className="flex flex-col gap-1">
                   {entry.current_team && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs rounded-full w-fit bg-blue-100 text-blue-700 border-0">
                       {entry.current_team}
                     </Badge>
                   )}
+                  {entry.primary_position && (
+                    <p className="text-sm font-medium text-gray-600">{entry.primary_position}</p>
+                  )}
                 </div>
-                {entry.primary_position && (
-                  <p className="text-sm text-gray-500">{entry.primary_position}</p>
-                )}
               </div>
               
               {/* Stats */}
-              <div className="text-right">
-                <div className="text-xl font-bold text-blue-600">
+              <div className="text-right flex-shrink-0">
+                <div className="text-2xl font-anton font-black text-blue-600 mb-1">
                   {tabInfo.getValue(entry)}
                 </div>
-                <div className="text-xs text-gray-500">
-                  {entry.total_swings} total • {entry.max_score} best
+                <div className="text-xs text-gray-500 space-y-0.5">
+                  <div>{entry.total_swings} total swings</div>
+                  <div>{entry.max_score} best score</div>
                 </div>
               </div>
             </div>
@@ -233,11 +236,28 @@ export default function Leaderboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-        <div className="container mx-auto px-6 py-8 max-w-4xl">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-lg font-medium text-gray-600">Loading leaderboards...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-6 max-w-lg">
+          <div className="flex items-center gap-4 mb-6">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div className="h-6 bg-muted rounded animate-pulse w-32"></div>
+          </div>
+          
+          <div className="space-y-6">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="p-6 rounded-3xl">
+                <div className="animate-pulse flex items-center gap-4">
+                  <div className="w-12 h-12 bg-muted rounded-full"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                    <div className="h-3 bg-muted rounded w-1/2"></div>
+                  </div>
+                  <div className="w-16 h-8 bg-muted rounded"></div>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
       </div>
@@ -245,91 +265,72 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-6 max-w-lg">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/')}
-              className="text-gray-600 hover:text-gray-900 p-2 rounded-xl"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-                <Trophy className="w-7 h-7 text-white" />
-              </div>
-              <h1 className="text-3xl font-black text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Leaderboard
-              </h1>
-            </div>
-            <div className="w-10"></div> {/* Spacer for centering */}
-          </div>
-          <div className="text-center">
-            <p className="text-lg text-gray-600">
-              Top performers from the last 30 days
-            </p>
-          </div>
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="h-10 w-10 p-0 rounded-2xl">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <h1 className="text-2xl font-anton font-black text-gray-900">Leaderboard</h1>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as LeaderboardType)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white rounded-2xl p-1 shadow-md">
-            <TabsTrigger value="total_swings" className="rounded-xl data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-              <Activity className="w-4 h-4 mr-2" />
-              Most Active
+          <TabsList className="grid w-full grid-cols-3 bg-white rounded-3xl p-1 shadow-lg">
+            <TabsTrigger value="total_swings" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm">
+              <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Most Active</span>
+              <span className="sm:hidden">Active</span>
             </TabsTrigger>
-            <TabsTrigger value="average_score" className="rounded-xl data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-              <Target className="w-4 h-4 mr-2" />
-              Best Average
+            <TabsTrigger value="average_score" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm">
+              <Target className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Best Average</span>
+              <span className="sm:hidden">Average</span>
             </TabsTrigger>
-            <TabsTrigger value="max_score" className="rounded-xl data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Highest Score
+            <TabsTrigger value="max_score" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Highest Score</span>
+              <span className="sm:hidden">Best</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="total_swings" className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Most Active Players</h2>
-              <p className="text-gray-600">Players with the most swings recorded</p>
-            </div>
+          <TabsContent value="total_swings" className="space-y-6">
             {leaderboards.total_swings.length > 0 ? (
               renderLeaderboard(leaderboards.total_swings, 'total_swings')
             ) : (
-              <Card className="p-8 text-center">
-                <p className="text-gray-500">No data available for the last 30 days</p>
+              <Card className="p-8 text-center rounded-3xl bg-white">
+                <div className="text-gray-400 mb-2">
+                  <Activity className="w-12 h-12 mx-auto" />
+                </div>
+                <p className="text-gray-500 font-medium">No data available for the last 30 days</p>
               </Card>
             )}
           </TabsContent>
 
-          <TabsContent value="average_score" className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Best Average Scores</h2>
-              <p className="text-gray-600">Players with the highest average scores (minimum 3 swings)</p>
-            </div>
+          <TabsContent value="average_score" className="space-y-6">
             {leaderboards.average_score.length > 0 ? (
               renderLeaderboard(leaderboards.average_score, 'average_score')
             ) : (
-              <Card className="p-8 text-center">
-                <p className="text-gray-500">No data available for the last 30 days</p>
+              <Card className="p-8 text-center rounded-3xl bg-white">
+                <div className="text-gray-400 mb-2">
+                  <Target className="w-12 h-12 mx-auto" />
+                </div>
+                <p className="text-gray-500 font-medium">No data available for the last 30 days</p>
+                <p className="text-sm text-gray-400 mt-1">Minimum 3 swings required</p>
               </Card>
             )}
           </TabsContent>
 
-          <TabsContent value="max_score" className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Highest Single Scores</h2>
-              <p className="text-gray-600">Players with the best individual swing scores</p>
-            </div>
+          <TabsContent value="max_score" className="space-y-6">
             {leaderboards.max_score.length > 0 ? (
               renderLeaderboard(leaderboards.max_score, 'max_score')
             ) : (
-              <Card className="p-8 text-center">
-                <p className="text-gray-500">No data available for the last 30 days</p>
+              <Card className="p-8 text-center rounded-3xl bg-white">
+                <div className="text-gray-400 mb-2">
+                  <TrendingUp className="w-12 h-12 mx-auto" />
+                </div>
+                <p className="text-gray-500 font-medium">No data available for the last 30 days</p>
               </Card>
             )}
           </TabsContent>
