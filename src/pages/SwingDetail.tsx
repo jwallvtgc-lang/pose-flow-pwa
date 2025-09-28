@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getVideoSignedUrl } from '@/lib/storage';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SwingData {
   id: string;
@@ -48,6 +49,7 @@ interface AICoaching {
 export default function SwingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [swing, setSwing] = useState<SwingData | null>(null);
   const [metrics, setMetrics] = useState<SwingMetric[]>([]);
@@ -246,7 +248,14 @@ export default function SwingDetail() {
       setIsLoading(true);
       setError('');
       console.log('Loading swing detail for ID:', swingId);
-      console.log('Current auth state:', { user: !!supabase.auth.getUser(), session: !!supabase.auth.getSession() });
+      
+      // Get current session properly
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      console.log('Current auth state:', { 
+        hasSession: !!currentSession, 
+        userEmail: currentSession?.user?.email,
+        contextUser: !!user 
+      });
 
       // Fetch swing data
       const { data: swingData, error: swingError } = await supabase
@@ -258,8 +267,13 @@ export default function SwingDetail() {
       console.log('Swing query result:', swingData, swingError);
 
       if (swingError) {
-        console.error('Swing query error:', swingError);
-        throw swingError;
+        console.error('Error loading swing:', swingError);
+        if (swingError.message?.includes('401') || swingError.code === '401') {
+          setError('Please log in to view swing analysis');
+        } else {
+          setError('Failed to load swing data');
+        }
+        return;
       }
       
       if (!swingData) {
@@ -286,8 +300,13 @@ export default function SwingDetail() {
 
       console.log('Metrics query result:', metricsData, metricsError);
       if (metricsError) {
-        console.error('Metrics query error:', metricsError);
-        throw metricsError;
+        console.error('Error loading metrics:', metricsError);
+        if (metricsError.message?.includes('401') || metricsError.code === '401') {
+          setError('Please log in to view swing metrics');
+        } else {
+          setError('Failed to load swing metrics');
+        }
+        return;
       }
       const processedMetrics = (metricsData || []).map(metric => ({
         swing_id: metric.swing_id || '',
