@@ -54,55 +54,72 @@ export default function SwingAnalysis() {
   }, []);
 
   const handleCapture = (blob: Blob) => {
+    console.log('🎬 === VIDEO CAPTURED ===');
+    console.log('🎬 Blob size:', blob.size);
+    console.log('🎬 Blob type:', blob.type);
+    console.log('🎬 Moving to score step...');
     setVideoBlob(blob);
     setCurrentStep('score');
   };
 
   const handleAnalysisComplete = async (result: PoseAnalysisResult) => {
+    console.log('🟡 === ANALYSIS COMPLETE CALLED ===');
+    console.log('🟡 Has result:', !!result);
+    console.log('🟡 Has videoBlob:', !!videoBlob); 
+    console.log('🟡 VideoBlob size:', videoBlob?.size);
+    console.log('🟡 Current step:', currentStep);
+    
     try {
       setIsSaving(true);
+      console.log('🟢 Set saving to true');
 
       // Generate metrics from pose analysis data
+      console.log('🟢 Computing metrics...');
       const metricsResult = computePhase1Metrics(
         result.keypointsByFrame,
         result.events,
         30 // fps
       );
+      console.log('🟢 Metrics computed:', Object.keys(metricsResult.metrics));
       
       // Filter out null values for evaluation
       const validMetrics = Object.fromEntries(
         Object.entries(metricsResult.metrics).filter(([_, value]) => value !== null)
       ) as Record<string, number>;
+      console.log('🟢 Valid metrics count:', Object.keys(validMetrics).length);
       
       // Evaluate the swing to get score and coaching cards
+      console.log('🟢 Evaluating swing...');
       const evaluation = await evaluateSwing(validMetrics);
+      console.log('🟢 Evaluation complete, score:', evaluation.score);
 
       // Save to database
       const clientRequestId = crypto.randomUUID();
+      console.log('🟢 Generated client ID:', clientRequestId);
       
       // Upload video
       let videoUrl = null;
       if (videoBlob) {
         try {
-          console.log('=== Starting video upload process ===');
-          console.log('Video blob size:', videoBlob.size);
-          console.log('Video blob type:', videoBlob.type);
+          console.log('📤 === STARTING VIDEO UPLOAD ===');
+          console.log('📤 Video blob size:', videoBlob.size);
+          console.log('📤 Video blob type:', videoBlob.type);
           
           const uploadResult = await uploadVideo({
             blob: videoBlob,
             client_request_id: clientRequestId
           });
           
-          console.log('Upload result:', uploadResult);
+          console.log('✅ Upload result received:', uploadResult);
           videoUrl = uploadResult.urlOrPath;
-          console.log('Video uploaded successfully to:', videoUrl);
+          console.log('✅ Video uploaded successfully to:', videoUrl);
         } catch (uploadError) {
-          console.error('=== Video upload failed ===');
-          console.error('Upload error details:', uploadError);
+          console.error('❌ === VIDEO UPLOAD FAILED ===');
+          console.error('❌ Upload error details:', uploadError);
           toast.error('Video upload failed, but analysis will still be saved');
         }
       } else {
-        console.log('No video blob available for upload');
+        console.log('⚠️ No video blob available for upload');
       }
 
       // Ensure we have a session
