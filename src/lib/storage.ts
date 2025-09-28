@@ -34,7 +34,8 @@ function env<T = string>(k: string, fallback?: T): T {
 
 /** Base URL where files are served from (no trailing slash). */
 function cdnBase(): string {
-  return String(env('VITE_STORAGE_CDN_URL', '')).replace(/\/+$/, '');
+  const fallbackCdn = 'https://swingsense-video.f654e3871f91d6cea64b343e353ea3b8.r2.dev';
+  return String(env('VITE_STORAGE_CDN_URL', fallbackCdn)).replace(/\/+$/, '');
 }
 
 /** Very small mime → extension mapping; defaults to mp4. */
@@ -100,11 +101,14 @@ export async function uploadVideo({
   console.log('Request body:', requestBody);
   
   try {
+    const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkdXJ6cm5kbnB4aGRyYnRxcW56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNzQ0MjMsImV4cCI6MjA3MzY1MDQyM30.ammqHLKHJjY3ynwgbuV0M9Q8jEKwcXELoWi8rMnkPxI';
+    console.log('Using Supabase anon key (first 10 chars):', supabaseAnonKey.substring(0, 10) + '...');
+    
     const presign = await fetch(presignUrl, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkdXJ6cm5kbnB4aGRyYnRxcW56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNzQ0MjMsImV4cCI6MjA3MzY1MDQyM30.ammqHLKHJjY3ynwgbuV0M9Q8jEKwcXELoWi8rMnkPxI'}`
+        'Authorization': `Bearer ${supabaseAnonKey}`
       },
       body: JSON.stringify(requestBody),
     });
