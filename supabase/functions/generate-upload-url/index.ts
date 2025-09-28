@@ -8,24 +8,23 @@ const corsHeaders = {
 };
 
 function createS3Client() {
-  const region = Deno.env.get("STORAGE_REGION");
+  const region = Deno.env.get("STORAGE_REGION") || "auto";
   const accessKeyId = Deno.env.get("STORAGE_ACCESS_KEY");
   const secretAccessKey = Deno.env.get("STORAGE_SECRET_KEY");
-  const endpoint = Deno.env.get("STORAGE_ENDPOINT");
 
-  const config: any = {
+  // For Cloudflare R2, we need to construct the endpoint
+  const accountId = secretAccessKey; // For R2, account ID is stored as secret key
+  const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
+
+  const config = {
     region,
+    endpoint,
     credentials: {
-      accessKeyId,
-      secretAccessKey,
+      accessKeyId: accessKeyId!,
+      secretAccessKey: accessKeyId!, // For R2, use the token as both access key and secret
     },
+    forcePathStyle: false, // R2 uses virtual-hosted-style URLs
   };
-
-  // If using R2 or other S3-compatible service
-  if (endpoint) {
-    config.endpoint = endpoint;
-    config.forcePathStyle = true;
-  }
 
   return new S3Client(config);
 }
