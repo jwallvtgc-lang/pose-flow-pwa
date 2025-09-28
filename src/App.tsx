@@ -23,7 +23,7 @@ import { initTf } from "./lib/tf";
 
 const queryClient = new QueryClient();
 
-// Register service worker
+// Register service worker with better error handling
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
@@ -32,6 +32,7 @@ if ('serviceWorker' in navigator) {
       })
       .catch((registrationError) => {
         console.log('SW registration failed: ', registrationError);
+        // Continue without service worker - don't break the app
       });
   });
 }
