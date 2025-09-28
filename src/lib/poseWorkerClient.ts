@@ -36,13 +36,28 @@ export class PoseWorkerClient {
   private worker: Worker | null = null;
   private isInitialized = false;
   private isProcessing = false;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor() {
-    this.initializeWorker();
+    // Don't initialize immediately - wait until needed
+    console.log('PoseWorkerClient created - worker will initialize when needed');
+  }
+
+  private async ensureInitialized(): Promise<void> {
+    if (this.isInitialized) return;
+    
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+    
+    this.initializationPromise = this.initializeWorker();
+    return this.initializationPromise;
   }
 
   private async initializeWorker(): Promise<void> {
     try {
+      console.log('Starting pose worker initialization...');
+      
       // Use the JavaScript worker from public directory to avoid module resolution issues
       this.worker = new Worker('/poseWorker.js');
 
@@ -67,11 +82,12 @@ export class PoseWorkerClient {
       // Initialize the worker
       this.worker.postMessage({ type: 'initialize' });
 
-      // Wait for initialization
+      // Wait for initialization with shorter timeout
       await this.waitForInitialization();
 
     } catch (error) {
       console.error('Failed to initialize pose worker:', error);
+      this.initializationPromise = null; // Reset so it can be retried
       throw new Error('Pose worker initialization failed');
     }
   }
@@ -88,9 +104,10 @@ export class PoseWorkerClient {
       
       setTimeout(() => {
         if (!this.isInitialized) {
+          this.initializationPromise = null; // Reset for retry
           reject(new Error('Worker initialization timeout'));
         }
-      }, 30000); // 30 second timeout
+      }, 15000); // Reduced to 15 seconds
       
       checkInitialization();
     });
@@ -101,6 +118,10 @@ export class PoseWorkerClient {
     fps?: number,
     onProgress?: (message: string) => void
   ): Promise<PoseAnalysisResult> {
+    // Initialize worker only when needed
+    onProgress?.('Initializing pose detection...');
+    await this.ensureInitialized();
+
     if (!this.worker || !this.isInitialized) {
       throw new Error('Pose worker not initialized');
     }
@@ -459,6 +480,15 @@ export class PoseWorkerClient {
 
   public isReady(): boolean {
     return this.isInitialized && !this.isProcessing;
+  }
+
+  public async checkReadiness(): Promise<boolean> {
+    try {
+      await this.ensureInitialized();
+      return this.isReady();
+    } catch {
+      return false;
+    }
   }
 
   public isWorking(): boolean {

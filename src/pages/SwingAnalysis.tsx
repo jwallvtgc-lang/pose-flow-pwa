@@ -12,7 +12,7 @@ import { computePhase1Metrics } from '@/lib/metrics';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { PoseAnalysisResult } from '@/lib/poseWorkerClient';
+import { poseWorkerClient, type PoseAnalysisResult } from '@/lib/poseWorkerClient';
 
 type FlowStep = 'capture' | 'score' | 'feedback';
 
@@ -28,6 +28,7 @@ export default function SwingAnalysis() {
   const [currentStep, setCurrentStep] = useState<FlowStep>('capture');
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isModelReady, setIsModelReady] = useState(false);
   
   // Check if user needs to be authenticated for this page
   useEffect(() => {
@@ -38,6 +39,19 @@ export default function SwingAnalysis() {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  // Warm up the pose model in the background (non-blocking)
+  useEffect(() => {
+    console.log('Starting background model warming...');
+    // Start warming up the model in the background without blocking the UI
+    poseWorkerClient.checkReadiness().then((ready: boolean) => {
+      console.log('Pose model ready:', ready);
+      setIsModelReady(ready);
+    }).catch((error: any) => {
+      console.log('Pose model initialization deferred:', error);
+      // Don't block UI - model will initialize when needed
+    });
+  }, []);
 
   const handleCapture = (blob: Blob) => {
     setVideoBlob(blob);
@@ -157,6 +171,13 @@ export default function SwingAnalysis() {
                 <p className="text-gray-600 text-lg leading-relaxed">
                   Position yourself sideways and record your baseball swing
                 </p>
+                {!isModelReady && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      💡 AI model is warming up in the background for faster analysis
+                    </p>
+                  </div>
+                )}
               </div>
               <CameraCapture 
                 onCapture={handleCapture}
