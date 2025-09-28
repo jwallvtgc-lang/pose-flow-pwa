@@ -278,23 +278,21 @@ const Index = () => {
     return userProfile.full_name.split(' ')[0] || 'Player';
   };
 
-  const getRankStars = (rank: number, totalUsers: number) => {
-    const percentile = ((totalUsers - rank) / totalUsers) * 100;
-    
-    if (percentile >= 95) return 5; // Top 5%
-    if (percentile >= 80) return 4; // Top 20%
-    if (percentile >= 60) return 3; // Top 40%
-    if (percentile >= 40) return 2; // Top 60%
-    return 1; // Bottom 40%
+  const getRankStars = (averageScore: number) => {
+    // Performance-based star rating using actual swing scores
+    if (averageScore >= 80) return 5; // Elite performance
+    if (averageScore >= 70) return 4; // Advanced performance
+    if (averageScore >= 60) return 3; // Skilled performance
+    if (averageScore >= 50) return 2; // Developing performance
+    return 1; // Beginner performance
   };
 
-  const getRankLabel = (rank: number, totalUsers: number) => {
-    const percentile = ((totalUsers - rank) / totalUsers) * 100;
-    
-    if (percentile >= 95) return "Elite Player";
-    if (percentile >= 80) return "Advanced Hitter";
-    if (percentile >= 60) return "Skilled Player";
-    if (percentile >= 40) return "Developing Hitter";
+  const getRankLabel = (averageScore: number) => {
+    // Performance-based labels using actual swing scores
+    if (averageScore >= 80) return "Elite Player";
+    if (averageScore >= 70) return "Advanced Hitter";
+    if (averageScore >= 60) return "Skilled Player";
+    if (averageScore >= 50) return "Developing Hitter";
     return "Beginner Player";
   };
 
@@ -348,14 +346,14 @@ const Index = () => {
               <div className="flex items-center gap-2 mb-6">
                 {leaderboardRank ? (
                   <>
-                    {[...Array(getRankStars(leaderboardRank.rank, leaderboardRank.totalUsers))].map((_, i) => (
+                    {[...Array(getRankStars(leaderboardRank.averageScore))].map((_, i) => (
                       <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                     ))}
-                    {[...Array(5 - getRankStars(leaderboardRank.rank, leaderboardRank.totalUsers))].map((_, i) => (
+                    {[...Array(5 - getRankStars(leaderboardRank.averageScore))].map((_, i) => (
                       <Star key={`empty-${i}`} className="w-4 h-4 text-yellow-400/40" />
                     ))}
                     <span className="text-blue-100 text-sm font-medium ml-2">
-                      Rank #{leaderboardRank.rank} • {getRankLabel(leaderboardRank.rank, leaderboardRank.totalUsers)}
+                      Rank #{leaderboardRank.rank} • {getRankLabel(leaderboardRank.averageScore)}
                     </span>
                   </>
                 ) : (
