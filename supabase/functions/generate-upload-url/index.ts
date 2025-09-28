@@ -94,8 +94,7 @@ serve(async (req) => {
 
     console.log('=== CREATING SIMPLE UPLOAD SOLUTION ===');
     
-    // For now, let's create a simpler solution that uses R2's direct upload
-    // We'll create URLs that the client can use with the proper headers
+    // Create the proper R2 upload URL with S3-compatible API
     const uploadUrl = `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${key}`;
     const publicUrl = `${cdnBase}/${key}`;
 
@@ -103,6 +102,7 @@ serve(async (req) => {
     console.log('Public URL created:', publicUrl);
 
     // Return the URLs along with the headers needed for upload
+    // For R2, we need to use the Authorization header with the R2 token
     const response = {
       uploadUrl,
       publicUrl,
