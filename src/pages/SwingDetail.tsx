@@ -231,15 +231,27 @@ export default function SwingDetail() {
     try {
       setIsLoading(true);
       setError('');
+      console.log('Loading swing detail for ID:', swingId);
 
       // Fetch swing data
       const { data: swingData, error: swingError } = await supabase
         .from('swings')
         .select('id, created_at, score_phase1, cues, drill_id, drill_data, video_url')
         .eq('id', swingId)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to handle missing data gracefully
 
-      if (swingError) throw swingError;
+      console.log('Swing query result:', swingData, swingError);
+
+      if (swingError) {
+        console.error('Swing query error:', swingError);
+        throw swingError;
+      }
+      
+      if (!swingData) {
+        console.error('No swing found with ID:', swingId);
+        throw new Error('Swing not found');
+      }
+      
       const processedSwing = {
         ...swingData,
         created_at: swingData.created_at || '',
@@ -247,15 +259,21 @@ export default function SwingDetail() {
               swingData.cues ? [String(swingData.cues)] : null
       } as SwingData & { drill_data?: any };
       setSwing(processedSwing);
+      console.log('Processed swing:', processedSwing);
 
       // Fetch swing metrics
+      console.log('Fetching metrics for swing ID:', swingId);
       const { data: metricsData, error: metricsError } = await supabase
         .from('swing_metrics')
         .select('swing_id, metric, value, unit')
         .eq('swing_id', swingId)
         .eq('phase', 1);
 
-      if (metricsError) throw metricsError;
+      console.log('Metrics query result:', metricsData, metricsError);
+      if (metricsError) {
+        console.error('Metrics query error:', metricsError);
+        throw metricsError;
+      }
       const processedMetrics = (metricsData || []).map(metric => ({
         swing_id: metric.swing_id || '',
         metric: metric.metric || '',
@@ -263,6 +281,7 @@ export default function SwingDetail() {
         unit: metric.unit || ''
       })) as SwingMetric[];
       setMetrics(processedMetrics);
+      console.log('Processed metrics:', processedMetrics);
 
       // Generate AI coaching
       await generateAICoaching(processedMetrics);
@@ -299,8 +318,13 @@ export default function SwingDetail() {
 
     } catch (err) {
       console.error('Failed to load swing detail:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load swing details');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load swing details';
+      console.error('Error details:', errorMessage);
+      setError(errorMessage);
+      // Show error in toast as well for immediate user feedback
+      toast.error(`Failed to load swing: ${errorMessage}`);
     } finally {
+      console.log('Loading complete, setting isLoading to false');
       setIsLoading(false);
     }
   };
