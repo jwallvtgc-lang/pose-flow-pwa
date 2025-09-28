@@ -38,18 +38,21 @@ serve(async (req) => {
       .sort((a, b) => a.percentileRank - b.percentileRank)
       .slice(0, 2);
 
-          const systemPrompt = `You are an expert baseball swing coach providing personalized feedback to teenage athletes (ages 12-18). 
+          const systemPrompt = `You are an expert baseball swing coach with advanced biomechanics knowledge providing personalized feedback to teenage athletes (ages 12-18). Use deep analytical reasoning to understand the interconnected nature of swing mechanics.
 
 Guidelines:
-- Focus on the 2 weakest areas that need most improvement
+- Analyze the relationship between all metrics to identify root causes, not just symptoms
+- Focus on the 2 most impactful areas that will create the biggest improvement cascade
+- Consider how fixing one area might positively affect other metrics
 - Provide conversational, encouraging coaching advice as if speaking directly to the athlete
 - Use language appropriate for teens - friendly but not condescending
 - Each explanation should be 3-4 sentences with specific actionable advice
-- Include WHY each area matters for hitting performance
+- Include WHY each area matters for hitting performance and how it connects to other aspects
 - Be encouraging and motivational while being honest about areas needing work
-- Make it feel like a real coach talking to them personally`;
+- Think step-by-step about the biomechanical chain and prioritize accordingly
+- Make it feel like a real coach talking to them personally with deep understanding of their swing`;
 
-    const userPrompt = `Analyze this swing data and provide personalized coaching:
+    const userPrompt = `Think step-by-step about this swing analysis. Consider the biomechanical relationships between all metrics to identify the root causes and most impactful improvements.
 
 WEAKEST METRICS:
 ${weakestMetrics.map(m => 
@@ -64,12 +67,19 @@ ${metrics.map(m =>
 ${previousScore ? `Previous swing score: ${previousScore}` : ''}
 ${sessionNumber ? `Session #${sessionNumber}` : ''}
 
+REASONING PROCESS:
+1. Analyze how each metric relates to the others in the kinetic chain
+2. Identify which 2 improvements would create the biggest positive cascade effect
+3. Consider the athlete's development level and what's most teachable
+4. Prioritize changes that will boost confidence and immediate performance
+
 Return a JSON response with this exact structure:
 {
-  "cues": ["Short actionable cue 1", "Short actionable cue 2"],
-  "explanations": ["Conversational coaching explanation 1 (3-4 sentences)", "Conversational coaching explanation 2 (3-4 sentences)"],
-  "encouragement": "Personal, motivational message about their swing and progress (2-3 sentences)",
-  "focusAreas": ["metric_name_1", "metric_name_2"]
+  "cues": ["Specific, actionable cue 1", "Specific, actionable cue 2"],
+  "explanations": ["Deep coaching explanation 1 with biomechanical reasoning (3-4 sentences)", "Deep coaching explanation 2 with biomechanical reasoning (3-4 sentences)"],
+  "encouragement": "Personal, motivational message about their swing potential and specific strengths to build on (2-3 sentences)",
+  "focusAreas": ["metric_name_1", "metric_name_2"],
+  "reasoning": "Brief explanation of why these 2 areas were prioritized over others (2 sentences)"
 }`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -79,14 +89,14 @@ Return a JSON response with this exact structure:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'o4-mini-2025-04-16', // Using the fast reasoning model
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.7,
-        max_tokens: 500,
+        max_completion_tokens: 500, // o4-mini uses max_completion_tokens instead of max_tokens
         response_format: { type: "json_object" }
+        // Note: o4-mini doesn't support temperature parameter
       }),
     });
 

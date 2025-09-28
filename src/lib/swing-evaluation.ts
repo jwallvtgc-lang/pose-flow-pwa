@@ -72,7 +72,8 @@ export async function evaluateSwing(values: Record<string, number>) {
       cards,
       aiCoaching: {
         encouragement: aiCoaching.encouragement,
-        cues: aiCoaching.cues
+        cues: aiCoaching.cues,
+        reasoning: aiCoaching.reasoning || 'AI analysis focused on your most impactful improvements'
       }
     };
   } catch (error) {
