@@ -500,7 +500,7 @@ export default function Progress() {
   );
 }
 
-// Score Bar Chart Component - Much more intuitive than dots!
+// Score Bar Chart Component - Shows up to 25 recent swings for trend analysis
 function ScoreBarChart({ data }: { data: ChartPoint[] }) {
   if (!data.length) {
     return (
@@ -510,7 +510,7 @@ function ScoreBarChart({ data }: { data: ChartPoint[] }) {
     );
   }
 
-  const recentScores = data.slice(-8); // Show last 8 scores for better trend view
+  const recentScores = data.slice(-25); // Show last 25 scores for comprehensive trend view
   const maxScore = Math.max(...recentScores.map(point => point.value));
   const minScore = Math.min(...recentScores.map(point => point.value));
   const scoreRange = maxScore - minScore || 1; // Prevent division by zero
@@ -521,7 +521,7 @@ function ScoreBarChart({ data }: { data: ChartPoint[] }) {
   return (
     <div className="space-y-2">
       {/* Bar Chart */}
-      <div className="flex items-end justify-between gap-1 bg-white/10 rounded p-3" style={{ height: `${maxBarHeight + 20}px` }}>
+      <div className="flex items-end justify-between gap-px bg-white/10 rounded p-3 overflow-x-auto" style={{ height: `${maxBarHeight + 20}px` }}>
         {recentScores.map((point, index) => {
           // Calculate height in pixels with better scaling
           let barHeight;
@@ -540,7 +540,8 @@ function ScoreBarChart({ data }: { data: ChartPoint[] }) {
           return (
             <div 
               key={`bar-${point.t}-${index}`} 
-              className="flex-1 flex flex-col items-center group relative min-w-[12px]"
+              className="flex flex-col items-center group relative"
+              style={{ minWidth: recentScores.length > 15 ? '8px' : '12px', flex: '0 0 auto' }}
             >
               {/* Score value on hover */}
               <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-white bg-black/80 rounded px-2 py-1 mb-1 whitespace-nowrap absolute -top-8 z-10">
@@ -560,10 +561,12 @@ function ScoreBarChart({ data }: { data: ChartPoint[] }) {
                 title={`Swing ${index + 1}: ${point.value} points`}
               />
               
-              {/* Swing number */}
-              <div className="text-xs text-blue-200 mt-1 font-medium">
-                {index + 1}
-              </div>
+              {/* Swing number - only show every few numbers if there are many bars */}
+              {(recentScores.length <= 15 || index % Math.ceil(recentScores.length / 10) === 0 || index === recentScores.length - 1) && (
+                <div className="text-xs text-blue-200 mt-1 font-medium">
+                  {index + 1}
+                </div>
+              )}
             </div>
           );
         })}
