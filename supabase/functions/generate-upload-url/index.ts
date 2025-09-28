@@ -55,24 +55,28 @@ serve(async (req) => {
     const bucket = Deno.env.get('STORAGE_BUCKET');
     const cdnBase = Deno.env.get('STORAGE_CDN_URL');
     const accessKeyId = Deno.env.get('STORAGE_ACCESS_KEY');
-    const accountId = Deno.env.get('STORAGE_SECRET_KEY'); // This is the account ID for R2
+    const secretKey = Deno.env.get('STORAGE_SECRET_KEY');
+    const accountId = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
     
     console.log('=== ENVIRONMENT VARIABLES CHECK ===');
     console.log('STORAGE_BUCKET present:', !!bucket);
     console.log('STORAGE_CDN_URL present:', !!cdnBase);
     console.log('STORAGE_ACCESS_KEY present:', !!accessKeyId);
-    console.log('STORAGE_SECRET_KEY (Account ID) present:', !!accountId);
+    console.log('STORAGE_SECRET_KEY present:', !!secretKey);
+    console.log('CLOUDFLARE_ACCOUNT_ID present:', !!accountId);
     
     if (bucket) console.log('STORAGE_BUCKET value:', bucket);
     if (cdnBase) console.log('STORAGE_CDN_URL value:', cdnBase);
     if (accessKeyId) console.log('STORAGE_ACCESS_KEY first 4 chars:', accessKeyId.substring(0, 4) + '...');
+    if (accountId) console.log('CLOUDFLARE_ACCOUNT_ID value:', accountId);
 
-    if (!bucket || !cdnBase || !accessKeyId || !accountId) {
+    if (!bucket || !cdnBase || !accessKeyId || !secretKey || !accountId) {
       const missing = [];
       if (!bucket) missing.push('STORAGE_BUCKET');
       if (!cdnBase) missing.push('STORAGE_CDN_URL');
       if (!accessKeyId) missing.push('STORAGE_ACCESS_KEY');
-      if (!accountId) missing.push('STORAGE_SECRET_KEY');
+      if (!secretKey) missing.push('STORAGE_SECRET_KEY');
+      if (!accountId) missing.push('CLOUDFLARE_ACCOUNT_ID');
       
       console.error('Missing environment variables:', missing);
       return new Response(JSON.stringify({ 
@@ -92,24 +96,28 @@ serve(async (req) => {
 
     console.log('Generated S3 key:', key);
 
-    console.log('=== CREATING SIMPLE UPLOAD SOLUTION ===');
+    console.log('=== CREATING R2 UPLOAD URL ===');
     
-    // Create the proper R2 upload URL with S3-compatible API
+    // For now, let's try the simple approach and see if it works
+    // We'll create a direct PUT URL to R2 using the S3-compatible API
     const uploadUrl = `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${key}`;
     const publicUrl = `${cdnBase}/${key}`;
 
     console.log('Upload URL created:', uploadUrl);
     console.log('Public URL created:', publicUrl);
 
-    // Return the URLs along with the headers needed for upload
-    // For R2, we need to use the Authorization header with the R2 token
+    // Return the URLs and credentials for the client to use
     const response = {
       uploadUrl,
       publicUrl,
       key,
+      credentials: {
+        accessKeyId,
+        secretAccessKey: secretKey,
+        region: 'auto'
+      },
       headers: {
-        'Content-Type': contentType,
-        'Authorization': `Bearer ${accessKeyId}` // R2 token
+        'Content-Type': contentType
       }
     };
 

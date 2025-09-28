@@ -2,14 +2,22 @@
 
 /**
  * Storage helpers for uploading and reading swing videos.
- * - Client-side only (Vite). Uses a serverless presigner at /api/upload-url.
- * - Requires env: VITE_STORAGE_CDN_URL (e.g., https://<bucket>.s3.<region>.amazonaws.com or CloudFront/R2 domain)
+ * - Client-side only (Vite). Uses R2 with AWS S3 SDK for proper authentication.
+ * - Requires env: VITE_STORAGE_CDN_URL
  */
 
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
 type PresignResponse = {
-  uploadUrl: string; // PUT here with the same Content-Type used for signing
-  publicUrl: string; // Browser-readable URL (via CDN/S3) for saving in your DB
-  key: string;       // Object key (path in bucket)
+  uploadUrl: string;
+  publicUrl: string;
+  key: string;
+  credentials?: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    region: string;
+  };
+  headers?: Record<string, string>;
 };
 
 type UploadArgs = {
@@ -113,29 +121,70 @@ export async function uploadVideo({
     const presignData = await presign.json();
     console.log('Presign response data:', presignData);
     
-    const { uploadUrl, publicUrl, key, headers: uploadHeaders } = presignData as PresignResponse & { headers?: Record<string, string> };
+    const { uploadUrl, publicUrl, key, credentials, headers: uploadHeaders } = presignData as PresignResponse;
 
-    // 2) PUT the blob to S3/R2 with the provided headers
-    console.log('=== Starting actual upload to R2 ===');
+    // 2) Upload using AWS S3 SDK for proper authentication
+    console.log('=== Starting authenticated upload to R2 ===');
     console.log('Upload URL (first 100 chars):', uploadUrl.substring(0, 100) + '...');
     
-    // Use the headers provided by the edge function, or fall back to Content-Type
-    const headers: Record<string, string> = uploadHeaders || { 'Content-Type': contentType };
-    console.log('Upload headers:', headers);
-    
-    const putRes = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers,
-      body: blob,
-    });
+    if (!credentials) {
+      console.warn('No credentials provided, falling back to simple PUT');
+      // Fall back to simple PUT if no credentials
+      const headers: Record<string, string> = uploadHeaders || { 'Content-Type': contentType };
+      console.log('Upload headers:', headers);
+      
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers,
+        body: blob,
+      });
 
-    console.log('S3 upload response status:', putRes.status);
-    console.log('S3 upload response headers:', Object.fromEntries(putRes.headers.entries()));
-
-    if (!putRes.ok) {
-      const text = await putRes.text().catch(() => '');
-      console.error('S3 upload failed:', text);
-      throw new Error(`Upload failed (${putRes.status}): ${text}`);
+      console.log('Simple upload response status:', putRes.status);
+      
+      if (!putRes.ok) {
+        const text = await putRes.text().catch(() => '');
+        console.error('Simple upload failed:', text);
+        throw new Error(`Upload failed (${putRes.status}): ${text}`);
+      }
+    } else {
+      // Use AWS S3 SDK for authenticated upload
+      console.log('Using AWS S3 SDK for authenticated upload');
+      
+      // Extract bucket and key from URL
+      const urlParts = uploadUrl.match(/https:\/\/([^.]+)\.r2\.cloudflarestorage\.com\/([^\/]+)\/(.+)/);
+      if (!urlParts) {
+        throw new Error('Invalid upload URL format');
+      }
+      
+      const [, accountId, bucket, s3Key] = urlParts;
+      console.log('Extracted - Account ID:', accountId, 'Bucket:', bucket, 'Key:', s3Key);
+      
+      // Configure S3 client for R2
+      const s3Client = new S3Client({
+        region: credentials.region,
+        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+        credentials: {
+          accessKeyId: credentials.accessKeyId,
+          secretAccessKey: credentials.secretAccessKey,
+        },
+        forcePathStyle: false,
+      });
+      
+      // Create the put command
+      const putCommand = new PutObjectCommand({
+        Bucket: bucket,
+        Key: s3Key,
+        Body: blob,
+        ContentType: contentType,
+      });
+      
+      try {
+        const result = await s3Client.send(putCommand);
+        console.log('S3 upload result:', result);
+      } catch (error) {
+        console.error('S3 upload error:', error);
+        throw new Error(`S3 upload failed: ${error}`);
+      }
     }
 
     console.log('=== Upload successful ===');
