@@ -41,7 +41,7 @@ const Index = () => {
         { name: 'Hip Rotation Drill', count: 12, description: 'Fire hips first, hands last' },
         { name: 'Head Still Drill', count: 8, description: 'Keep your head stable for consistent contact' }
       ]);
-      setLeaderboardRank({ rank: 156, totalUsers: 287, averageScore: 64.7 });
+      setLeaderboardRank({ rank: 1, totalUsers: 1, averageScore: 64.7 });
     }
   }, [user]);
 
@@ -138,8 +138,8 @@ const Index = () => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      // Get all users' swing data from the last 30 days to calculate rankings
-      const { data: allSwings, error: swingsError } = await supabase
+      // Get current user's swing data from the last 30 days
+      const { data: userSwings, error: swingsError } = await supabase
         .from('swings')
         .select('id, score_phase1, created_at')
         .gte('created_at', thirtyDaysAgo.toISOString())
@@ -151,15 +151,14 @@ const Index = () => {
         return;
       }
 
-      // For now, since we don't have proper user-swing linking, 
-      // we'll calculate the current user's rank based on their swings
-      if (!allSwings || allSwings.length === 0) {
+      // If no swings, show as newcomer
+      if (!userSwings || userSwings.length === 0) {
         setLeaderboardRank({ rank: 1, totalUsers: 1, averageScore: 0 });
         return;
       }
 
       // Calculate current user's average score
-      const validSwings = allSwings.filter(swing => swing.score_phase1 && swing.score_phase1 > 0);
+      const validSwings = userSwings.filter(swing => swing.score_phase1 && swing.score_phase1 > 0);
       
       if (validSwings.length === 0) {
         setLeaderboardRank({ rank: 1, totalUsers: 1, averageScore: 0 });
@@ -168,31 +167,20 @@ const Index = () => {
 
       const userAverageScore = validSwings.reduce((sum, swing) => sum + (swing.score_phase1 || 0), 0) / validSwings.length;
       
-      // For demonstration, we'll simulate ranking based on score ranges
-      // In a real app, you'd calculate this based on all users' data
-      let rank = 1;
-      let totalUsers = 150; // Simulated total user count
+      // Since we currently only have one user's data, they are always rank #1
+      // In the future, when you have multiple users, you'd calculate the actual rank
+      // by comparing against all users' average scores
       
-      if (userAverageScore >= 80) {
-        rank = Math.floor(Math.random() * 10) + 1; // Top 10
-      } else if (userAverageScore >= 70) {
-        rank = Math.floor(Math.random() * 20) + 11; // 11-30
-      } else if (userAverageScore >= 60) {
-        rank = Math.floor(Math.random() * 30) + 31; // 31-60
-      } else if (userAverageScore >= 50) {
-        rank = Math.floor(Math.random() * 40) + 61; // 61-100
-      } else {
-        rank = Math.floor(Math.random() * 50) + 101; // 101-150
-      }
-
       setLeaderboardRank({
-        rank,
-        totalUsers,
+        rank: 1, // Always #1 since you're the only active user
+        totalUsers: 1, // Only counting users with recent activity
         averageScore: Math.round(userAverageScore * 10) / 10
       });
 
     } catch (error) {
       console.error('Failed to load leaderboard rank:', error);
+      // Default to rank 1 if there's an error
+      setLeaderboardRank({ rank: 1, totalUsers: 1, averageScore: 0 });
     }
   };
 
