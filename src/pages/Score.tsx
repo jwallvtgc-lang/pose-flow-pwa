@@ -109,7 +109,15 @@ export default function Score() {
     return () => {
       URL.revokeObjectURL(url);
     };
-  }, [state?.videoBlob]);
+  }, [navigate]); // Fixed dependency - only depend on navigate function
+
+  // Separate effect for video blob changes to prevent unnecessary re-runs
+  useEffect(() => {
+    if (state?.videoBlob && videoUrl) {
+      // Analysis already started, don't restart
+      return;
+    }
+  }, [state?.videoBlob, videoUrl]);
 
   const loadHistoricalData = async () => {
     try {
@@ -122,7 +130,10 @@ export default function Score() {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (swingsError) throw swingsError;
+      if (swingsError) {
+        console.error('Error loading historical swings:', swingsError);
+        return; // Fail silently for progress data
+      }
       
       const processedSwings = (swingsData || []).map(swing => ({
         ...swing,
@@ -141,7 +152,11 @@ export default function Score() {
           .in('swing_id', swingIds)
           .eq('phase', 1);
 
-        if (metricsError) throw metricsError;
+        if (metricsError) {
+          console.error('Error loading historical metrics:', metricsError);
+          return; // Fail silently for progress data
+        }
+        
         const processedMetrics = (metricsData || []).map(metric => ({
           swing_id: metric.swing_id || '',
           metric: metric.metric || '',
@@ -508,7 +523,7 @@ export default function Score() {
           </Button>
         </div>
 
-        <Tabs defaultValue="score" className="space-y-6">
+        <Tabs defaultValue="score" className="space-y-6" key={`tabs-${clientRequestId}`}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="score">This Swing</TabsTrigger>
             <TabsTrigger value="progress">Progress</TabsTrigger>
