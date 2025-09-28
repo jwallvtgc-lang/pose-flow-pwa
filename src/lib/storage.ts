@@ -113,15 +113,19 @@ export async function uploadVideo({
     const presignData = await presign.json();
     console.log('Presign response data:', presignData);
     
-    const { uploadUrl, publicUrl, key } = presignData as PresignResponse;
+    const { uploadUrl, publicUrl, key, headers: uploadHeaders } = presignData as PresignResponse & { headers?: Record<string, string> };
 
-    // 2) PUT the blob to S3/R2 with the SAME Content-Type
-    console.log('=== Starting actual upload to S3 ===');
+    // 2) PUT the blob to S3/R2 with the provided headers
+    console.log('=== Starting actual upload to R2 ===');
     console.log('Upload URL (first 100 chars):', uploadUrl.substring(0, 100) + '...');
+    
+    // Use the headers provided by the edge function, or fall back to Content-Type
+    const headers: Record<string, string> = uploadHeaders || { 'Content-Type': contentType };
+    console.log('Upload headers:', headers);
     
     const putRes = await fetch(uploadUrl, {
       method: 'PUT',
-      headers: { 'Content-Type': contentType },
+      headers,
       body: blob,
     });
 

@@ -1,33 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { S3Client, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.637.0";
-import { getSignedUrl } from "https://esm.sh/@aws-sdk/s3-request-presigner@3.637.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-function createS3Client() {
-  const region = Deno.env.get("STORAGE_REGION") || "auto";
-  const accessKeyId = Deno.env.get("STORAGE_ACCESS_KEY");
-  const secretAccessKey = Deno.env.get("STORAGE_SECRET_KEY");
-
-  // For Cloudflare R2, we need to construct the endpoint
-  const accountId = secretAccessKey; // For R2, account ID is stored as secret key
-  const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
-
-  const config = {
-    region,
-    endpoint,
-    credentials: {
-      accessKeyId: accessKeyId!,
-      secretAccessKey: accessKeyId!, // For R2, use the token as both access key and secret
-    },
-    forcePathStyle: false, // R2 uses virtual-hosted-style URLs
-  };
-
-  return new S3Client(config);
-}
 
 function getFileExtension(contentType: string): string {
   if (contentType.includes("mp4")) return "mp4";
@@ -39,81 +15,73 @@ function getFileExtension(contentType: string): string {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('=== UPLOAD URL GENERATION STARTED ===')
-    console.log('Request method:', req.method)
-    console.log('Timestamp:', new Date().toISOString())
+    console.log('=== UPLOAD URL GENERATION STARTED ===');
+    console.log('Request method:', req.method);
+    console.log('Timestamp:', new Date().toISOString());
     
     if (req.method !== 'POST') {
-      console.log('Invalid method:', req.method)
+      console.log('Invalid method:', req.method);
       return new Response('Method Not Allowed', { 
         status: 405, 
         headers: corsHeaders 
-      })
+      });
     }
 
-    const requestBody = await req.json()
-    const { filename, contentType, folder = 'videos' } = requestBody
-    console.log('Request payload:', { filename, contentType, folder })
+    const requestBody = await req.json();
+    const { filename, contentType, folder = 'videos' } = requestBody;
+    console.log('Request payload:', { filename, contentType, folder });
 
     if (!filename) {
-      console.log('Missing filename')
+      console.log('Missing filename');
       return new Response(JSON.stringify({ error: 'filename required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      });
     }
 
     if (!contentType) {
-      console.log('Missing contentType')
+      console.log('Missing contentType');
       return new Response(JSON.stringify({ error: 'contentType required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      });
     }
 
-    // Check environment variables with detailed logging
-    const bucket = Deno.env.get('STORAGE_BUCKET')
-    const cdnBase = Deno.env.get('STORAGE_CDN_URL')
-    const region = Deno.env.get('STORAGE_REGION')
-    const accessKeyId = Deno.env.get('STORAGE_ACCESS_KEY')
-    const secretAccessKey = Deno.env.get('STORAGE_SECRET_KEY')
+    // Check environment variables
+    const bucket = Deno.env.get('STORAGE_BUCKET');
+    const cdnBase = Deno.env.get('STORAGE_CDN_URL');
+    const accessKeyId = Deno.env.get('STORAGE_ACCESS_KEY');
+    const accountId = Deno.env.get('STORAGE_SECRET_KEY'); // This is the account ID for R2
     
-    console.log('=== ENVIRONMENT VARIABLES CHECK ===')
-    console.log('STORAGE_BUCKET present:', !!bucket)
-    console.log('STORAGE_CDN_URL present:', !!cdnBase)
-    console.log('STORAGE_REGION present:', !!region)
-    console.log('STORAGE_ACCESS_KEY present:', !!accessKeyId)
-    console.log('STORAGE_SECRET_KEY present:', !!secretAccessKey)
+    console.log('=== ENVIRONMENT VARIABLES CHECK ===');
+    console.log('STORAGE_BUCKET present:', !!bucket);
+    console.log('STORAGE_CDN_URL present:', !!cdnBase);
+    console.log('STORAGE_ACCESS_KEY present:', !!accessKeyId);
+    console.log('STORAGE_SECRET_KEY (Account ID) present:', !!accountId);
     
-    if (bucket) console.log('STORAGE_BUCKET value:', bucket)
-    if (cdnBase) console.log('STORAGE_CDN_URL value:', cdnBase)
-    if (region) console.log('STORAGE_REGION value:', region)
-    if (accessKeyId) console.log('STORAGE_ACCESS_KEY first 4 chars:', accessKeyId.substring(0, 4) + '...')
+    if (bucket) console.log('STORAGE_BUCKET value:', bucket);
+    if (cdnBase) console.log('STORAGE_CDN_URL value:', cdnBase);
+    if (accessKeyId) console.log('STORAGE_ACCESS_KEY first 4 chars:', accessKeyId.substring(0, 4) + '...');
 
-    if (!bucket || !cdnBase) {
-      console.error('Missing storage configuration:', { bucket: !!bucket, cdnBase: !!cdnBase })
+    if (!bucket || !cdnBase || !accessKeyId || !accountId) {
+      const missing = [];
+      if (!bucket) missing.push('STORAGE_BUCKET');
+      if (!cdnBase) missing.push('STORAGE_CDN_URL');
+      if (!accessKeyId) missing.push('STORAGE_ACCESS_KEY');
+      if (!accountId) missing.push('STORAGE_SECRET_KEY');
+      
+      console.error('Missing environment variables:', missing);
       return new Response(JSON.stringify({ 
         error: 'Missing storage configuration',
-        details: { bucket: !!bucket, cdnBase: !!cdnBase }
+        missing: missing
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    if (!region || !accessKeyId || !secretAccessKey) {
-      console.error('Missing AWS credentials:', { region: !!region, accessKeyId: !!accessKeyId, secretAccessKey: !!secretAccessKey })
-      return new Response(JSON.stringify({ 
-        error: 'Missing AWS credentials',
-        details: { region: !!region, accessKeyId: !!accessKeyId, secretAccessKey: !!secretAccessKey }
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      });
     }
 
     const extension = getFileExtension(contentType);
@@ -122,58 +90,47 @@ serve(async (req) => {
     const sanitizedFilename = filename.replace(/\s+/g, "-");
     const key = `${folder}/${new Date().toISOString().slice(0, 10)}/${timestamp}-${randomId}-${sanitizedFilename}.${extension}`;
 
-    console.log('Generated S3 key:', key)
+    console.log('Generated S3 key:', key);
 
-    console.log('=== CREATING S3 CLIENT ===')
-    const client = createS3Client()
-    console.log('S3 client created successfully')
+    console.log('=== CREATING SIMPLE UPLOAD SOLUTION ===');
     
-    console.log('=== CREATING PUT OBJECT COMMAND ===')
-    const command = new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      ContentType: contentType,
-      ACL: 'private', // Keep objects private, serve via CDN
-    })
-    console.log('PutObjectCommand created successfully')
+    // For now, let's create a simpler solution that uses R2's direct upload
+    // We'll create URLs that the client can use with the proper headers
+    const uploadUrl = `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${key}`;
+    const publicUrl = `${cdnBase}/${key}`;
 
-    console.log('=== GENERATING PRESIGNED URL ===')
-    // Generate presigned URL with 10 minute expiry
-    const uploadUrl = await getSignedUrl(client, command, { expiresIn: 600 })
-    console.log('Presigned URL generated successfully')
-    console.log('Upload URL length:', uploadUrl.length)
+    console.log('Upload URL created:', uploadUrl);
+    console.log('Public URL created:', publicUrl);
 
-    // Public URL for accessing the file
-    const publicUrl = `${cdnBase.replace(/\/+$/, '')}/${key}`
-    console.log('Public URL generated:', publicUrl)
+    // Return the URLs along with the headers needed for upload
+    const response = {
+      uploadUrl,
+      publicUrl,
+      key,
+      headers: {
+        'Content-Type': contentType,
+        'Authorization': `Bearer ${accessKeyId}` // R2 token
+      }
+    };
 
-    console.log('=== SUCCESS ===')
-    return new Response(JSON.stringify({ uploadUrl, publicUrl, key }), {
+    console.log('=== SUCCESS ===');
+    return new Response(JSON.stringify(response), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    });
 
   } catch (error) {
-    console.error('=== UPLOAD URL GENERATION ERROR ===')
-    console.error('Error occurred at timestamp:', new Date().toISOString())
+    console.error('=== UPLOAD URL GENERATION ERROR ===');
+    console.error('Error occurred at timestamp:', new Date().toISOString());
     
     if (error instanceof Error) {
-      console.error('Error type:', error.constructor.name)
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
     } else {
-      console.error('Unknown error type:', typeof error)
-      console.error('Unknown error:', error)
+      console.error('Unknown error type:', typeof error);
+      console.error('Unknown error:', error);
     }
-    
-    // Also log environment state for debugging
-    console.error('Environment state:', {
-      bucket: !!Deno.env.get('STORAGE_BUCKET'),
-      cdnBase: !!Deno.env.get('STORAGE_CDN_URL'),
-      region: !!Deno.env.get('STORAGE_REGION'),
-      accessKeyId: !!Deno.env.get('STORAGE_ACCESS_KEY'),
-      secretAccessKey: !!Deno.env.get('STORAGE_SECRET_KEY')
-    })
     
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Internal server error',
@@ -181,6 +138,6 @@ serve(async (req) => {
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    });
   }
-})
+});
