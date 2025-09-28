@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CameraCapture } from '@/components/CameraCapture';
 import { SwingAnalysisResults } from '@/components/SwingAnalysisResults';
 import { Button } from '@/components/ui/button';
@@ -17,11 +17,27 @@ import type { PoseAnalysisResult } from '@/lib/poseWorkerClient';
 type FlowStep = 'capture' | 'score' | 'feedback';
 
 export default function SwingAnalysis() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+  console.log('SwingAnalysis render - Auth state:', { 
+    hasUser: !!user, 
+    userEmail: user?.email, 
+    loading 
+  });
+  
   const [currentStep, setCurrentStep] = useState<FlowStep>('capture');
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Check if user needs to be authenticated for this page
+  useEffect(() => {
+    console.log('SwingAnalysis component mounted');
+    if (!loading && !user) {
+      console.log('No user found, redirecting to auth...');
+      // Redirect to auth if user is not authenticated
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
 
   const handleCapture = (blob: Blob) => {
     setVideoBlob(blob);
@@ -54,15 +70,25 @@ export default function SwingAnalysis() {
       let videoUrl = null;
       if (videoBlob) {
         try {
+          console.log('=== Starting video upload process ===');
+          console.log('Video blob size:', videoBlob.size);
+          console.log('Video blob type:', videoBlob.type);
+          
           const uploadResult = await uploadVideo({
             blob: videoBlob,
             client_request_id: clientRequestId
           });
+          
+          console.log('Upload result:', uploadResult);
           videoUrl = uploadResult.urlOrPath;
+          console.log('Video uploaded successfully to:', videoUrl);
         } catch (uploadError) {
-          console.warn('Video upload failed:', uploadError);
+          console.error('=== Video upload failed ===');
+          console.error('Upload error details:', uploadError);
           toast.error('Video upload failed, but analysis will still be saved');
         }
+      } else {
+        console.log('No video blob available for upload');
       }
 
       // Ensure we have a session
@@ -192,6 +218,18 @@ export default function SwingAnalysis() {
         return null;
     }
   };
+
+  // Show loading screen while authentication is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
