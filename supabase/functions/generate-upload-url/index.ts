@@ -140,15 +140,29 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('=== UPLOAD URL GENERATION ERROR ===')
+    console.error('Error occurred at timestamp:', new Date().toISOString())
+    
     if (error instanceof Error) {
       console.error('Error type:', error.constructor.name)
       console.error('Error message:', error.message)
       console.error('Error stack:', error.stack)
     } else {
+      console.error('Unknown error type:', typeof error)
       console.error('Unknown error:', error)
     }
+    
+    // Also log environment state for debugging
+    console.error('Environment state:', {
+      bucket: !!Deno.env.get('STORAGE_BUCKET'),
+      cdnBase: !!Deno.env.get('STORAGE_CDN_URL'),
+      region: !!Deno.env.get('STORAGE_REGION'),
+      accessKeyId: !!Deno.env.get('STORAGE_ACCESS_KEY'),
+      secretAccessKey: !!Deno.env.get('STORAGE_SECRET_KEY')
+    })
+    
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Internal server error' 
+      error: error instanceof Error ? error.message : 'Internal server error',
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
