@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera, BarChart3, TrendingUp, Activity, Bell } from 'lucide-react';
+import { Camera, BarChart3, TrendingUp, Activity, Bell, Star, Play, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -264,9 +264,22 @@ const Index = () => {
               <h2 className="text-3xl font-bold mb-4 leading-tight">
                 {user ? getFirstName() : 'Player'}!
               </h2>
-              <p className="text-blue-100 text-base mb-8 leading-relaxed">
+              <p className="text-blue-100 text-base mb-4 leading-relaxed">
                 Your swing is improving every day
               </p>
+              {/* Level indicator with stars */}
+              <div className="flex items-center gap-2 mb-6">
+                {[...Array(4)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
+                <Star className="w-4 h-4 text-yellow-400/40" />
+                <span className="text-blue-100 text-sm font-medium ml-2">Level 4 Hitter</span>
+              </div>
+              {/* Weekly improvement indicator */}
+              <div className="flex items-center gap-2 text-blue-100">
+                <TrendingUp className="w-4 h-4" />
+                <span className="text-sm">+5 this week</span>
+              </div>
             </div>
             <div className="text-right bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
               <div className="text-4xl font-black mb-1">
@@ -278,17 +291,23 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 relative z-10">
+          <div className="grid grid-cols-2 gap-4 relative z-10 mt-8">
             <Link to={user ? "/analysis" : "/auth"}>
               <Button className="w-full bg-white/15 hover:bg-white/25 text-white border-0 rounded-2xl h-16 backdrop-blur-sm transition-all duration-300 hover:scale-105 shadow-lg">
                 <Camera className="w-6 h-6 mr-3" />
-                <span className="font-semibold">Record</span>
+                <div className="text-left">
+                  <div className="font-semibold">Record</div>
+                  <div className="text-xs text-blue-200">New swing</div>
+                </div>
               </Button>
             </Link>
             <Link to={user ? "/progress" : "/auth"}>
               <Button className="w-full bg-white/15 hover:bg-white/25 text-white border-0 rounded-2xl h-16 backdrop-blur-sm transition-all duration-300 hover:scale-105 shadow-lg">
                 <BarChart3 className="w-6 h-6 mr-3" />
-                <span className="font-semibold">View Analytics</span>
+                <div className="text-left">
+                  <div className="font-semibold">Analytics</div>
+                  <div className="text-xs text-blue-200">View progress</div>
+                </div>
               </Button>
             </Link>
           </div>
@@ -433,30 +452,40 @@ const Index = () => {
           {topDrills.length > 0 ? (
             <div className="space-y-4">
               {topDrills.map((drill, index) => (
-                <Card key={drill.name} className="p-5 bg-white rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                  <div className="flex items-start gap-4">
+                <Card key={drill.name} className="p-5 bg-gradient-to-r from-purple-50 to-pink-50 rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                  <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md ${
                       index === 0 
-                        ? 'bg-gradient-to-br from-purple-400 to-purple-600' 
-                        : 'bg-gradient-to-br from-pink-400 to-pink-600'
+                        ? 'bg-gradient-to-br from-purple-500 to-purple-600' 
+                        : 'bg-gradient-to-br from-pink-500 to-pink-600'
                     }`}>
                       <span className="text-white font-bold text-lg">
                         #{index + 1}
                       </span>
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-lg font-bold text-gray-900">
-                          {drill.name}
-                        </h4>
-                        <div className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full font-medium">
-                          {drill.count} recommendations
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600 leading-relaxed">
+                      <h4 className="text-lg font-bold text-gray-900 mb-1">
+                        {drill.name}
+                      </h4>
+                      <p className="text-sm text-gray-600 mb-2">
                         {drill.description}
                       </p>
+                      {/* Star rating */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center">
+                          {[...Array(index === 0 ? 5 : 4)].map((_, i) => (
+                            <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          ))}
+                          {index === 1 && <Star className="w-3 h-3 text-gray-300" />}
+                        </div>
+                        <span className="text-xs text-gray-500 font-medium">
+                          {drill.count} recommendations
+                        </span>
+                      </div>
                     </div>
+                    <Button size="sm" className="bg-white hover:bg-gray-50 text-gray-700 rounded-2xl h-10 w-10 p-0 shadow-md">
+                      <Play className="w-4 h-4" />
+                    </Button>
                   </div>
                 </Card>
               ))}
@@ -480,22 +509,29 @@ const Index = () => {
           )}
         </div>
 
-        {/* CTA Section for non-authenticated users */}
-        {!user && (
-          <div className="p-6 text-center mb-8">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">
-              Ready to improve your swing?
+        {/* Bottom CTA Card */}
+        <Card className="p-8 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl mb-8 text-white relative overflow-hidden shadow-2xl border-0">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+          
+          <div className="text-center relative z-10">
+            <div className="w-16 h-16 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+              <Award className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold mb-4 leading-tight">
+              Ready to improve your<br />swing?
             </h2>
-            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
-              Join thousands of players using AI-powered analysis to perfect their baseball swing.
+            <p className="text-blue-100 text-base mb-8 leading-relaxed max-w-sm mx-auto">
+              Join thousands of players using AI-powered analysis to perfect their baseball swing
             </p>
-            <Link to="/auth">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg h-12 px-8 rounded-xl shadow-lg w-full">
-                Get Started Now
+            <Link to={user ? "/analysis" : "/auth"}>
+              <Button className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold text-lg h-14 px-8 rounded-2xl shadow-lg transition-all duration-300 hover:scale-105">
+                {user ? 'Record New Swing' : 'Get Started Now'}
               </Button>
             </Link>
           </div>
-        )}
+        </Card>
 
         <AddToHomeScreen />
       </div>
