@@ -68,44 +68,84 @@ export async function uploadVideo({
   preferredName = 'swing',
   folder = 'videos',
 }: UploadArgs): Promise<{ urlOrPath: string; key: string }> {
+  console.log('=== Starting video upload ===');
+  console.log('Blob size:', blob.size);
+  console.log('Content type:', blob.type);
+  console.log('Client request ID:', client_request_id);
+  
   const contentType = blob.type || 'video/mp4';
   const safeName = `${preferredName}-${client_request_id}.${extFromMime(contentType)}`;
+  
+  console.log('Safe filename:', safeName);
+  console.log('CDN base URL:', cdnBase());
 
   // 1) Ask for presigned URL from Supabase edge function
-  const presign = await fetch(`https://xdurzrndnpxhdrbtqqnz.supabase.co/functions/v1/generate-upload-url`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkdXJ6cm5kbnB4aGRyYnRxcW56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNzQ0MjMsImV4cCI6MjA3MzY1MDQyM30.ammqHLKHJjY3ynwgbuV0M9Q8jEKwcXELoWi8rMnkPxI'}`
-    },
-    body: JSON.stringify({
-      filename: safeName.replace(/\s+/g, '-'),
-      contentType,
-      folder,
-    }),
-  });
+  const presignUrl = `https://xdurzrndnpxhdrbtqqnz.supabase.co/functions/v1/generate-upload-url`;
+  console.log('Requesting presigned URL from:', presignUrl);
+  
+  const requestBody = {
+    filename: safeName.replace(/\s+/g, '-'),
+    contentType,
+    folder,
+  };
+  
+  console.log('Request body:', requestBody);
+  
+  try {
+    const presign = await fetch(presignUrl, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkdXJ6cm5kbnB4aGRyYnRxcW56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNzQ0MjMsImV4cCI6MjA3MzY1MDQyM30.ammqHLKHJjY3ynwgbuV0M9Q8jEKwcXELoWi8rMnkPxI'}`
+      },
+      body: JSON.stringify(requestBody),
+    });
 
-  if (!presign.ok) {
-    const text = await presign.text().catch(() => '');
-    throw new Error(`Failed to get upload URL (${presign.status}): ${text}`);
+    console.log('Presign response status:', presign.status);
+    console.log('Presign response headers:', Object.fromEntries(presign.headers.entries()));
+
+    if (!presign.ok) {
+      const text = await presign.text().catch(() => '');
+      console.error('Presign request failed:', text);
+      throw new Error(`Failed to get upload URL (${presign.status}): ${text}`);
+    }
+
+    const presignData = await presign.json();
+    console.log('Presign response data:', presignData);
+    
+    const { uploadUrl, publicUrl, key } = presignData as PresignResponse;
+
+    // 2) PUT the blob to S3/R2 with the SAME Content-Type
+    console.log('=== Starting actual upload to S3 ===');
+    console.log('Upload URL (first 100 chars):', uploadUrl.substring(0, 100) + '...');
+    
+    const putRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType },
+      body: blob,
+    });
+
+    console.log('S3 upload response status:', putRes.status);
+    console.log('S3 upload response headers:', Object.fromEntries(putRes.headers.entries()));
+
+    if (!putRes.ok) {
+      const text = await putRes.text().catch(() => '');
+      console.error('S3 upload failed:', text);
+      throw new Error(`Upload failed (${putRes.status}): ${text}`);
+    }
+
+    console.log('=== Upload successful ===');
+    const finalUrl = publicUrlForKey(publicUrl || key);
+    console.log('Final URL:', finalUrl);
+    
+    // 3) Return the URL you can persist (served from CDN/S3) and the object key
+    return { urlOrPath: finalUrl, key };
+    
+  } catch (error) {
+    console.error('=== Upload error ===');
+    console.error(error);
+    throw error;
   }
-
-  const { uploadUrl, publicUrl, key } = (await presign.json()) as PresignResponse;
-
-  // 2) PUT the blob to S3/R2 with the SAME Content-Type
-  const putRes = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': contentType },
-    body: blob,
-  });
-
-  if (!putRes.ok) {
-    const text = await putRes.text().catch(() => '');
-    throw new Error(`Upload failed (${putRes.status}): ${text}`);
-  }
-
-  // 3) Return the URL you can persist (served from CDN/S3) and the object key
-  return { urlOrPath: publicUrlForKey(publicUrl || key), key };
 }
 
 /**
