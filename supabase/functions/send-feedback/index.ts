@@ -140,8 +140,8 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'SwingSense Feedback <feedback@swingsense.app>',
-        to: ['feedback@swingsense.app'], // Replace with your actual email
+        from: 'SwingSense Feedback <onboarding@resend.dev>',
+        to: ['jwallvtgc@gmail.com'], // Using your email address since swingsense.app isn't verified
         reply_to: email,
         subject: `[${formatFeedbackType(feedbackType)}] ${name || 'Anonymous'}: ${message.substring(0, 50)}${message.length > 50 ? '...' : ''}`,
         html: emailHtml,
