@@ -198,21 +198,24 @@ export default function SwingAnalysis() {
       <div className="container mx-auto px-6 py-6 max-w-lg">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          {currentStep !== 'capture' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (currentStep === 'score') setCurrentStep('capture');
-                if (currentStep === 'feedback') setCurrentStep('score');
-              }}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (currentStep === 'capture') {
+                navigate('/');
+              } else if (currentStep === 'score') {
+                setCurrentStep('capture');
+              } else if (currentStep === 'feedback') {
+                setCurrentStep('score');
+              }
+            }}
+            className="text-gray-600 hover:text-gray-900 h-10 w-10 p-0 rounded-2xl"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           
-          <div className="flex items-center gap-3 flex-1 justify-center">
+          <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-lg">S</span>
             </div>
