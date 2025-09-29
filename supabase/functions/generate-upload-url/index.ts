@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getSignedUrl } from "https://deno.land/x/aws_s3_presign/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,27 +106,31 @@ serve(async (req) => {
 
     console.log('=== CREATING R2 UPLOAD URL ===');
     
-    // For now, let's try the simple approach and see if it works
-    // We'll create a direct PUT URL to R2 using the S3-compatible API
-    const uploadUrl = `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${key}`;
+    // Generate presigned URL using Deno AWS S3 presign module
+    const uploadUrl = getSignedUrl({
+      accessKeyId,
+      secretAccessKey: secretKey,
+      bucket,
+      key,
+      method: 'PUT',
+      region: 'auto',
+      endpoint: `${accountId}.r2.cloudflarestorage.com`,
+      expiresIn: 3600, // 1 hour expiry
+      queryParams: {
+        'Content-Type': contentType,
+      },
+    });
+
     const publicUrl = `${cdnBase}/${key}`;
 
-    console.log('Upload URL created:', uploadUrl);
+    console.log('Presigned upload URL generated successfully');
     console.log('Public URL created:', publicUrl);
 
-    // Return the URLs and credentials for the client to use
+    // Return the URLs for the client to use
     const response = {
       uploadUrl,
       publicUrl,
       key,
-      credentials: {
-        accessKeyId,
-        secretAccessKey: secretKey,
-        region: 'auto'
-      },
-      headers: {
-        'Content-Type': contentType
-      }
     };
 
     console.log('=== SUCCESS ===');

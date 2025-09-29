@@ -87,7 +87,7 @@ serve(async (req) => {
 
     console.log('Got presigned URL:', presignData.uploadUrl ? 'yes' : 'no');
 
-    // Upload to R2 using the presigned URL
+    // Upload to R2 using the presigned URL (authentication is embedded in the URL)
     const arrayBuffer = await file.arrayBuffer();
     
     const uploadResponse = await fetch(presignData.uploadUrl, {
