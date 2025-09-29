@@ -91,7 +91,14 @@ serve(async (req) => {
     const extension = getFileExtension(contentType);
     const timestamp = Date.now();
     const randomId = crypto.randomUUID().slice(0, 8);
-    const sanitizedFilename = filename.replace(/\s+/g, "-");
+    
+    // Remove existing extension from filename to avoid duplicates
+    let sanitizedFilename = filename.replace(/\s+/g, "-");
+    const existingExtension = sanitizedFilename.split('.').pop()?.toLowerCase();
+    if (existingExtension && ['mp4', 'mov', 'webm'].includes(existingExtension)) {
+      sanitizedFilename = sanitizedFilename.replace(/\.[^.]*$/, '');
+    }
+    
     const key = `${folder}/${new Date().toISOString().slice(0, 10)}/${timestamp}-${randomId}-${sanitizedFilename}.${extension}`;
 
     console.log('Generated S3 key:', key);
