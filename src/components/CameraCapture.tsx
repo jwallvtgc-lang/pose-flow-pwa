@@ -78,27 +78,86 @@ export function CameraCapture({
   }
 
   async function validateAndSend(blob: Blob) {
-    try {
-      resetError();
-      if (blob.size > maxBytes) {
-        throw new Error(
-          `Video is too large (${Math.round(blob.size / (1024 * 1024))}MB). Max ${Math.round(
-            maxBytes / (1024 * 1024)
-          )}MB.`
-        );
-      }
-      const dur = await getVideoDuration(blob);
-      if (!Number.isFinite(dur) || dur <= 0) {
-        // Some iOS MOVs may delay metadata; allow if size looks sane as fallback
-        setTip('Could not read duration; proceeding based on file size.');
-      } else if (dur > maxDurationSec + 0.25) {
-        throw new Error(`Please keep clips ≤ ${maxDurationSec}s (yours was ~${dur.toFixed(1)}s).`);
-      }
-      onCapture(blob);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to validate video. Please try again.');
+  try {
+    resetError();
+    if (blob.size > maxBytes) {
+      throw new Error(
+        `Video is too large (${Math.round(blob.size / (1024 * 1024))}MB). Max ${Math.round(
+          maxBytes / (1024 * 1024)
+        )}MB.`
+      );
     }
+    const dur = await getVideoDuration(blob);
+    if (!Number.isFinite(dur) || dur <= 0) {
+      setTip('Could not read duration; proceeding based on file size.');
+    } else if (dur > maxDurationSec + 0.25) {
+      throw new Error(`Please keep clips ≤ ${maxDurationSec}s (yours was ~${dur.toFixed(1)}s).`);
+    }
+
+    // NEW: Upload to R2 before calling onCapture
+    setTip('Uploading video to cloud storage...');
+    const uploadResult = await uploadToR2(blob);
+    
+    if (!uploadResult) {
+      throw new Error('Failed to upload video. Please try again.');
+    }
+
+    console.log('Video uploaded successfully:', uploadResult);
+    
+    // Pass both the blob and upload info to parent
+    onCapture(blob);
+    
+  } catch (e: any) {
+    setError(e?.message || 'Failed to validate video. Please try again.');
   }
+}
+
+// NEW: Add this upload function
+async function uploadToR2(videoBlob: Blob): Promise<any> {
+  try {
+    console.log('Uploading to R2...', {
+      size: videoBlob.size,
+      type: videoBlob.type
+    });
+
+    // Create FormData
+    const formData = new FormData();
+    formData.append('video', videoBlob, 'swing.mov');
+    formData.append('client_request_id', Date.now().toString());
+    formData.append('preferred_name', 'swing');
+    formData.append('folder', 'videos');
+
+    // Get Supabase URL and key from environment
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    // Call upload Edge Function
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/upload-video`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseAnonKey}`
+        },
+        body: formData
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Upload failed:', response.status, errorText);
+      return null;
+    }
+
+    const result = await response.json();
+    console.log('✅ Upload successful:', result);
+    return result;
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    return null;
+  }
+}
 
   // --- preview / recording ---------------------------------------------------
 
