@@ -229,8 +229,14 @@ async function uploadToR2(videoBlob: Blob): Promise<any> {
   }
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    console.log('File input clicked, files:', e.target.files);
     const f = e.target.files?.[0];
-    if (f) validateAndSend(f);
+    if (f) {
+      console.log('File selected:', f.name, f.size, f.type);
+      validateAndSend(f);
+    } else {
+      console.log('No file selected');
+    }
     // allow re-selecting same file
     e.currentTarget.value = '';
   }
