@@ -114,7 +114,7 @@ serve(async (req) => {
       key,
       method: 'PUT',
       region: 'auto',
-      endpoint: `${accountId}.r2.cloudflarestorage.com`,
+      endpoint: `${accountId.toLowerCase()}.r2.cloudflarestorage.com`,
       expiresIn: 3600, // 1 hour expiry
       queryParams: {
         'Content-Type': contentType,
