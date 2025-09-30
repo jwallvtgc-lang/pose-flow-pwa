@@ -121,6 +121,12 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
             controls
             className="w-full rounded-lg"
             muted
+            playsInline
+            onLoadStart={() => console.log('Preview video load started')}
+            onLoadedMetadata={(e) => console.log('Preview video metadata loaded:', e.currentTarget.duration)}
+            onCanPlay={() => console.log('Preview video can play')}
+            onError={(e) => console.error('Preview video error:', e.currentTarget.error)}
+            onLoadedData={() => console.log('Preview video data loaded')}
           />
         </Card>
       </div>
@@ -171,6 +177,12 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
             controls
             className="w-full rounded-lg"
             muted
+            playsInline
+            onLoadStart={() => console.log('Video load started')}
+            onLoadedMetadata={(e) => console.log('Video metadata loaded:', e.currentTarget.duration)}
+            onCanPlay={() => console.log('Video can play')}
+            onError={(e) => console.error('Video error:', e.currentTarget.error)}
+            onLoadedData={() => console.log('Video data loaded')}
           />
         </div>
       </Card>
