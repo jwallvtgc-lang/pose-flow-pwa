@@ -15,7 +15,7 @@ type UploadArgs = {
 
 /** Base URL where files are served from (no trailing slash). */
 function cdnBase(): string {
-  const fallbackCdn = 'https://swingsense-video.f654e3871f91d6cea64b343e353ea3b8.r2.dev';
+  const fallbackCdn = 'https://swingsense-video.f654e3871f91d6cea64b343e353ea3b8.r2.cloudflarestorage.com';
   return getEnvVar('VITE_STORAGE_CDN_URL') || fallbackCdn;
 }
 
