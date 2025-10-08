@@ -93,13 +93,24 @@ export default function SwingDetail() {
       console.log('Loading video URL for path:', videoPath);
       const signedUrl = await getVideoSignedUrl(videoPath);
       console.log('Got signed URL:', signedUrl);
+      
+      // Test if the URL is accessible
+      try {
+        const testResponse = await fetch(signedUrl, { method: 'HEAD' });
+        console.log('Video URL test response:', testResponse.status, testResponse.statusText);
+        if (!testResponse.ok) {
+          throw new Error(`Video not accessible: ${testResponse.status} ${testResponse.statusText}`);
+        }
+      } catch (fetchErr) {
+        console.error('Video URL not accessible:', fetchErr);
+        throw new Error('Video URL not accessible');
+      }
+      
       setVideoUrl(signedUrl);
     } catch (err) {
       console.error('Failed to load video URL:', err);
-      if (err instanceof Error && (err.message.includes('401') || err.toString().includes('401'))) {
-        console.error('401 Unauthorized error detected in video URL loading');
-      }
-      setVideoError('Failed to load video');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load video';
+      setVideoError(errorMsg);
     } finally {
       setIsVideoLoading(false);
     }
@@ -648,7 +659,16 @@ export default function SwingDetail() {
                     controls
                     className="w-full h-auto"
                     preload="metadata"
-                    onError={() => setVideoError('Failed to load video')}
+                    playsInline
+                    crossOrigin="anonymous"
+                    onLoadStart={() => console.log('Detail video load started')}
+                    onLoadedMetadata={(e) => console.log('Detail video metadata loaded:', e.currentTarget.duration)}
+                    onCanPlay={() => console.log('Detail video can play')}
+                    onError={(e) => {
+                      console.error('Detail video error:', e.currentTarget.error);
+                      setVideoError('Failed to play video. Please try again.');
+                    }}
+                    onLoadedData={() => console.log('Detail video data loaded')}
                   >
                     Your browser does not support video playback.
                   </video>
