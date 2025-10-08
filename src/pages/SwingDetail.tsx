@@ -647,7 +647,6 @@ export default function SwingDetail() {
                     className="w-full h-auto"
                     preload="metadata"
                     playsInline
-                    crossOrigin="anonymous"
                     onLoadStart={() => console.log('Detail video load started')}
                     onLoadedMetadata={(e) => console.log('Detail video metadata loaded:', e.currentTarget.duration)}
                     onCanPlay={() => console.log('Detail video can play')}
