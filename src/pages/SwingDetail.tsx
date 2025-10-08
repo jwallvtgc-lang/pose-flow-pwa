@@ -92,20 +92,7 @@ export default function SwingDetail() {
       setVideoError('');
       console.log('Loading video URL for path:', videoPath);
       const signedUrl = await getVideoSignedUrl(videoPath);
-      console.log('Got signed URL:', signedUrl);
-      
-      // Test if the URL is accessible
-      try {
-        const testResponse = await fetch(signedUrl, { method: 'HEAD' });
-        console.log('Video URL test response:', testResponse.status, testResponse.statusText);
-        if (!testResponse.ok) {
-          throw new Error(`Video not accessible: ${testResponse.status} ${testResponse.statusText}`);
-        }
-      } catch (fetchErr) {
-        console.error('Video URL not accessible:', fetchErr);
-        throw new Error('Video URL not accessible');
-      }
-      
+      console.log('Got video URL:', signedUrl);
       setVideoUrl(signedUrl);
     } catch (err) {
       console.error('Failed to load video URL:', err);
