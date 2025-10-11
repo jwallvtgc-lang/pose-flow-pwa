@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getVideoSignedUrl } from '@/lib/storage';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
 
 interface SwingData {
   id: string;
@@ -23,6 +24,7 @@ interface SwingData {
   cues: string[] | null;
   drill_id: string | null;
   video_url: string | null;
+  pose_data?: any;
 }
 
 interface SwingMetric {
@@ -71,6 +73,8 @@ export default function SwingDetail() {
   const [videoError, setVideoError] = useState<string>('');
   const [aiCoaching, setAiCoaching] = useState<AICoaching | null>(null);
   const [isLoadingCoaching, setIsLoadingCoaching] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Share functionality state
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -265,10 +269,10 @@ export default function SwingDetail() {
         contextUser: !!user 
       });
 
-      // Fetch swing data
+      // Fetch swing data including pose_data
       const { data: swingData, error: swingError } = await supabase
         .from('swings')
-        .select('id, created_at, score_phase1, cues, drill_id, drill_data, video_url')
+        .select('id, created_at, score_phase1, cues, drill_id, drill_data, video_url, pose_data')
         .eq('id', swingId)
         .maybeSingle(); // Use maybeSingle() instead of single() to handle missing data gracefully
 
@@ -640,24 +644,40 @@ export default function SwingDetail() {
               )}
 
               {videoUrl && (
-                <div className="bg-black rounded-2xl overflow-hidden">
-                  <video
-                    src={videoUrl}
-                    controls
-                    className="w-full h-auto"
-                    preload="metadata"
-                    playsInline
-                    onLoadStart={() => console.log('Detail video load started')}
-                    onLoadedMetadata={(e) => console.log('Detail video metadata loaded:', e.currentTarget.duration)}
-                    onCanPlay={() => console.log('Detail video can play')}
-                    onError={(e) => {
-                      console.error('Detail video error:', e.currentTarget.error);
-                      setVideoError('Failed to play video. Please try again.');
-                    }}
-                    onLoadedData={() => console.log('Detail video data loaded')}
-                  >
-                    Your browser does not support video playback.
-                  </video>
+                <div className="space-y-4">
+                  <div className="bg-black rounded-2xl overflow-hidden relative">
+                    <video
+                      ref={videoRef}
+                      src={videoUrl}
+                      controls
+                      className="w-full h-auto"
+                      preload="metadata"
+                      playsInline
+                      onLoadStart={() => console.log('Detail video load started')}
+                      onLoadedMetadata={(e) => console.log('Detail video metadata loaded:', e.currentTarget.duration)}
+                      onCanPlay={() => console.log('Detail video can play')}
+                      onError={(e) => {
+                        console.error('Detail video error:', e.currentTarget.error);
+                        setVideoError('Failed to play video. Please try again.');
+                      }}
+                      onLoadedData={() => console.log('Detail video data loaded')}
+                    >
+                      Your browser does not support video playback.
+                    </video>
+                    <canvas
+                      ref={canvasRef}
+                      className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                      style={{ zIndex: 10 }}
+                    />
+                  </div>
+                  
+                  {videoRef.current && swing.pose_data?.keypointsByFrame && (
+                    <SwingOverlayCanvas
+                      videoElement={videoRef.current}
+                      keypointsByFrame={swing.pose_data.keypointsByFrame}
+                      canvasRef={canvasRef}
+                    />
+                  )}
                 </div>
               )}
             </Card>

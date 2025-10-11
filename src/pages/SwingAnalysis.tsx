@@ -129,13 +129,17 @@ export default function SwingAnalysis() {
         view: 'side'
       });
 
-      // Save swing data
+      // Save swing data with keypoints
       const swingId = await saveSwing({
         session_id: sessionId,
         score: evaluation.score,
         cards: evaluation.cards,
         videoUrl,
-        client_request_id: clientRequestId
+        client_request_id: clientRequestId,
+        keypointsData: {
+          keypointsByFrame: result.keypointsByFrame,
+          events: result.events
+        }
       });
 
       // Update user streak after successful swing analysis

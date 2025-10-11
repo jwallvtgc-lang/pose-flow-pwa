@@ -104,13 +104,15 @@ export async function saveSwing({
   score,
   cards,
   videoUrl,
-  client_request_id
+  client_request_id,
+  keypointsData
 }: {
   session_id: string;
   score: number;
   cards: CoachingCard[];
   videoUrl?: string | null;
   client_request_id: string;
+  keypointsData?: any;
 }): Promise<string> {
   try {
     console.log('=== SAVE SWING DEBUG ===');
@@ -132,7 +134,8 @@ export async function saveSwing({
       drill_id: drillId,
       drill_data: drillData,
       video_url: videoUrl,
-      client_request_id
+      client_request_id,
+      pose_data: keypointsData ? 'present' : 'none'
     });
     
     // Try to insert, if conflict on client_request_id, fetch existing
@@ -145,7 +148,8 @@ export async function saveSwing({
         drill_id: drillId,
         drill_data: drillData,
         video_url: videoUrl,
-        client_request_id
+        client_request_id,
+        pose_data: keypointsData
       })
       .select()
       .single();
