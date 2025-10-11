@@ -38,48 +38,35 @@ serve(async (req) => {
       .sort((a, b) => a.percentileRank - b.percentileRank)
       .slice(0, 2);
 
-          const systemPrompt = `You are an expert baseball swing coach with advanced biomechanics knowledge providing personalized feedback to teenage athletes (ages 12-18). Use deep analytical reasoning to understand the interconnected nature of swing mechanics.
+          const systemPrompt = `You are a cool baseball swing coach providing feedback to teen athletes (13-16 years old). Be relatable, upbeat, and straight to the point.
 
-Guidelines:
-- Analyze the relationship between all metrics to identify root causes, not just symptoms
-- Focus on the 2 most impactful areas that will create the biggest improvement cascade
-- Consider how fixing one area might positively affect other metrics
-- Provide conversational, encouraging coaching advice as if speaking directly to the athlete
-- Use language appropriate for teens - friendly but not condescending
-- Each explanation should be 3-4 sentences with specific actionable advice
-- Include WHY each area matters for hitting performance and how it connects to other aspects
-- Be encouraging and motivational while being honest about areas needing work
-- Think step-by-step about the biomechanical chain and prioritize accordingly
-- Make it feel like a real coach talking to them personally with deep understanding of their swing`;
+Style Guidelines:
+- Talk like you're texting a friend - casual but knowledgeable
+- Keep everything SHORT - no lengthy explanations
+- Use bullets wherever possible to break things down
+- Be encouraging and hype them up
+- Focus on the 2 most impactful improvements
+- No fluff - get straight to what matters`;
 
-    const userPrompt = `Think step-by-step about this swing analysis. Consider the biomechanical relationships between all metrics to identify the root causes and most impactful improvements.
+    const userPrompt = `Analyze this swing data and give feedback on the 2 biggest areas to improve.
 
 WEAKEST METRICS:
 ${weakestMetrics.map(m => 
-  `• ${m.name}: ${m.value}${m.unit} (target: ${m.target[0]}-${m.target[1]}${m.unit}) - ${m.percentileRank}th percentile`
+  `• ${m.name}: ${m.value}${m.unit} (target: ${m.target[0]}-${m.target[1]}${m.unit})`
 ).join('\n')}
 
-ALL METRICS CONTEXT:
+ALL METRICS:
 ${metrics.map(m => 
   `• ${m.name}: ${m.value}${m.unit} (${m.percentileRank}th percentile)`
 ).join('\n')}
 
-${previousScore ? `Previous swing score: ${previousScore}` : ''}
-${sessionNumber ? `Session #${sessionNumber}` : ''}
-
-REASONING PROCESS:
-1. Analyze how each metric relates to the others in the kinetic chain
-2. Identify which 2 improvements would create the biggest positive cascade effect
-3. Consider the athlete's development level and what's most teachable
-4. Prioritize changes that will boost confidence and immediate performance
-
-Return a JSON response with this exact structure:
+Return JSON with this structure:
 {
-  "cues": ["Specific, actionable cue 1", "Specific, actionable cue 2"],
-  "explanations": ["Deep coaching explanation 1 with biomechanical reasoning (3-4 sentences)", "Deep coaching explanation 2 with biomechanical reasoning (3-4 sentences)"],
-  "encouragement": "Personal, motivational message about their swing potential and specific strengths to build on (2-3 sentences)",
+  "cues": ["Short drill instruction 1 (one sentence)", "Short drill instruction 2 (one sentence)"],
+  "explanations": ["Why this matters + how to fix it with bullets (2-3 bullet points max)", "Why this matters + how to fix it with bullets (2-3 bullet points max)"],
+  "encouragement": "Quick hype message (1-2 sentences max)",
   "focusAreas": ["metric_name_1", "metric_name_2"],
-  "reasoning": "Brief explanation of why these 2 areas were prioritized over others (2 sentences)"
+  "reasoning": "Why these 2 areas (1 sentence)"
 }`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -133,10 +120,10 @@ Return a JSON response with this exact structure:
     return new Response(JSON.stringify({
       cues: fallbackCues,
       explanations: [
-        "Hey, balance is super important for consistent hitting! When you stay balanced through your swing, you're able to make solid contact every time and transfer your weight properly from your back foot to your front foot. This gives you way more power and control over where the ball goes. Work on keeping your head steady and your core engaged throughout the entire swing.",
-        "Visual tracking is one of the most crucial skills for any hitter. The better you can track the ball from the pitcher's hand all the way to your bat, the better your timing and barrel accuracy will be. Try to see the ball hit your bat - this helps with both contact quality and gives you more confidence in the box. Practice watching the ball during batting practice and really focus on seeing it clearly."
+        "Balance = power and control\n• Transfer weight from back foot to front\n• Keep your head steady\n• Core stays engaged throughout",
+        "Better tracking = better contact\n• Watch the ball from pitcher's hand to bat\n• See the ball hit the bat\n• Focus during BP to build this habit"
       ],
-      encouragement: "You're putting in great work by tracking your swing data! Every swing is a chance to get better, and the fact that you're analyzing your mechanics shows you're serious about improving. Keep working on these fundamentals and you'll see real progress.",
+      encouragement: "You're tracking your data - that's what the pros do! Keep grinding and you'll see results.",
       focusAreas: ["balance", "tracking"]
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
