@@ -192,6 +192,42 @@ export type Database = {
           },
         ]
       }
+      swing_videos: {
+        Row: {
+          content_type: string
+          created_at: string | null
+          file_size: number
+          filename: string
+          id: string
+          public_url: string
+          s3_key: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string | null
+          file_size: number
+          filename: string
+          id?: string
+          public_url: string
+          s3_key: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string | null
+          file_size?: number
+          filename?: string
+          id?: string
+          public_url?: string
+          s3_key?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       swings: {
         Row: {
           client_request_id: string | null
@@ -200,6 +236,7 @@ export type Database = {
           drill_data: Json | null
           drill_id: string | null
           id: string
+          pose_data: Json | null
           score_phase1: number | null
           session_id: string | null
           video_url: string | null
@@ -211,6 +248,7 @@ export type Database = {
           drill_data?: Json | null
           drill_id?: string | null
           id?: string
+          pose_data?: Json | null
           score_phase1?: number | null
           session_id?: string | null
           video_url?: string | null
@@ -222,6 +260,7 @@ export type Database = {
           drill_data?: Json | null
           drill_id?: string | null
           id?: string
+          pose_data?: Json | null
           score_phase1?: number | null
           session_id?: string | null
           video_url?: string | null
