@@ -23,20 +23,40 @@ interface SwingOverlayCanvasProps {
   videoElement: HTMLVideoElement;
   keypointsByFrame: FrameData[];
   currentTime?: number;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
 }
 
 export function SwingOverlayCanvas({
   videoElement,
   keypointsByFrame,
   currentTime,
+  canvasRef,
 }: SwingOverlayCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [selectedPhase, setSelectedPhase] = useState<SwingPhase>('contact');
   const [showIdealPose, setShowIdealPose] = useState(true);
   const [showDetectedPose, setShowDetectedPose] = useState(true);
   const [idealOpacity, setIdealOpacity] = useState([70]);
   const [similarity, setSimilarity] = useState<number>(0);
   const [detailedScores, setDetailedScores] = useState<Record<string, number>>({});
+
+  // Setup canvas dimensions
+  useEffect(() => {
+    const setupCanvas = () => {
+      if (!canvasRef.current || !videoElement) return;
+      
+      const canvas = canvasRef.current;
+      canvas.width = videoElement.videoWidth || videoElement.clientWidth;
+      canvas.height = videoElement.videoHeight || videoElement.clientHeight;
+    };
+
+    setupCanvas();
+    videoElement.addEventListener('loadedmetadata', setupCanvas);
+
+    return () => {
+      videoElement.removeEventListener('loadedmetadata', setupCanvas);
+    };
+  }, [videoElement, canvasRef]);
 
   // Get current frame based on video time
   const getCurrentFrame = (): FrameData | null => {
@@ -196,16 +216,7 @@ export function SwingOverlayCanvas({
   const phases: SwingPhase[] = ['setup', 'load', 'stride', 'contact', 'extension', 'finish'];
 
   return (
-    <div className="space-y-4">
-      {/* Canvas Overlay */}
-      <div className="relative">
-        <canvas
-          ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
-          style={{ zIndex: 10 }}
-        />
-      </div>
-
+    <div ref={containerRef}>
       {/* Controls */}
       <Card className="p-4 space-y-4">
         <div className="flex items-center justify-between">

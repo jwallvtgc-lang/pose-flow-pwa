@@ -21,6 +21,7 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
   const [error, setError] = useState<string>('');
   const [videoUrl, setVideoUrl] = useState<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     // Reset all state for new video
@@ -173,24 +174,33 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
             </Badge>
           </div>
           
-          <div className="relative">
-            <video
-              ref={videoRef}
-              src={videoUrl}
-              controls
-              className="w-full rounded-lg"
-              muted
-              playsInline
-              onLoadStart={() => console.log('Video load started')}
-              onLoadedMetadata={(e) => console.log('Video metadata loaded:', e.currentTarget.duration)}
-              onCanPlay={() => console.log('Video can play')}
-              onError={(e) => console.error('Video error:', e.currentTarget.error)}
-              onLoadedData={() => console.log('Video data loaded')}
-            />
+          <div className="space-y-4">
+            <div className="relative">
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                controls
+                className="w-full rounded-lg"
+                muted
+                playsInline
+                onLoadStart={() => console.log('Video load started')}
+                onLoadedMetadata={(e) => console.log('Video metadata loaded:', e.currentTarget.duration)}
+                onCanPlay={() => console.log('Video can play')}
+                onError={(e) => console.error('Video error:', e.currentTarget.error)}
+                onLoadedData={() => console.log('Video data loaded')}
+              />
+              <canvas
+                ref={canvasRef}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none rounded-lg"
+                style={{ zIndex: 10 }}
+              />
+            </div>
+            
             {videoRef.current && (
               <SwingOverlayCanvas
                 videoElement={videoRef.current}
                 keypointsByFrame={results.keypointsByFrame}
+                canvasRef={canvasRef}
               />
             )}
           </div>
