@@ -160,11 +160,6 @@ export function SwingOverlayCanvas({
     if (!canvas || !ctx || !videoElement) return;
 
     const updateCanvas = () => {
-      // Match canvas size to video
-      const rect = videoElement.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
