@@ -65,7 +65,6 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
       setIsAnalyzing(false);
       setProgress(100);
       setProgressMessage('Analysis complete!');
-      onComplete?.(result);
 
     } catch (err) {
       console.error('Swing analysis failed:', err);
@@ -262,17 +261,27 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
       </Card>
 
       {/* Actions */}
-      <div className="flex gap-4">
-        {onRetake && (
-          <Button onClick={onRetake} variant="outline" className="flex-1">
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Record Another Swing
+      <div className="flex flex-col gap-3">
+        {onComplete && (
+          <Button 
+            onClick={() => onComplete(results)} 
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-semibold py-6 text-lg"
+          >
+            Save Analysis & Continue
           </Button>
         )}
-        <Button onClick={retryAnalysis} variant="outline">
-          <Play className="w-4 h-4 mr-2" />
-          Re-analyze
-        </Button>
+        <div className="flex gap-3">
+          {onRetake && (
+            <Button onClick={onRetake} variant="outline" className="flex-1">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Record Another
+            </Button>
+          )}
+          <Button onClick={retryAnalysis} variant="outline" className="flex-1">
+            <Play className="w-4 h-4 mr-2" />
+            Re-analyze
+          </Button>
+        </div>
       </div>
     </div>
   );
