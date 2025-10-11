@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, Clock, Play, RotateCcw } from 'lucide-react';
 import { poseWorkerClient, type PoseAnalysisResult } from '@/lib/poseWorkerClient';
+import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
 
 interface SwingAnalysisResultsProps {
   videoBlob: Blob;
@@ -19,6 +20,7 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
   const [results, setResults] = useState<PoseAnalysisResult | null>(null);
   const [error, setError] = useState<string>('');
   const [videoUrl, setVideoUrl] = useState<string>('');
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     // Reset all state for new video
@@ -172,18 +174,27 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
             </Badge>
           </div>
           
-          <video
-            src={videoUrl}
-            controls
-            className="w-full rounded-lg"
-            muted
-            playsInline
-            onLoadStart={() => console.log('Video load started')}
-            onLoadedMetadata={(e) => console.log('Video metadata loaded:', e.currentTarget.duration)}
-            onCanPlay={() => console.log('Video can play')}
-            onError={(e) => console.error('Video error:', e.currentTarget.error)}
-            onLoadedData={() => console.log('Video data loaded')}
-          />
+          <div className="relative">
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              controls
+              className="w-full rounded-lg"
+              muted
+              playsInline
+              onLoadStart={() => console.log('Video load started')}
+              onLoadedMetadata={(e) => console.log('Video metadata loaded:', e.currentTarget.duration)}
+              onCanPlay={() => console.log('Video can play')}
+              onError={(e) => console.error('Video error:', e.currentTarget.error)}
+              onLoadedData={() => console.log('Video data loaded')}
+            />
+            {videoRef.current && (
+              <SwingOverlayCanvas
+                videoElement={videoRef.current}
+                keypointsByFrame={results.keypointsByFrame}
+              />
+            )}
+          </div>
         </div>
       </Card>
 

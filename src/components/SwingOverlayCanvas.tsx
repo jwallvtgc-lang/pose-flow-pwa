@@ -1,0 +1,306 @@
+import { useEffect, useRef, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { TrendingUp } from 'lucide-react';
+import {
+  IDEAL_SWING_KEYPOINTS,
+  POSE_CONNECTIONS,
+  PHASE_DESCRIPTIONS,
+  type SwingPhase,
+} from '@/lib/idealSwingData';
+import { calculatePoseSimilarity, getDetailedSimilarity } from '@/lib/swingSimilarity';
+
+interface FrameData {
+  keypoints: Array<{ x: number; y: number; score: number; name?: string }>;
+  t: number;
+}
+
+interface SwingOverlayCanvasProps {
+  videoElement: HTMLVideoElement;
+  keypointsByFrame: FrameData[];
+  currentTime?: number;
+}
+
+export function SwingOverlayCanvas({
+  videoElement,
+  keypointsByFrame,
+  currentTime,
+}: SwingOverlayCanvasProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [selectedPhase, setSelectedPhase] = useState<SwingPhase>('contact');
+  const [showIdealPose, setShowIdealPose] = useState(true);
+  const [showDetectedPose, setShowDetectedPose] = useState(true);
+  const [idealOpacity, setIdealOpacity] = useState([70]);
+  const [similarity, setSimilarity] = useState<number>(0);
+  const [detailedScores, setDetailedScores] = useState<Record<string, number>>({});
+
+  // Get current frame based on video time
+  const getCurrentFrame = (): FrameData | null => {
+    if (!videoElement || keypointsByFrame.length === 0) return null;
+    
+    const currentTimeMs = (currentTime ?? videoElement.currentTime) * 1000;
+    
+    // Find closest frame
+    let closestFrame = keypointsByFrame[0];
+    let minDiff = Math.abs(closestFrame.t - currentTimeMs);
+    
+    for (const frame of keypointsByFrame) {
+      const diff = Math.abs(frame.t - currentTimeMs);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestFrame = frame;
+      }
+    }
+    
+    return closestFrame;
+  };
+
+  // Draw skeleton on canvas
+  const drawSkeleton = (
+    ctx: CanvasRenderingContext2D,
+    keypoints: Record<string, { x: number; y: number; score?: number }>,
+    color: string,
+    opacity: number,
+    lineWidth: number = 3
+  ) => {
+    const canvas = ctx.canvas;
+    
+    // Draw connections
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.globalAlpha = opacity;
+    
+    for (const [start, end] of POSE_CONNECTIONS) {
+      const startPoint = keypoints[start];
+      const endPoint = keypoints[end];
+      
+      if (!startPoint || !endPoint) continue;
+      
+      // Skip if detected pose has low confidence
+      if (startPoint.score !== undefined && startPoint.score < 0.3) continue;
+      if (endPoint.score !== undefined && endPoint.score < 0.3) continue;
+      
+      ctx.beginPath();
+      ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
+      ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+      ctx.stroke();
+    }
+    
+    // Draw keypoints
+    ctx.fillStyle = color;
+    for (const point of Object.values(keypoints)) {
+      if (point.score !== undefined && point.score < 0.3) continue;
+      
+      ctx.beginPath();
+      ctx.arc(
+        point.x * canvas.width,
+        point.y * canvas.height,
+        lineWidth * 1.5,
+        0,
+        2 * Math.PI
+      );
+      ctx.fill();
+    }
+    
+    ctx.globalAlpha = 1;
+  };
+
+  // Convert detected keypoints array to object
+  const convertDetectedKeypoints = (frame: FrameData) => {
+    const keypointNames = [
+      'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
+      'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+      'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+      'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+    ];
+    
+    const result: Record<string, { x: number; y: number; score: number }> = {};
+    
+    frame.keypoints.forEach((kp, index) => {
+      if (index < keypointNames.length) {
+        result[keypointNames[index]] = {
+          x: kp.x,
+          y: kp.y,
+          score: kp.score
+        };
+      }
+    });
+    
+    return result;
+  };
+
+  // Update canvas on frame change
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx || !videoElement) return;
+
+    const updateCanvas = () => {
+      // Match canvas size to video
+      const rect = videoElement.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw ideal pose
+      if (showIdealPose) {
+        const idealKeypoints = IDEAL_SWING_KEYPOINTS[selectedPhase];
+        drawSkeleton(ctx, idealKeypoints, '#22c55e', idealOpacity[0] / 100, 4);
+      }
+      
+      // Draw detected pose
+      if (showDetectedPose) {
+        const currentFrame = getCurrentFrame();
+        if (currentFrame) {
+          const detectedKeypoints = convertDetectedKeypoints(currentFrame);
+          drawSkeleton(ctx, detectedKeypoints, '#3b82f6', 0.8, 3);
+          
+          // Calculate similarity
+          const idealKeypoints = IDEAL_SWING_KEYPOINTS[selectedPhase];
+          const sim = calculatePoseSimilarity(detectedKeypoints, idealKeypoints);
+          setSimilarity(sim);
+          
+          const detailed = getDetailedSimilarity(detectedKeypoints, idealKeypoints);
+          setDetailedScores(detailed);
+        }
+      }
+    };
+
+    // Update on time change
+    const handleTimeUpdate = () => {
+      requestAnimationFrame(updateCanvas);
+    };
+
+    videoElement.addEventListener('timeupdate', handleTimeUpdate);
+    videoElement.addEventListener('play', handleTimeUpdate);
+    videoElement.addEventListener('pause', handleTimeUpdate);
+    videoElement.addEventListener('seeked', handleTimeUpdate);
+    
+    // Initial draw
+    updateCanvas();
+
+    return () => {
+      videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+      videoElement.removeEventListener('play', handleTimeUpdate);
+      videoElement.removeEventListener('pause', handleTimeUpdate);
+      videoElement.removeEventListener('seeked', handleTimeUpdate);
+    };
+  }, [videoElement, selectedPhase, showIdealPose, showDetectedPose, idealOpacity, keypointsByFrame, currentTime]);
+
+  const phases: SwingPhase[] = ['setup', 'load', 'stride', 'contact', 'extension', 'finish'];
+
+  return (
+    <div className="space-y-4">
+      {/* Canvas Overlay */}
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          style={{ zIndex: 10 }}
+        />
+      </div>
+
+      {/* Controls */}
+      <Card className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold">Form Comparison</h3>
+          {showDetectedPose && showIdealPose && (
+            <Badge variant={similarity >= 80 ? "default" : similarity >= 60 ? "secondary" : "destructive"}>
+              <TrendingUp className="w-3 h-3 mr-1" />
+              {similarity}% Match
+            </Badge>
+          )}
+        </div>
+
+        {/* Phase Selection */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Swing Phase</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {phases.map((phase) => (
+              <Button
+                key={phase}
+                variant={selectedPhase === phase ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedPhase(phase)}
+                className="capitalize"
+              >
+                {phase}
+              </Button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {PHASE_DESCRIPTIONS[selectedPhase]}
+          </p>
+        </div>
+
+        {/* Toggle Controls */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <Label htmlFor="ideal-toggle" className="text-sm">Ideal Form</Label>
+            </div>
+            <Switch
+              id="ideal-toggle"
+              checked={showIdealPose}
+              onCheckedChange={setShowIdealPose}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-blue-500" />
+              <Label htmlFor="detected-toggle" className="text-sm">Your Form</Label>
+            </div>
+            <Switch
+              id="detected-toggle"
+              checked={showDetectedPose}
+              onCheckedChange={setShowDetectedPose}
+            />
+          </div>
+        </div>
+
+        {/* Opacity Slider */}
+        {showIdealPose && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Ideal Form Opacity</Label>
+            <Slider
+              value={idealOpacity}
+              onValueChange={setIdealOpacity}
+              min={10}
+              max={100}
+              step={5}
+              className="w-full"
+            />
+            <div className="text-xs text-muted-foreground text-right">
+              {idealOpacity[0]}%
+            </div>
+          </div>
+        )}
+
+        {/* Detailed Scores */}
+        {showDetectedPose && showIdealPose && Object.keys(detailedScores).length > 0 && (
+          <div className="space-y-2 pt-2 border-t">
+            <Label className="text-sm font-medium">Body Part Analysis</Label>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {Object.entries(detailedScores).map(([part, score]) => (
+                <div key={part} className="flex justify-between items-center p-2 bg-muted rounded">
+                  <span className="capitalize">{part.replace(/([A-Z])/g, ' $1').trim()}</span>
+                  <Badge variant={score >= 70 ? "default" : "secondary"} className="text-xs">
+                    {score}%
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
