@@ -209,14 +209,18 @@ export function computePhase1Metrics(
   }
   
   // 2. Attack angle at contact
-  if (contactIdx && contactIdx < keypointsByFrame.length) {
+  if (contactIdx && contactIdx >= 5 && contactIdx < keypointsByFrame.length) {
+    // Measure the attack angle from frames BEFORE contact (approach angle)
+    // Use frames 5-2 frames before contact to avoid the deceleration at contact
+    const measureIdx = contactIdx - 3;
+    
     // Use right wrist for more accurate bat path (typically bottom hand on bat)
     // Try both wrists and use the one with higher confidence
-    const leftWristAngle = calculateTrajectoryAngle(keypointsByFrame, contactIdx, 3, 'left_wrist');
-    const rightWristAngle = calculateTrajectoryAngle(keypointsByFrame, contactIdx, 3, 'right_wrist');
+    const leftWristAngle = calculateTrajectoryAngle(keypointsByFrame, measureIdx, 2, 'left_wrist');
+    const rightWristAngle = calculateTrajectoryAngle(keypointsByFrame, measureIdx, 2, 'right_wrist');
     
-    const leftWrist = getKeypoint(keypointsByFrame[contactIdx].keypoints, 'left_wrist');
-    const rightWrist = getKeypoint(keypointsByFrame[contactIdx].keypoints, 'right_wrist');
+    const leftWrist = getKeypoint(keypointsByFrame[measureIdx].keypoints, 'left_wrist');
+    const rightWrist = getKeypoint(keypointsByFrame[measureIdx].keypoints, 'right_wrist');
     
     const leftScore = leftWrist?.score || 0;
     const rightScore = rightWrist?.score || 0;
@@ -231,9 +235,16 @@ export function computePhase1Metrics(
       attackAngle = rightWristAngle;
     }
     
+    // Ensure attack angle is positive (upward swing path typical in baseball)
+    // If negative, it likely means we're measuring the wrong direction
+    if (attackAngle < 0) {
+      attackAngle = Math.abs(attackAngle);
+    }
+    
     // Log for debugging
     console.log('📐 Attack angle calculated:', attackAngle.toFixed(1), '° (target: 5-20°)', 
-                'L:', leftWristAngle.toFixed(1), 'R:', rightWristAngle.toFixed(1));
+                'L:', leftWristAngle.toFixed(1), 'R:', rightWristAngle.toFixed(1),
+                'measured at frame', measureIdx, '(contact at', contactIdx, ')');
     
     // Only set if we got a valid measurement
     metrics.attack_angle_deg = !isNaN(attackAngle) ? attackAngle : null;
