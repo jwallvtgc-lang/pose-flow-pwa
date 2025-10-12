@@ -319,9 +319,11 @@ export function computePhase1Metrics(
     metrics.bat_lag_deg = null;
   }
   
-  // 6. Torso tilt at launch
-  if (launchIdx && launchIdx < keypointsByFrame.length) {
-    const frame = keypointsByFrame[launchIdx];
+  // 6. Torso tilt at contact (not launch)
+  // Research shows pros have 10-20° forward lean at contact for power transfer
+  // This is the optimal body position when bat meets ball
+  if (contactIdx && contactIdx < keypointsByFrame.length) {
+    const frame = keypointsByFrame[contactIdx];
     const leftShoulder = getKeypoint(frame.keypoints, 'left_shoulder');
     const rightShoulder = getKeypoint(frame.keypoints, 'right_shoulder');
     const leftHip = getKeypoint(frame.keypoints, 'left_hip');
@@ -340,7 +342,7 @@ export function computePhase1Metrics(
       const tiltAngle = angleFromVertical(hipCenter, shoulderCenter);
       
       // Log for debugging
-      console.log('📐 Torso tilt calculated:', tiltAngle.toFixed(1), '° (target: 20-35°)');
+      console.log('📐 Torso tilt calculated:', tiltAngle.toFixed(1), '° (target: 10-25°)');
       
       metrics.torso_tilt_deg = tiltAngle;
     } else {
