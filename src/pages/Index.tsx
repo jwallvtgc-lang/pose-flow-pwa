@@ -261,14 +261,14 @@ const Index = () => {
       const { data: swings, error } = await supabase
         .from('swings')
         .select('drill_id, drill_data')
-        .gte('created_at', oneWeekAgo.toISOString())
-        .not('drill_id', 'is', null)
-        .or('drill_data.not.is.null');
+        .gte('created_at', oneWeekAgo.toISOString());
 
       if (error) {
         console.error('Error loading drill data:', error);
         return;
       }
+
+      console.log('Loaded swings for drills:', swings?.length || 0, swings);
 
       // Count drill occurrences
       const drillCount: Record<string, {count: number; description: string}> = {};
@@ -302,6 +302,8 @@ const Index = () => {
         }
       }
       
+      console.log('Drill count results:', drillCount);
+      
       // Sort by count and take top 2
       const sortedDrills = Object.entries(drillCount)
         .map(([name, data]) => ({
@@ -312,6 +314,7 @@ const Index = () => {
         .sort((a, b) => b.count - a.count)
         .slice(0, 2);
       
+      console.log('Top drills:', sortedDrills);
       setTopDrills(sortedDrills);
       
     } catch (error) {
