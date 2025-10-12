@@ -158,6 +158,68 @@ export function SwingOverlayCanvas({
     return closestFrame;
   };
 
+  // Scale and align ideal pose to match detected pose
+  const scaleIdealPoseToDetected = (
+    idealKeypoints: Record<string, { x: number; y: number }>,
+    detectedKeypoints: Record<string, { x: number; y: number; score?: number }>,
+    canvas: HTMLCanvasElement
+  ): Record<string, { x: number; y: number }> => {
+    // Calculate bounding boxes
+    const getBox = (kps: Record<string, { x: number; y: number }>) => {
+      const points = Object.values(kps);
+      if (points.length === 0) return { minX: 0, maxX: 1, minY: 0, maxY: 1, centerX: 0.5, centerY: 0.5 };
+      
+      const xs = points.map(p => p.x);
+      const ys = points.map(p => p.y);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      
+      return {
+        minX, maxX, minY, maxY,
+        centerX: (minX + maxX) / 2,
+        centerY: (minY + maxY) / 2,
+        width: maxX - minX,
+        height: maxY - minY
+      };
+    };
+    
+    // Get detected pose box (in normalized coords)
+    const normalizedDetected: Record<string, { x: number; y: number }> = {};
+    Object.entries(detectedKeypoints).forEach(([key, point]) => {
+      if (point.score === undefined || point.score >= 0.3) {
+        normalizedDetected[key] = {
+          x: point.x / canvas.width,
+          y: point.y / canvas.height
+        };
+      }
+    });
+    
+    const detectedBox = getBox(normalizedDetected);
+    const idealBox = getBox(idealKeypoints);
+    
+    // Calculate scale to match detected pose size (use the smaller scale to fit)
+    const scaleX = (detectedBox.width || 1) / (idealBox.width || 1);
+    const scaleY = (detectedBox.height || 1) / (idealBox.height || 1);
+    const scale = Math.min(scaleX, scaleY) || 1;
+    
+    // Scale and translate ideal pose to match detected pose
+    const scaled: Record<string, { x: number; y: number }> = {};
+    Object.entries(idealKeypoints).forEach(([key, point]) => {
+      // Center at origin, scale, then move to detected position
+      const centeredX = (point.x - idealBox.centerX) * scale;
+      const centeredY = (point.y - idealBox.centerY) * scale;
+      
+      scaled[key] = {
+        x: centeredX + detectedBox.centerX,
+        y: centeredY + detectedBox.centerY
+      };
+    });
+    
+    return scaled;
+  };
+
   // Draw skeleton on canvas
   const drawSkeleton = (
     ctx: CanvasRenderingContext2D,
@@ -253,17 +315,19 @@ export function SwingOverlayCanvas({
       // Auto-progress phase based on video time if enabled
       const currentPhase = effectiveAutoProgress ? getCurrentPhase() : effectiveSelectedPhase;
       
-      // Draw ideal pose (normalized coordinates)
-      if (effectiveShowIdeal) {
-        const idealKeypoints = getAdjustedIdealPose(currentPhase, cameraView, handedness);
-        drawSkeleton(ctx, idealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 4, true);
+      // Get current frame first to scale ideal pose properly
+      const currentFrame = effectiveAutoProgress ? getCurrentFrame() : getFrameForPhase(currentPhase);
+      
+      // Draw ideal pose (scaled and aligned to detected pose)
+      if (effectiveShowIdeal && currentFrame) {
+        const rawIdealKeypoints = getAdjustedIdealPose(currentPhase, cameraView, handedness);
+        const detectedKeypoints = convertDetectedKeypoints(currentFrame);
+        const scaledIdealKeypoints = scaleIdealPoseToDetected(rawIdealKeypoints, detectedKeypoints, canvas);
+        drawSkeleton(ctx, scaledIdealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 4, true);
       }
       
       // Draw detected pose (normalized to match ideal pose scale)
-      if (effectiveShowDetected) {
-        // Use phase-specific frame when auto-progress is off, otherwise use current video time
-        const currentFrame = effectiveAutoProgress ? getCurrentFrame() : getFrameForPhase(currentPhase);
-        if (currentFrame) {
+      if (effectiveShowDetected && currentFrame) {
           const detectedKeypoints = convertDetectedKeypoints(currentFrame);
           console.log('🔵 Drawing blue pose, keypoints:', Object.keys(detectedKeypoints).length);
           
@@ -289,11 +353,6 @@ export function SwingOverlayCanvas({
           const detailed = getDetailedSimilarity(normalizedDetected, idealKeypoints);
           console.log('🎯 Detailed scores:', detailed);
           setDetailedScores(detailed);
-        } else {
-          console.log('❌ No current frame found for drawing');
-        }
-      } else {
-        console.log('👁️ Detected pose display is OFF');
       }
     };
 
