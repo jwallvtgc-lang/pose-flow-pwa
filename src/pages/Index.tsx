@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera, BarChart3, TrendingUp, Activity, Bell, Star, Play, Award } from 'lucide-react';
+import { Camera, BarChart3, TrendingUp, Activity, Bell, Star, Play, Award, Settings, Zap, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { HamburgerMenu } from "@/components/HamburgerMenu";
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -291,15 +291,6 @@ const Index = () => {
     return userProfile.full_name.split(' ')[0] || 'Player';
   };
 
-  const getRankStars = (averageScore: number) => {
-    // Performance-based star rating using actual swing scores
-    if (averageScore >= 80) return 5; // Elite performance
-    if (averageScore >= 70) return 4; // Advanced performance
-    if (averageScore >= 60) return 3; // Skilled performance
-    if (averageScore >= 50) return 2; // Developing performance
-    return 1; // Beginner performance
-  };
-
   const getRankLabel = (averageScore: number) => {
     // Performance-based labels using actual swing scores
     if (averageScore >= 80) return "Elite Player";
@@ -322,139 +313,126 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 scroll-smooth-inertia">
-      <div className="container mx-auto px-6 py-6 max-w-lg">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <HamburgerMenu />
+    <div className="min-h-screen bg-gray-50">
+      {/* HEADER SECTION with gradient */}
+      <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 pb-20 pt-6 px-6">
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">S</span>
+            <Avatar className="w-12 h-12 border-2 border-white/30">
+              <AvatarFallback className="bg-white/20 text-white font-bold text-lg backdrop-blur-sm">
+                {user ? getFirstName()[0] : 'P'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-white/80 text-sm font-medium">Welcome back,</p>
+              <p className="text-white text-lg font-bold">{user ? getFirstName() : 'Player'}</p>
             </div>
-            <h1 className="text-2xl font-black text-black tracking-tight text-glitch" style={{ fontFamily: 'Poppins, sans-serif' }}>SwingSense</h1>
           </div>
-          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
-            <Bell className="w-5 h-5 text-gray-600" />
+          
+          <div className="flex items-center gap-3">
+            <Link to="/profile">
+              <button className="relative w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
+                <Bell className="w-5 h-5 text-white" />
+                {stats.todayCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs font-bold flex items-center justify-center">
+                    {stats.todayCount}
+                  </span>
+                )}
+              </button>
+            </Link>
+            <Link to="/profile">
+              <button className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
+                <Settings className="w-5 h-5 text-white" />
+              </button>
+            </Link>
           </div>
         </div>
 
-        {/* Welcome Section */}
-        <Card className="p-8 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl mb-8 text-white relative overflow-hidden shadow-2xl border-0">
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
-          
-          <div className="flex justify-between items-start relative z-10">
+        {/* Large score card */}
+        <Card className="bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 p-6 text-white shadow-xl">
+          <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-3xl font-bold mb-2 leading-tight">
-                Welcome back,
-              </h2>
-              <h2 className="text-3xl font-bold mb-4 leading-tight">
-                {user ? getFirstName() : 'Player'}!
-              </h2>
-              <p className="text-blue-100 text-base mb-4 leading-relaxed">
-                Your swing is improving every day
-              </p>
-              {/* Leaderboard rank indicator with stars */}
-              <div className="flex items-center gap-2 mb-6">
-                {leaderboardRank ? (
-                  <>
-                    {[...Array(getRankStars(leaderboardRank.averageScore))].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                    {[...Array(5 - getRankStars(leaderboardRank.averageScore))].map((_, i) => (
-                      <Star key={`empty-${i}`} className="w-4 h-4 text-yellow-400/40" />
-                    ))}
-                    <span className="text-blue-100 text-sm font-medium ml-2">
-                      Rank #{leaderboardRank.rank} • {getRankLabel(leaderboardRank.averageScore)}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Star className="w-4 h-4 text-yellow-400/40" />
-                    <Star className="w-4 h-4 text-yellow-400/40" />
-                    <Star className="w-4 h-4 text-yellow-400/40" />
-                    <Star className="w-4 h-4 text-yellow-400/40" />
-                    <Star className="w-4 h-4 text-yellow-400/40" />
-                    <span className="text-blue-100 text-sm font-medium ml-2">Calculating rank...</span>
-                  </>
-                )}
-              </div>
-              {/* Weekly improvement indicator */}
-              <div className="flex items-center gap-2 text-blue-100">
-                <TrendingUp className="w-4 h-4" />
-                <span className="text-sm">+5 this week</span>
+              <p className="text-white/80 text-sm font-medium mb-2">Current Score</p>
+              <div className="flex items-end gap-3">
+                <span className="text-5xl font-black leading-none">
+                  {stats.isLoading ? '...' : Math.round(stats.trendingScore)}
+                </span>
+                <div className="bg-green-500/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1 mb-1">
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="text-sm font-bold">+8</span>
+                </div>
               </div>
             </div>
-            <div className="text-right bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
-              <div className="text-4xl font-black mb-1">
-                {stats.isLoading ? '...' : stats.bestScore}
-              </div>
-              <div className="text-blue-200 text-sm font-medium">
-                Personal<br />Best
-              </div>
+            <div className="text-right">
+              <p className="text-white/80 text-sm font-medium mb-2">Personal Best</p>
+              <p className="text-3xl font-black">{stats.isLoading ? '...' : stats.bestScore}</p>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 relative z-10 mt-8">
-            <Link to={user ? "/analysis" : "/auth"}>
-              <Button className="w-full bg-white/15 hover:bg-white/25 text-white border-0 rounded-2xl h-16 backdrop-blur-sm transition-all duration-300 hover:scale-105 shadow-lg">
-                <Camera className="w-6 h-6 mr-3" />
-                <div className="text-left">
-                  <div className="font-semibold">Record</div>
-                  <div className="text-xs text-blue-200">New swing</div>
-                </div>
-              </Button>
-            </Link>
-            <Link to={user ? "/progress" : "/auth"}>
-              <Button className="w-full bg-white/15 hover:bg-white/25 text-white border-0 rounded-2xl h-16 backdrop-blur-sm transition-all duration-300 hover:scale-105 shadow-lg">
-                <BarChart3 className="w-6 h-6 mr-3" />
-                <div className="text-left">
-                  <div className="font-semibold">Analytics</div>
-                  <div className="text-xs text-blue-200">View progress</div>
-                </div>
-              </Button>
-            </Link>
+          <div className="flex items-center justify-between pt-4 border-t border-white/20">
+            <div>
+              <p className="text-white/80 text-sm font-medium">{leaderboardRank ? getRankLabel(leaderboardRank.averageScore) : 'High School Level'}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-white/80 text-sm font-medium">Next: <span className="text-white font-bold">75 pts</span></p>
+            </div>
           </div>
         </Card>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-6 mb-8">
-          {/* Consecutive Days */}
-          <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 card-tilt">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-md">
-                <Activity className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full font-medium flex items-center">
-                <TrendingUp className="w-3 h-3 mr-1" />
-                +2
-              </div>
+      {/* QUICK STATS - overlapping header */}
+      <div className="px-6 -mt-6 mb-8">
+        <div className="grid grid-cols-3 gap-3">
+          {/* Streak */}
+          <Card className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mb-3">
+              <Zap className="w-5 h-5 text-white" />
             </div>
-            <div className="text-3xl font-black text-gray-900 mb-2">
+            <p className="text-2xl font-black text-gray-900 mb-1">
               {stats.isLoading ? '...' : (userProfile?.current_streak || 0)}
-            </div>
-            <div className="text-base font-semibold text-gray-700 mb-1">Consecutive Days</div>
-            <div className="text-sm text-gray-500">keep it up!</div>
+            </p>
+            <p className="text-xs font-semibold text-gray-600">Day Streak</p>
           </Card>
 
-          {/* Weekly Average */}
-          <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 card-tilt">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl flex items-center justify-center shadow-md">
-                <BarChart3 className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full font-medium flex items-center">
-                <TrendingUp className="w-3 h-3 mr-1" />
-                +6.7
-              </div>
+          {/* This Week */}
+          <Card className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center mb-3">
+              <Target className="w-5 h-5 text-white" />
             </div>
-            <div className="text-3xl font-black text-gray-900 mb-2">
-              {stats.isLoading ? '...' : stats.trendingScore.toFixed(1)}
-            </div>
-            <div className="text-base font-semibold text-gray-700 mb-1">Weekly Avg</div>
-            <div className="text-sm text-gray-500">points</div>
+            <p className="text-2xl font-black text-gray-900 mb-1">
+              {stats.isLoading ? '...' : stats.todayCount}
+            </p>
+            <p className="text-xs font-semibold text-gray-600">This Week</p>
           </Card>
+
+          {/* Improvement */}
+          <Card className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center mb-3">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-2xl font-black text-gray-900 mb-1">+8%</p>
+            <p className="text-xs font-semibold text-gray-600">Improvement</p>
+          </Card>
+        </div>
+      </div>
+
+      {/* Main content area */}
+      <div className="px-6 pb-6 space-y-6">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 gap-4">
+          <Link to={user ? "/analysis" : "/auth"}>
+            <Button className="w-full h-24 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2">
+              <Camera className="w-8 h-8" />
+              <span className="font-bold">Record Swing</span>
+            </Button>
+          </Link>
+          <Link to={user ? "/progress" : "/auth"}>
+            <Button className="w-full h-24 bg-gradient-to-br from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2">
+              <BarChart3 className="w-8 h-8" />
+              <span className="font-bold">View Stats</span>
+            </Button>
+          </Link>
         </div>
 
         {/* Latest Analysis Section */}
