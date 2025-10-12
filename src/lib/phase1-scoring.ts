@@ -21,9 +21,22 @@ export function scorePhase1FromValues(
       if (raw > hi) v = hi + Math.abs(raw - hi);
     }
 
-    // Normalize raw value into [0,1] within the target band
-    let normalized = (v - lo) / (hi - lo);
-    normalized = Math.max(0, Math.min(1, normalized));
+    // Normalize: target range gets score of 1.0, values outside get lower scores
+    let normalized: number;
+    if (v >= lo && v <= hi) {
+      // Inside target range = perfect score
+      normalized = 1.0;
+    } else if (v < lo) {
+      // Below target: score decreases based on distance
+      const distance = lo - v;
+      const range = hi - lo;
+      normalized = Math.max(0, 1 - distance / range);
+    } else {
+      // Above target: score decreases based on distance
+      const distance = v - hi;
+      const range = hi - lo;
+      normalized = Math.max(0, 1 - distance / range);
+    }
 
     // Flip score if "invert" (smaller = better)
     if ('invert' in spec && spec.invert) normalized = 1 - normalized;
