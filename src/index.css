@@ -164,4 +164,36 @@ All colors MUST be HSL.
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
+  
+  /* Shimmer effect for hero gradient */
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  
+  /* Safe area padding for iOS */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Sticky header with blur */
+  .header-blur {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  /* Loading skeleton */
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded-2xl;
+  }
 }
