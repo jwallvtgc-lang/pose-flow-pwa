@@ -187,20 +187,20 @@ export default function SwingAnalysis() {
     switch (currentStep) {
       case 'capture':
         return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-8 shadow-lg border-0">
+          <div className="space-y-6 animate-fade-in-up">
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse-soft">
                   <Camera className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-black text-gray-900 mb-3">Record Your Swing</h2>
-                <p className="text-gray-600 text-lg leading-relaxed">
+                <h2 className="text-2xl font-black text-gray-900 mb-2">Record Your Swing</h2>
+                <p className="text-gray-600 text-base">
                   Position yourself sideways and record your baseball swing
                 </p>
                 {!isModelReady && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-700">
-                      💡 AI model is warming up in the background for faster analysis
+                  <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                    <p className="text-sm font-semibold text-blue-700">
+                      💡 AI model warming up for faster analysis
                     </p>
                   </div>
                 )}
@@ -220,16 +220,16 @@ export default function SwingAnalysis() {
             onComplete={handleAnalysisComplete}
           />
         ) : (
-          <div className="bg-white rounded-3xl p-8 shadow-lg border-0">
+          <div className="bg-white rounded-2xl p-8 shadow-sm">
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                 <Camera className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">No Video Recorded</h2>
+              <h2 className="text-2xl font-black text-gray-900 mb-2">No Video Recorded</h2>
               <p className="text-gray-600 mb-6">Please record a video to continue with analysis.</p>
               <Button 
                 onClick={handleRetake} 
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-2xl shadow-lg"
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg transition-all hover:scale-105 active:scale-95"
               >
                 Try Again
               </Button>
@@ -241,14 +241,14 @@ export default function SwingAnalysis() {
         // Only show saving state - successful completion navigates to SwingDetail page
         if (isSaving) {
           return (
-            <div className="space-y-6">
-              <div className="bg-white rounded-3xl p-8 shadow-lg border-0">
+            <div className="space-y-6 animate-fade-in-up">
+              <div className="bg-white rounded-2xl p-8 shadow-sm">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <BarChart3 className="w-8 h-8 text-white animate-pulse" />
+                  <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse-soft">
+                    <BarChart3 className="w-8 h-8 text-white" />
                   </div>
-                  <h2 className="text-3xl font-black text-gray-900 mb-3">Saving Analysis</h2>
-                  <p className="text-gray-600 text-lg mb-6">
+                  <h2 className="text-2xl font-black text-gray-900 mb-2">Saving Analysis</h2>
+                  <p className="text-gray-600 mb-6">
                     Processing your swing data...
                   </p>
                   <Progress value={75} className="mt-4" />
@@ -269,20 +269,20 @@ export default function SwingAnalysis() {
   // Show loading screen while authentication is being checked
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-600 font-semibold">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      <div className="container mx-auto px-6 py-6 max-w-lg">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-white pb-safe">
+      {/* Gradient Header with Shimmer */}
+      <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 pt-safe rounded-b-[2rem] pb-6 px-6 shadow-lg relative overflow-hidden shimmer-bg">
+        <div className="flex items-center justify-between mb-6">
           <Button
             variant="ghost"
             size="sm"
@@ -295,60 +295,78 @@ export default function SwingAnalysis() {
                 setCurrentStep('score');
               }
             }}
-            className="text-gray-600 hover:text-gray-900 h-10 w-10 p-0 rounded-2xl"
+            className="text-white hover:bg-white/20 h-10 w-10 p-0 rounded-xl"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">S</span>
+          <div className="flex items-center gap-3 animate-fade-in-up">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-black text-xl">S</span>
             </div>
-            <h1 className="text-2xl font-black text-black tracking-tight" style={{ fontFamily: 'Poppins, sans-serif' }}>SwingSense</h1>
+            <h1 className="text-2xl font-black text-white tracking-tight">SwingSense</h1>
           </div>
           
-          <div className="w-10"></div> {/* Spacer for centering */}
+          <div className="w-10"></div>
         </div>
 
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-md ${
-                currentStep === 'capture' ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : 'bg-gray-200'
-              }`}>
-                <Camera className={`w-5 h-5 ${currentStep === 'capture' ? 'text-white' : 'text-gray-500'}`} />
-              </div>
-              <span className={`text-sm font-semibold ${
-                currentStep === 'capture' ? 'text-blue-600' : 'text-gray-500'
-              }`}>Record</span>
+        {/* Progress indicator inside header */}
+        <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+              currentStep === 'capture' 
+                ? 'bg-white/30 backdrop-blur-sm scale-110' 
+                : 'bg-white/10'
+            }`}>
+              <Camera className="w-5 h-5 text-white" />
             </div>
-            <div className={`w-8 h-0.5 rounded ${currentStep === 'score' || currentStep === 'feedback' ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-            <div className="flex items-center gap-2">
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-md ${
-                currentStep === 'score' ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : (currentStep === 'feedback' ? 'bg-green-500' : 'bg-gray-200')
-              }`}>
-                <BarChart3 className={`w-5 h-5 ${currentStep === 'score' || currentStep === 'feedback' ? 'text-white' : 'text-gray-500'}`} />
-              </div>
-              <span className={`text-sm font-semibold ${
-                currentStep === 'score' ? 'text-blue-600' : (currentStep === 'feedback' ? 'text-green-600' : 'text-gray-500')
-              }`}>Analyze</span>
+            <span className={`text-xs font-bold transition-all ${
+              currentStep === 'capture' ? 'text-white' : 'text-white/60'
+            }`}>Record</span>
+          </div>
+          
+          <div className={`w-6 h-0.5 rounded transition-all ${
+            currentStep === 'score' || currentStep === 'feedback' 
+              ? 'bg-white/60' 
+              : 'bg-white/20'
+          }`}></div>
+          
+          <div className="flex items-center gap-2">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+              currentStep === 'score' 
+                ? 'bg-white/30 backdrop-blur-sm scale-110' 
+                : currentStep === 'feedback'
+                ? 'bg-white/20'
+                : 'bg-white/10'
+            }`}>
+              <BarChart3 className="w-5 h-5 text-white" />
             </div>
-            <div className={`w-8 h-0.5 rounded ${currentStep === 'feedback' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-            <div className="flex items-center gap-2">
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-md ${
-                currentStep === 'feedback' ? 'bg-gradient-to-br from-green-500 to-green-600' : 'bg-gray-200'
-              }`}>
-                <Target className={`w-5 h-5 ${currentStep === 'feedback' ? 'text-white' : 'text-gray-500'}`} />
-              </div>
-              <span className={`text-sm font-semibold ${
-                currentStep === 'feedback' ? 'text-green-600' : 'text-gray-500'
-              }`}>Results</span>
+            <span className={`text-xs font-bold transition-all ${
+              currentStep === 'score' ? 'text-white' : 'text-white/60'
+            }`}>Analyze</span>
+          </div>
+          
+          <div className={`w-6 h-0.5 rounded transition-all ${
+            currentStep === 'feedback' ? 'bg-white/60' : 'bg-white/20'
+          }`}></div>
+          
+          <div className="flex items-center gap-2">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+              currentStep === 'feedback' 
+                ? 'bg-white/30 backdrop-blur-sm scale-110' 
+                : 'bg-white/10'
+            }`}>
+              <Target className="w-5 h-5 text-white" />
             </div>
+            <span className={`text-xs font-bold transition-all ${
+              currentStep === 'feedback' ? 'text-white' : 'text-white/60'
+            }`}>Results</span>
           </div>
         </div>
+      </div>
 
-        {/* Main content */}
+      {/* Main content */}
+      <div className="px-6 -mt-4">
         {renderStep()}
       </div>
     </div>
