@@ -58,6 +58,9 @@ export function SwingOverlayCanvas({
   const [idealOpacity, setIdealOpacity] = useState([70]);
   const [similarity, setSimilarity] = useState<number>(0);
   const [detailedScores, setDetailedScores] = useState<Record<string, number>>({});
+  const [frameHistory, setFrameHistory] = useState<FrameData[]>([]);
+  const [showDifferenceHighlight, setShowDifferenceHighlight] = useState(true);
+  const [showMotionTrails, setShowMotionTrails] = useState(true);
   
   // Use external props if provided, otherwise use internal state
   const effectiveShowIdeal = externalShowIdeal ?? showIdealPose;
@@ -220,18 +223,97 @@ export function SwingOverlayCanvas({
     return scaled;
   };
 
-  // Draw skeleton on canvas
+  // Get color based on similarity score
+  const getColorForSimilarity = (similarity: number): string => {
+    if (similarity >= 85) return '#22c55e'; // green - good match
+    if (similarity >= 70) return '#eab308'; // yellow - fair match
+    return '#ef4444'; // red - needs work
+  };
+
+  // Draw skeleton with difference highlighting
+  const drawSkeletonWithDifference = (
+    ctx: CanvasRenderingContext2D,
+    detectedKeypoints: Record<string, { x: number; y: number; score?: number }>,
+    idealKeypoints: Record<string, { x: number; y: number }>,
+    opacity: number,
+    lineWidth: number = 3
+  ) => {
+    const canvas = ctx.canvas;
+    
+    // Calculate per-joint distances for color coding
+    const jointDistances: Record<string, number> = {};
+    Object.keys(detectedKeypoints).forEach(key => {
+      if (idealKeypoints[key] && detectedKeypoints[key]) {
+        const dx = detectedKeypoints[key].x - idealKeypoints[key].x;
+        const dy = detectedKeypoints[key].y - idealKeypoints[key].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        jointDistances[key] = dist;
+      }
+    });
+    
+    // Normalize distances to 0-100 scale (0 = perfect match, 100 = max difference)
+    const maxDist = Math.max(...Object.values(jointDistances), 0.1);
+    const normalizedDistances: Record<string, number> = {};
+    Object.entries(jointDistances).forEach(([key, dist]) => {
+      normalizedDistances[key] = 100 - (dist / maxDist) * 100;
+    });
+    
+    ctx.globalAlpha = opacity;
+    ctx.lineWidth = lineWidth;
+    
+    // Draw connections with color-coded similarity
+    for (const [start, end] of POSE_CONNECTIONS) {
+      const startPoint = detectedKeypoints[start];
+      const endPoint = detectedKeypoints[end];
+      
+      if (!startPoint || !endPoint) continue;
+      if (startPoint.score !== undefined && startPoint.score < 0.3) continue;
+      if (endPoint.score !== undefined && endPoint.score < 0.3) continue;
+      
+      // Use average similarity of both joints
+      const avgSimilarity = ((normalizedDistances[start] || 50) + (normalizedDistances[end] || 50)) / 2;
+      ctx.strokeStyle = getColorForSimilarity(avgSimilarity);
+      
+      ctx.beginPath();
+      const startX = startPoint.x * canvas.width;
+      const startY = startPoint.y * canvas.height;
+      const endX = endPoint.x * canvas.width;
+      const endY = endPoint.y * canvas.height;
+      
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+    }
+    
+    // Draw keypoints with color-coded similarity
+    Object.entries(detectedKeypoints).forEach(([key, point]) => {
+      if (point.score !== undefined && point.score < 0.3) return;
+      
+      const similarity = normalizedDistances[key] || 50;
+      ctx.fillStyle = getColorForSimilarity(similarity);
+      
+      const x = point.x * canvas.width;
+      const y = point.y * canvas.height;
+      
+      ctx.beginPath();
+      ctx.arc(x, y, lineWidth * 1.5, 0, 2 * Math.PI);
+      ctx.fill();
+    });
+    
+    ctx.globalAlpha = 1;
+  };
+
+  // Draw standard skeleton (for ideal pose)
   const drawSkeleton = (
     ctx: CanvasRenderingContext2D,
     keypoints: Record<string, { x: number; y: number; score?: number }>,
     color: string,
     opacity: number,
     lineWidth: number = 3,
-    isNormalized: boolean = true  // ideal poses are normalized, detected poses are pixel coords
+    isNormalized: boolean = true
   ) => {
     const canvas = ctx.canvas;
     
-    // Draw connections
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
     ctx.globalAlpha = opacity;
@@ -241,13 +323,10 @@ export function SwingOverlayCanvas({
       const endPoint = keypoints[end];
       
       if (!startPoint || !endPoint) continue;
-      
-      // Skip if detected pose has low confidence
       if (startPoint.score !== undefined && startPoint.score < 0.3) continue;
       if (endPoint.score !== undefined && endPoint.score < 0.3) continue;
       
       ctx.beginPath();
-      // Only multiply by dimensions if keypoints are normalized (0-1 range)
       const startX = isNormalized ? startPoint.x * canvas.width : startPoint.x;
       const startY = isNormalized ? startPoint.y * canvas.height : startPoint.y;
       const endX = isNormalized ? endPoint.x * canvas.width : endPoint.x;
@@ -258,7 +337,6 @@ export function SwingOverlayCanvas({
       ctx.stroke();
     }
     
-    // Draw keypoints
     ctx.fillStyle = color;
     for (const point of Object.values(keypoints)) {
       if (point.score !== undefined && point.score < 0.3) continue;
@@ -270,6 +348,56 @@ export function SwingOverlayCanvas({
       ctx.arc(x, y, lineWidth * 1.5, 0, 2 * Math.PI);
       ctx.fill();
     }
+    
+    ctx.globalAlpha = 1;
+  };
+
+  // Draw motion trails for key points
+  const drawMotionTrails = (
+    ctx: CanvasRenderingContext2D,
+    frames: FrameData[],
+    keyPointNames: string[]
+  ) => {
+    if (frames.length < 2) return;
+    
+    const trailLength = Math.min(5, frames.length);
+    
+    keyPointNames.forEach(keypointName => {
+      const keypointIndex = ['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
+        'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+        'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+        'left_knee', 'right_knee', 'left_ankle', 'right_ankle'].indexOf(keypointName);
+      
+      if (keypointIndex === -1) return;
+      
+      // Draw trail from oldest to newest
+      for (let i = frames.length - trailLength; i < frames.length - 1; i++) {
+        if (i < 0) continue;
+        
+        const frame = frames[i];
+        const nextFrame = frames[i + 1];
+        
+        if (!frame.keypoints[keypointIndex] || !nextFrame.keypoints[keypointIndex]) continue;
+        
+        const kp1 = frame.keypoints[keypointIndex];
+        const kp2 = nextFrame.keypoints[keypointIndex];
+        
+        if (kp1.score < 0.3 || kp2.score < 0.3) continue;
+        
+        // Fade based on age (older frames more transparent)
+        const age = frames.length - 1 - i;
+        const opacity = Math.max(0.1, 1 - (age / trailLength));
+        
+        ctx.globalAlpha = opacity;
+        ctx.strokeStyle = '#8b5cf6'; // purple for trails
+        ctx.lineWidth = 2;
+        
+        ctx.beginPath();
+        ctx.moveTo(kp1.x, kp1.y);
+        ctx.lineTo(kp2.x, kp2.y);
+        ctx.stroke();
+      }
+    });
     
     ctx.globalAlpha = 1;
   };
@@ -318,42 +446,61 @@ export function SwingOverlayCanvas({
       // Get current frame first to scale ideal pose properly
       const currentFrame = effectiveAutoProgress ? getCurrentFrame() : getFrameForPhase(currentPhase);
       
-      // Draw ideal pose (scaled and aligned to detected pose)
-      if (effectiveShowIdeal && currentFrame) {
-        const rawIdealKeypoints = getAdjustedIdealPose(currentPhase, cameraView, handedness);
-        const detectedKeypoints = convertDetectedKeypoints(currentFrame);
-        const scaledIdealKeypoints = scaleIdealPoseToDetected(rawIdealKeypoints, detectedKeypoints, canvas);
-        drawSkeleton(ctx, scaledIdealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 4, true);
+      if (!currentFrame) return;
+      
+      // Update frame history for motion trails
+      setFrameHistory(prev => {
+        const newHistory = [...prev, currentFrame];
+        return newHistory.slice(-5); // Keep last 5 frames
+      });
+      
+      const detectedKeypoints = convertDetectedKeypoints(currentFrame);
+      
+      // Normalize detected keypoints
+      const normalizedDetected: Record<string, { x: number; y: number; score?: number }> = {};
+      Object.entries(detectedKeypoints).forEach(([key, point]) => {
+        normalizedDetected[key] = {
+          x: point.x / canvas.width,
+          y: point.y / canvas.height,
+          score: point.score
+        };
+      });
+      
+      const rawIdealKeypoints = getAdjustedIdealPose(currentPhase, cameraView, handedness);
+      const scaledIdealKeypoints = scaleIdealPoseToDetected(rawIdealKeypoints, detectedKeypoints, canvas);
+      
+      // Draw motion trails first (underneath everything)
+      if (showMotionTrails && frameHistory.length >= 2) {
+        drawMotionTrails(ctx, frameHistory, ['left_wrist', 'right_wrist', 'left_hip', 'right_hip', 'left_shoulder', 'right_shoulder']);
       }
       
-      // Draw detected pose (normalized to match ideal pose scale)
-      if (effectiveShowDetected && currentFrame) {
-          const detectedKeypoints = convertDetectedKeypoints(currentFrame);
-          console.log('🔵 Drawing blue pose, keypoints:', Object.keys(detectedKeypoints).length);
-          
-          // Normalize detected keypoints to 0-1 range to match ideal pose scale
-          const normalizedDetected: Record<string, { x: number; y: number; score?: number }> = {};
-          Object.entries(detectedKeypoints).forEach(([key, point]) => {
-            normalizedDetected[key] = {
-              x: point.x / canvas.width,
-              y: point.y / canvas.height,
-              score: point.score
-            };
+      // Draw ideal pose (scaled and aligned to detected pose)
+      if (effectiveShowIdeal) {
+        drawSkeleton(ctx, scaledIdealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 3, true);
+      }
+      
+      // Draw detected pose with difference highlighting
+      if (effectiveShowDetected) {
+        if (showDifferenceHighlight && effectiveShowIdeal) {
+          // Normalize ideal keypoints for comparison
+          const normalizedIdeal: Record<string, { x: number; y: number }> = {};
+          Object.entries(scaledIdealKeypoints).forEach(([key, point]) => {
+            normalizedIdeal[key] = { x: point.x, y: point.y };
           });
           
-          // Draw with normalized coordinates to match ideal pose
+          drawSkeletonWithDifference(ctx, normalizedDetected, normalizedIdeal, 0.9, 4);
+        } else {
+          // Standard blue skeleton
           drawSkeleton(ctx, normalizedDetected, '#3b82f6', 0.9, 4, true);
-          
-          // Calculate similarity
-          const idealKeypoints = getAdjustedIdealPose(currentPhase, cameraView, handedness);
-          const sim = calculatePoseSimilarity(normalizedDetected, idealKeypoints);
-          console.log('📊 Similarity calculated:', sim, '%');
-          setSimilarity(sim);
-          
-          const detailed = getDetailedSimilarity(normalizedDetected, idealKeypoints);
-          console.log('🎯 Detailed scores:', detailed);
-          setDetailedScores(detailed);
+        }
       }
+      
+      // Calculate similarity
+      const sim = calculatePoseSimilarity(normalizedDetected, rawIdealKeypoints);
+      setSimilarity(sim);
+      
+      const detailed = getDetailedSimilarity(normalizedDetected, rawIdealKeypoints);
+      setDetailedScores(detailed);
     };
 
     // Update on time change
@@ -492,6 +639,27 @@ export function SwingOverlayCanvas({
           </div>
         </div>
 
+        {/* Visual Enhancement Toggles */}
+        <div className="space-y-3 pt-2 border-t">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="difference-highlight" className="text-sm">Difference Highlighting</Label>
+            <Switch
+              id="difference-highlight"
+              checked={showDifferenceHighlight}
+              onCheckedChange={setShowDifferenceHighlight}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <Label htmlFor="motion-trails" className="text-sm">Motion Trails</Label>
+            <Switch
+              id="motion-trails"
+              checked={showMotionTrails}
+              onCheckedChange={setShowMotionTrails}
+            />
+          </div>
+        </div>
+
         {/* Opacity Slider */}
         {showIdealPose && (
           <div className="space-y-2">
@@ -506,6 +674,27 @@ export function SwingOverlayCanvas({
             />
             <div className="text-xs text-muted-foreground text-right">
               {idealOpacity[0]}%
+            </div>
+          </div>
+        )}
+        
+        {/* Legend for difference highlighting */}
+        {showDifferenceHighlight && showDetectedPose && showIdealPose && (
+          <div className="space-y-2 pt-2 border-t">
+            <Label className="text-sm font-medium">Color Guide</Label>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <span>Good</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                <span>Fair</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <span>Focus</span>
+              </div>
             </div>
           </div>
         )}
