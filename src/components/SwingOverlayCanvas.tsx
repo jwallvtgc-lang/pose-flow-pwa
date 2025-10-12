@@ -93,11 +93,15 @@ export function SwingOverlayCanvas({
     if (!videoElement || videoElement.duration === 0) return 'contact';
     
     const progress = videoElement.currentTime / videoElement.duration;
-    const phases: SwingPhase[] = ['setup', 'load', 'stride', 'contact', 'extension', 'finish'];
     
-    // Divide video into equal segments for each phase
-    const phaseIndex = Math.min(Math.floor(progress * phases.length), phases.length - 1);
-    return phases[phaseIndex];
+    // Map progress to phases with smoother transitions
+    // Stay on each phase a bit longer to better match typical swing timing
+    if (progress < 0.15) return 'setup';
+    if (progress < 0.30) return 'load';
+    if (progress < 0.45) return 'stride';
+    if (progress < 0.60) return 'contact';
+    if (progress < 0.80) return 'extension';
+    return 'finish';
   };
 
   // Get frame for a specific phase (when manually selecting phases)
@@ -255,19 +259,15 @@ export function SwingOverlayCanvas({
         drawSkeleton(ctx, idealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 4, true);
       }
       
-      // Draw detected pose (pixel coordinates)
+      // Draw detected pose (normalized to match ideal pose scale)
       if (effectiveShowDetected) {
         // Use phase-specific frame when auto-progress is off, otherwise use current video time
         const currentFrame = effectiveAutoProgress ? getCurrentFrame() : getFrameForPhase(currentPhase);
         if (currentFrame) {
           const detectedKeypoints = convertDetectedKeypoints(currentFrame);
           console.log('🔵 Drawing blue pose, keypoints:', Object.keys(detectedKeypoints).length);
-          // Draw with pixel coordinates (not normalized), higher opacity and thicker lines
-          drawSkeleton(ctx, detectedKeypoints, '#3b82f6', 0.9, 4, false);
           
-          // Calculate similarity - normalize detected keypoints first
-          const idealKeypoints = getAdjustedIdealPose(currentPhase, cameraView, handedness);
-          // Normalize detected keypoints to 0-1 range for comparison
+          // Normalize detected keypoints to 0-1 range to match ideal pose scale
           const normalizedDetected: Record<string, { x: number; y: number; score?: number }> = {};
           Object.entries(detectedKeypoints).forEach(([key, point]) => {
             normalizedDetected[key] = {
@@ -277,6 +277,11 @@ export function SwingOverlayCanvas({
             };
           });
           
+          // Draw with normalized coordinates to match ideal pose
+          drawSkeleton(ctx, normalizedDetected, '#3b82f6', 0.9, 4, true);
+          
+          // Calculate similarity
+          const idealKeypoints = getAdjustedIdealPose(currentPhase, cameraView, handedness);
           const sim = calculatePoseSimilarity(normalizedDetected, idealKeypoints);
           console.log('📊 Similarity calculated:', sim, '%');
           setSimilarity(sim);
