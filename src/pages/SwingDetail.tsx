@@ -765,6 +765,8 @@ export default function SwingDetail() {
                     idealOpacity={idealOpacity}
                     selectedPhase={selectedPhase as any}
                     autoProgress={true}
+                    cameraView="front"
+                    handedness="right"
                   />
                 )}
                 

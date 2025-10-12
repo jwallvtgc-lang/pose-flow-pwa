@@ -34,6 +34,7 @@ export const KEYPOINT_NAMES = {
 // Based on professional MLB biomechanics: kinematic sequencing, hip-shoulder separation,
 // torso angles, weight transfer, and attack angle principles
 // View: Looking from first base side (right side of field)
+// NOTE: For face-on views, these coordinates should be horizontally flipped
 export const IDEAL_SWING_KEYPOINTS: Record<SwingPhase, IdealKeypoints> = {
   // SETUP: Athletic stance, balanced weight (50/50), vertical torso
   setup: {
@@ -181,3 +182,63 @@ export const PHASE_DESCRIPTIONS: Record<SwingPhase, string> = {
   extension: 'Arms extend through ball, full hip rotation, back heel up',
   finish: 'High finish, weight on front leg (85-90%), balanced follow-through',
 };
+
+// Camera view types
+export type CameraView = 'side' | 'front';
+
+// Handedness
+export type Handedness = 'right' | 'left';
+
+/**
+ * Flip ideal keypoints horizontally for face-on camera views
+ * Formula: new_x = 1.0 - original_x (mirrors across center)
+ */
+export function flipIdealPoseHorizontally(keypoints: IdealKeypoints): IdealKeypoints {
+  const flipped: IdealKeypoints = {};
+  
+  for (const [name, point] of Object.entries(keypoints)) {
+    flipped[name] = {
+      x: 1.0 - point.x,  // Mirror X coordinate
+      y: point.y         // Y stays the same
+    };
+  }
+  
+  return flipped;
+}
+
+/**
+ * Get the ideal pose adjusted for camera view and batter handedness
+ * 
+ * @param phase - The swing phase
+ * @param cameraView - 'side' for first/third base view, 'front' for face-on
+ * @param handedness - 'right' or 'left' handed batter
+ * @returns Ideal keypoints adjusted for the specific setup
+ */
+export function getAdjustedIdealPose(
+  phase: SwingPhase,
+  cameraView: CameraView = 'front',
+  handedness: Handedness = 'right'
+): IdealKeypoints {
+  const baseKeypoints = IDEAL_SWING_KEYPOINTS[phase];
+  
+  // Base keypoints are for right-handed batter, side view (first base side)
+  // For face-on view with right-handed batter: flip horizontally
+  if (cameraView === 'front' && handedness === 'right') {
+    return flipIdealPoseHorizontally(baseKeypoints);
+  }
+  
+  // For side view with left-handed batter: flip horizontally
+  if (cameraView === 'side' && handedness === 'left') {
+    return flipIdealPoseHorizontally(baseKeypoints);
+  }
+  
+  // For face-on view with left-handed batter: use base as-is
+  // (since base is RH side view, flipping once for front view, 
+  //  then flipping again for LH = back to original orientation)
+  if (cameraView === 'front' && handedness === 'left') {
+    return baseKeypoints;
+  }
+  
+  // Default: side view, right-handed (matches base data)
+  return baseKeypoints;
+}

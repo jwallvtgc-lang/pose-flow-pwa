@@ -7,10 +7,12 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { TrendingUp } from 'lucide-react';
 import {
-  IDEAL_SWING_KEYPOINTS,
   POSE_CONNECTIONS,
   PHASE_DESCRIPTIONS,
+  getAdjustedIdealPose,
   type SwingPhase,
+  type CameraView,
+  type Handedness,
 } from '@/lib/idealSwingData';
 import { calculatePoseSimilarity, getDetailedSimilarity } from '@/lib/swingSimilarity';
 
@@ -29,6 +31,8 @@ interface SwingOverlayCanvasProps {
   idealOpacity?: number;
   selectedPhase?: SwingPhase;
   autoProgress?: boolean;
+  cameraView?: CameraView;
+  handedness?: Handedness;
 }
 
 export function SwingOverlayCanvas({
@@ -41,6 +45,8 @@ export function SwingOverlayCanvas({
   idealOpacity: externalIdealOpacity,
   selectedPhase: externalSelectedPhase,
   autoProgress: externalAutoProgress,
+  cameraView = 'front',
+  handedness = 'right',
 }: SwingOverlayCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedPhase, setSelectedPhase] = useState<SwingPhase>('contact');
@@ -243,7 +249,7 @@ export function SwingOverlayCanvas({
       
       // Draw ideal pose (normalized coordinates)
       if (effectiveShowIdeal) {
-        const idealKeypoints = IDEAL_SWING_KEYPOINTS[currentPhase];
+        const idealKeypoints = getAdjustedIdealPose(currentPhase, cameraView, handedness);
         drawSkeleton(ctx, idealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 4, true);
       }
       
@@ -258,7 +264,7 @@ export function SwingOverlayCanvas({
           drawSkeleton(ctx, detectedKeypoints, '#3b82f6', 0.9, 4, false);
           
           // Calculate similarity - normalize detected keypoints first
-          const idealKeypoints = IDEAL_SWING_KEYPOINTS[currentPhase];
+          const idealKeypoints = getAdjustedIdealPose(currentPhase, cameraView, handedness);
           // Normalize detected keypoints to 0-1 range for comparison
           const normalizedDetected: Record<string, { x: number; y: number; score?: number }> = {};
           Object.entries(detectedKeypoints).forEach(([key, point]) => {
@@ -303,7 +309,7 @@ export function SwingOverlayCanvas({
       videoElement.removeEventListener('pause', handleTimeUpdate);
       videoElement.removeEventListener('seeked', handleTimeUpdate);
     };
-  }, [videoElement, selectedPhase, showIdealPose, showDetectedPose, idealOpacity, keypointsByFrame, currentTime, effectiveShowIdeal, effectiveShowDetected, effectiveIdealOpacity, effectiveSelectedPhase, effectiveAutoProgress]);
+  }, [videoElement, selectedPhase, showIdealPose, showDetectedPose, idealOpacity, keypointsByFrame, currentTime, effectiveShowIdeal, effectiveShowDetected, effectiveIdealOpacity, effectiveSelectedPhase, effectiveAutoProgress, cameraView, handedness]);
 
   const phases: SwingPhase[] = ['setup', 'load', 'stride', 'contact', 'extension', 'finish'];
 
