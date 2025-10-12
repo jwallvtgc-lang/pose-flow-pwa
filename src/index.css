@@ -116,6 +116,7 @@ All colors MUST be HSL.
     -moz-osx-font-smoothing: grayscale;
     background-color: white;
     color: black;
+    scroll-behavior: smooth;
   }
 
   /* Mobile-first button styling */
@@ -123,10 +124,44 @@ All colors MUST be HSL.
     @apply h-12 rounded-2xl transition-all duration-200;
     min-height: 44px; /* iOS touch target */
   }
+  
+  button:hover {
+    @apply scale-105;
+  }
+  
+  button:active {
+    @apply scale-95;
+  }
 
   /* Touch-friendly interactive elements */
   a, button, [role="button"] {
     min-height: 44px;
     min-width: 44px;
+  }
+}
+
+@layer components {
+  /* Card hover tilt effect */
+  .card-tilt {
+    @apply transition-all duration-200;
+  }
+  
+  .card-tilt:hover {
+    animation: tilt 0.3s ease-in-out;
+  }
+  
+  /* Hero glitch text effect */
+  .text-glitch {
+    @apply relative;
+  }
+  
+  .text-glitch:hover {
+    animation: glitch 0.3s ease-in-out;
+  }
+  
+  /* Smooth scroll container with inertia */
+  .scroll-smooth-inertia {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
 }

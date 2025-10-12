@@ -6,7 +6,7 @@ export function DrillCard({ card }: { card: CoachingCard }) {
   const equipment = card.drill.equipment;
 
   return (
-    <div className="rounded-2xl p-4 shadow-sm border-border border bg-card text-card-foreground flex flex-col gap-2">
+    <div className="rounded-2xl p-4 shadow-sm border-border border bg-card text-card-foreground flex flex-col gap-2 transition-all duration-300 card-tilt hover:shadow-lg">
       <div className="text-xs uppercase text-muted-foreground">{card.metric}</div>
       <div className="text-lg font-semibold">{card.cue}</div>
       <div className="text-sm text-muted-foreground">{card.why}</div>

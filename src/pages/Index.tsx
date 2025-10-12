@@ -323,7 +323,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 scroll-smooth-inertia">
       <div className="container mx-auto px-6 py-6 max-w-lg">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -332,7 +332,7 @@ const Index = () => {
             <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-lg">S</span>
             </div>
-            <h1 className="text-2xl font-black text-black tracking-tight" style={{ fontFamily: 'Poppins, sans-serif' }}>SwingSense</h1>
+            <h1 className="text-2xl font-black text-black tracking-tight text-glitch" style={{ fontFamily: 'Poppins, sans-serif' }}>SwingSense</h1>
           </div>
           <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
             <Bell className="w-5 h-5 text-gray-600" />
@@ -422,7 +422,7 @@ const Index = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-6 mb-8">
           {/* Consecutive Days */}
-          <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 card-tilt">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-md">
                 <Activity className="w-6 h-6 text-white" />
@@ -440,7 +440,7 @@ const Index = () => {
           </Card>
 
           {/* Weekly Average */}
-          <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 card-tilt">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl flex items-center justify-center shadow-md">
                 <BarChart3 className="w-6 h-6 text-white" />
@@ -468,7 +468,7 @@ const Index = () => {
           </div>
           
           {user && latestSwing ? (
-            <Card className="p-6 bg-white rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <Card className="p-6 bg-white rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 card-tilt">
               <div className="flex items-start gap-5">
                 <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
                   <span className="text-white font-black text-xl">
@@ -558,7 +558,7 @@ const Index = () => {
           {topDrills.length > 0 ? (
             <div className="space-y-4">
               {topDrills.map((drill, index) => (
-                <Card key={drill.name} className="p-5 bg-gradient-to-r from-purple-50 to-pink-50 rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                <Card key={drill.name} className="p-5 bg-gradient-to-r from-purple-50 to-pink-50 rounded-3xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 card-tilt">
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md ${
                       index === 0 
