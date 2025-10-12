@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, Clock, Play, RotateCcw } from 'lucide-react';
 import { poseWorkerClient, type PoseAnalysisResult } from '@/lib/poseWorkerClient';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
+import { BatSpeedEstimator } from '@/lib/batSpeedEstimator';
+import { BatSpeedDisplay } from '@/components/BatSpeedDisplay';
 
 interface SwingAnalysisResultsProps {
   videoBlob: Blob;
@@ -23,6 +25,7 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isVideoReady, setIsVideoReady] = useState(false);
+  const [batSpeed, setBatSpeed] = useState<ReturnType<BatSpeedEstimator['calculateBatSpeed']> | null>(null);
 
   useEffect(() => {
     // Reset all state for new video
@@ -64,6 +67,12 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
       );
 
       setResults(result);
+      
+      // Calculate bat speed
+      const estimator = new BatSpeedEstimator();
+      const batSpeedResult = estimator.calculateBatSpeed(result.keypointsByFrame, 30);
+      setBatSpeed(batSpeedResult);
+      
       setIsAnalyzing(false);
       setProgress(100);
       setProgressMessage('Analysis complete!');
@@ -246,6 +255,9 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
           </div>
         )}
       </Card>
+
+      {/* Bat Speed Analysis */}
+      {batSpeed && <BatSpeedDisplay batSpeed={batSpeed} />}
 
       {/* Analysis Summary */}
       <Card className="p-6">
