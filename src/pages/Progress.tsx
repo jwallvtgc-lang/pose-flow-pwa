@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, TrendingDown, ArrowRight, ArrowLeft, Target, AlertTriangle, Share2, ChevronRight } from 'lucide-react';
+import { TrendingUp, ArrowRight, ArrowLeft, Target, AlertTriangle, Share2, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -455,115 +455,121 @@ export default function Progress() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         <div className="space-y-6">
-          {/* SUMMARY STATS ROW */}
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="bg-white rounded-2xl p-4 shadow-sm border-gray-100">
-              <div className="text-xs text-gray-500 mb-1">Latest</div>
-              <div className="text-3xl font-black text-gray-900">{stats.latest}</div>
-            </Card>
-            <Card className="bg-white rounded-2xl p-4 shadow-sm border-gray-100">
-              <div className="text-xs text-gray-500 mb-1">Average</div>
-              <div className="text-3xl font-black text-gray-900">{stats.average}</div>
-            </Card>
-            <Card className="bg-white rounded-2xl p-4 shadow-sm border-gray-100">
-              <div className="text-xs text-gray-500 mb-1">Best</div>
-              <div className="text-3xl font-black text-green-600">{stats.best}</div>
-            </Card>
+          {/* Score Trend Header */}
+          <div>
+            <h2 className="text-2xl font-black mb-4">Score Trend</h2>
+            
+            {/* SUMMARY STATS ROW */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <Card className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="text-xs text-gray-500 mb-1">Latest</div>
+                <div className="text-3xl font-black text-gray-900">{stats.latest}</div>
+              </Card>
+              <Card className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="text-xs text-gray-500 mb-1">Average</div>
+                <div className="text-3xl font-black text-gray-900">{stats.average}</div>
+              </Card>
+              <Card className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="text-xs text-gray-500 mb-1">Best</div>
+                <div className="text-3xl font-black text-green-600">{stats.best}</div>
+              </Card>
+            </div>
           </div>
 
           {/* RECENT SWINGS TIMELINE */}
-          <Card className="bg-white rounded-2xl shadow-sm border p-5">
+          <Card className="bg-white rounded-xl shadow-sm border p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-black text-lg">Recent Swings</h3>
-              <span className="text-xs text-gray-500">Last {Math.min(swings.length, 8)} swings</span>
+              <span className="text-sm text-gray-500">Last {Math.min(swings.length, 8)} swings</span>
             </div>
 
-            <div className="space-y-4 max-h-[500px] overflow-y-auto">
+            <div className="space-y-3">
               {swings.slice(0, 8).map((swing, index) => {
                 const score = swing.score_phase1 || 0;
-                const date = swing.created_at ? format(new Date(swing.created_at), 'MMM d, h:mm a') : 'Unknown';
+                const date = swing.created_at ? format(new Date(swing.created_at), 'MMM d') : 'Unknown';
                 
                 return (
-                  <div key={swing.id}>
-                    <div 
-                      className="flex items-center gap-4 cursor-pointer active:scale-98 transition-transform"
-                      onClick={() => navigate(`/swing/${swing.id}`)}
-                    >
-                      {/* Score Circle */}
-                      <div className={`relative w-14 h-14 rounded-full ${getScoreGradient(score)} flex items-center justify-center flex-shrink-0`}>
-                        <span className="text-white font-black text-lg">{score}</span>
-                        {index === 0 && (
-                          <Badge className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] px-1.5 py-0.5">
-                            Latest
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900">{date}</div>
-                        {/* Progress Bar */}
-                        <div className="w-full h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
-                          <div 
-                            className={`h-full ${score >= 60 ? 'bg-green-500' : score >= 40 ? 'bg-orange-500' : 'bg-red-500'}`}
-                            style={{ width: `${score}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <div 
+                    key={swing.id}
+                    className="flex items-center gap-4 cursor-pointer active:scale-98 transition-transform"
+                    onClick={() => navigate(`/swing/${swing.id}`)}
+                  >
+                    {/* Score Circle */}
+                    <div className={`relative w-14 h-14 rounded-full ${getScoreGradient(score)} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                      <span className="text-white font-black text-lg">{score}</span>
                     </div>
 
-                    {/* Connecting Line */}
-                    {index < Math.min(swings.length, 8) - 1 && (
-                      <div className="ml-7 h-4 border-l border-gray-200" style={{ width: '0.5px' }} />
-                    )}
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 mb-1">{date}</div>
+                      {/* Progress Bar */}
+                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${score >= 60 ? 'bg-red-500' : score >= 40 ? 'bg-orange-500' : 'bg-red-500'}`}
+                          style={{ width: `${score}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Latest Badge and Chevron */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {index === 0 && (
+                        <Badge className="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 hover:bg-blue-100">
+                          Latest
+                        </Badge>
+                      )}
+                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                    </div>
                   </div>
                 );
               })}
             </div>
 
             {swings.length > 8 && (
-              <Button 
-                variant="ghost" 
-                className="w-full mt-4 text-blue-600 hover:text-blue-700"
-                onClick={() => navigate('/recent-swings')}
-              >
-                View All Swings →
-              </Button>
+              <div className="mt-4 text-center">
+                <button 
+                  className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                  onClick={() => navigate('/recent-swings')}
+                >
+                  View All Swings →
+                </button>
+              </div>
             )}
           </Card>
 
           {/* WEEKLY BREAKDOWN */}
           <div>
-            <h3 className="font-black text-lg mb-4">Weekly Breakdown</h3>
+            <h3 className="font-black text-2xl mb-4">Weekly Breakdown</h3>
             <div className="space-y-3">
               {weeklyData.map((week, index) => {
                 const prevWeek = weeklyData[index + 1];
                 const trend = prevWeek && week.avgScore > prevWeek.avgScore ? 'up' : 'down';
                 
                 return (
-                  <Card key={week.name} className="bg-white rounded-2xl p-5 shadow-sm">
-                    <div className="flex items-start justify-between mb-3">
+                  <Card key={week.name} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                    <div className="flex items-start justify-between mb-2">
                       <div>
-                        <div className="text-sm font-medium text-gray-500">{week.name}</div>
-                        <div className="text-3xl font-black text-gray-900 mt-1">{week.avgScore}</div>
+                        <div className="text-base font-black text-gray-900">{week.name}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{week.swingCount} swings</div>
                       </div>
-                      {week.swingCount > 0 && prevWeek && (
-                        <div className={`flex items-center gap-1 ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                          {trend === 'up' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                          <span className="text-sm font-bold">{Math.abs(week.avgScore - prevWeek.avgScore)}</span>
-                        </div>
-                      )}
+                      <div className="text-right">
+                        <div className="text-4xl font-black text-gray-900">{week.avgScore}</div>
+                        {week.swingCount > 0 && prevWeek && prevWeek.swingCount > 0 && (
+                          <div className={`flex items-center justify-end gap-1 text-xs ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                            {trend === 'up' ? '↗' : '↘'} avg score
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="text-xs text-gray-500 mb-2">{week.swingCount} swings</div>
-
-                    {/* Activity Dots */}
-                    <div className="flex gap-1">
-                      {[...Array(week.swingCount)].map((_, i) => (
-                        <div key={i} className="w-2 h-2 rounded-full bg-blue-500" />
+                    {/* Horizontal Blue Bars */}
+                    <div className="flex gap-1.5 mt-3">
+                      {[...Array(Math.min(week.swingCount, 12))].map((_, i) => (
+                        <div key={i} className="h-1.5 flex-1 bg-blue-500 rounded-full" />
                       ))}
+                      {week.swingCount > 12 && (
+                        <span className="text-xs text-gray-500 ml-1">+{week.swingCount - 12}</span>
+                      )}
                     </div>
                   </Card>
                 );
@@ -572,42 +578,122 @@ export default function Progress() {
           </div>
 
           {/* ACTIVITY HEATMAP */}
-          <Card className="bg-white rounded-2xl p-5 shadow-sm">
-            <h3 className="font-black text-lg mb-4">Activity</h3>
-            <div className="text-xs text-gray-500 mb-3">Last 30 days</div>
+          <Card className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <h3 className="font-black text-2xl mb-2">Activity</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-gray-500">Last 30 Days</div>
+              <div className="flex items-center gap-3 text-xs text-gray-500">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-gray-200" />
+                  <span>No swings</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-green-600" />
+                  <span>Active</span>
+                </div>
+              </div>
+            </div>
             
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-2.5">
               {heatmapData.map((day, i) => {
                 const getColor = (count: number) => {
                   if (count === 0) return 'bg-gray-200';
-                  if (count === 1) return 'bg-green-200';
-                  if (count === 2) return 'bg-green-400';
+                  if (count === 1) return 'bg-green-300';
+                  if (count === 2) return 'bg-green-500';
                   return 'bg-green-600';
                 };
 
                 return (
                   <div 
                     key={i} 
-                    className={`aspect-square rounded-lg ${getColor(day.count)}`}
+                    className={`aspect-square rounded-xl ${getColor(day.count)}`}
                     title={`${format(day.date, 'MMM d')}: ${day.count} swings`}
                   />
                 );
               })}
             </div>
+          </Card>
 
-            <div className="flex items-center gap-3 mt-4 text-xs text-gray-500">
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded bg-gray-200" />
-                <span>No swings</span>
+          {/* PROGRESS OVERVIEW */}
+          <Card className="relative overflow-hidden rounded-3xl shadow-lg border-0">
+            <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 p-6 text-white">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="text-sm opacity-90 mb-1">Progress Overview</div>
+                  <h3 className="text-3xl font-black">Last 50 Swings</h3>
+                </div>
+                <div className="text-right">
+                  <div className="text-5xl font-black">{stats.latest}</div>
+                  <div className="text-sm opacity-90">Current</div>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded bg-green-600" />
-                <span>Active</span>
+
+              {/* Simple Line Chart */}
+              <div className="relative h-32 mb-6">
+                <svg className="w-full h-full" viewBox="0 0 500 120" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="rgba(255,255,255,0.3)" />
+                      <stop offset="100%" stopColor="rgba(255,255,255,0.8)" />
+                    </linearGradient>
+                    <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="rgba(255,255,255,0.2)" />
+                      <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                    </linearGradient>
+                  </defs>
+                  
+                  {(() => {
+                    const data = chartData.scoreSeries.slice(-50);
+                    if (data.length < 2) return null;
+                    
+                    const maxScore = Math.max(...data.map(d => d.value), 100);
+                    const points = data.map((point, i) => {
+                      const x = (i / (data.length - 1)) * 500;
+                      const y = 120 - ((point.value / maxScore) * 100);
+                      return `${x},${y}`;
+                    }).join(' ');
+                    
+                    const areaPoints = `0,120 ${points} 500,120`;
+                    
+                    return (
+                      <>
+                        <polyline
+                          points={areaPoints}
+                          fill="url(#areaGradient)"
+                        />
+                        <polyline
+                          points={points}
+                          fill="none"
+                          stroke="url(#lineGradient)"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </>
+                    );
+                  })()}
+                </svg>
+              </div>
+
+              {/* Stats Row */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                  <div className="text-xs opacity-75 mb-1">Avg</div>
+                  <div className="text-2xl font-black">{chartData.averages['score']?.toFixed(1) || '—'}</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                  <div className="text-xs opacity-75 mb-1">Best</div>
+                  <div className="text-2xl font-black">{stats.best}</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                  <div className="text-xs opacity-75 mb-1">Total</div>
+                  <div className="text-2xl font-black">{swings.length}</div>
+                </div>
               </div>
             </div>
           </Card>
 
-          {/* IMPROVING & FOCUS AREAS */}
+          {/* IMPROVING & FOCUS AREAS - Moved after Progress Overview */}
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 rounded-2xl shadow-sm">
               <div className="flex items-center gap-2 mb-3">
