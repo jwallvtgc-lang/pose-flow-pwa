@@ -185,6 +185,7 @@ export function computePhase1Metrics(
   // 1. Hip-shoulder separation angle at contact (not launch)
   // This is when maximum separation occurs in the kinematic sequence
   // Pros achieve 45-60° as hips fully rotate while shoulders lag behind
+  // We measure the ROTATIONAL DIFFERENCE between hip and shoulder orientations
   if (contactIdx && contactIdx < keypointsByFrame.length) {
     const frame = keypointsByFrame[contactIdx];
     const leftShoulder = getKeypoint(frame.keypoints, 'left_shoulder');
@@ -193,19 +194,29 @@ export function computePhase1Metrics(
     const rightHip = getKeypoint(frame.keypoints, 'right_hip');
     
     if (leftShoulder && rightShoulder && leftHip && rightHip) {
-      const shoulderVector = {
-        x: rightShoulder.x - leftShoulder.x,
-        y: rightShoulder.y - leftShoulder.y
-      };
-      const hipVector = {
-        x: rightHip.x - leftHip.x,
-        y: rightHip.y - leftHip.y
-      };
+      // Calculate rotation angle of each line relative to horizontal
+      // atan2 gives us the angle from horizontal: positive = rotated open
+      const shoulderAngle = Math.atan2(
+        rightShoulder.y - leftShoulder.y,
+        rightShoulder.x - leftShoulder.x
+      ) * (180 / Math.PI);
       
-      const separation = angleBetweenVectors(shoulderVector, hipVector);
+      const hipAngle = Math.atan2(
+        rightHip.y - leftHip.y,
+        rightHip.x - leftHip.x
+      ) * (180 / Math.PI);
+      
+      // Separation is the absolute difference in rotation angles
+      let separation = Math.abs(hipAngle - shoulderAngle);
+      
+      // Normalize to 0-180 range (avoid over-rotation)
+      if (separation > 180) {
+        separation = 360 - separation;
+      }
       
       // Log for debugging
-      console.log('📐 Hip-shoulder separation calculated:', separation.toFixed(1), '° (target: 40-60°)');
+      console.log('📐 Hip-shoulder separation calculated:', separation.toFixed(1), '° (target: 40-60°)',
+                  'Hip angle:', hipAngle.toFixed(1), '° Shoulder angle:', shoulderAngle.toFixed(1), '°');
       
       metrics.hip_shoulder_sep_deg = separation;
     } else {
