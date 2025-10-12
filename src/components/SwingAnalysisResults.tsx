@@ -26,6 +26,7 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [batSpeed, setBatSpeed] = useState<ReturnType<BatSpeedEstimator['calculateBatSpeed']> | null>(null);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
   useEffect(() => {
     // Reset all state for new video
@@ -209,6 +210,28 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
                 className="absolute top-0 left-0 w-full h-full pointer-events-none rounded-lg"
                 style={{ zIndex: 10 }}
               />
+            </div>
+            
+            <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+              <span className="text-sm text-muted-foreground">Playback Speed:</span>
+              <div className="flex gap-1">
+                {[0.25, 0.5, 0.75, 1].map((speed) => (
+                  <Button
+                    key={speed}
+                    variant={playbackSpeed === speed ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setPlaybackSpeed(speed);
+                      if (videoRef.current) {
+                        videoRef.current.playbackRate = speed;
+                      }
+                    }}
+                    className="rounded-lg"
+                  >
+                    {speed}x
+                  </Button>
+                ))}
+              </div>
             </div>
             
             {isVideoReady && videoRef.current && canvasRef.current && (

@@ -75,6 +75,7 @@ export default function SwingDetail() {
   const [showMyForm, setShowMyForm] = useState(true);
   const [idealOpacity, setIdealOpacity] = useState(0.5);
   const [selectedPhase, setSelectedPhase] = useState('all');
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
   
   // UI state
   const [expandedFocusArea, setExpandedFocusArea] = useState<number | null>(null);
@@ -434,6 +435,13 @@ export default function SwingDetail() {
     }
   };
 
+  const handlePlaybackSpeedChange = (speed: number) => {
+    setPlaybackSpeed(speed);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+    }
+  };
+
   // Calculate quick stats
   const calculateQuickStats = () => {
     if (metrics.length === 0) return null;
@@ -773,7 +781,7 @@ export default function SwingDetail() {
                 
                 {/* Video Controls Bar */}
                 <div className="p-4 bg-card border-t">
-                  <div className="flex items-center gap-2 justify-between">
+                  <div className="flex items-center gap-2 justify-between flex-wrap">
                     <Button
                       variant="outline"
                       size="sm"
@@ -783,6 +791,20 @@ export default function SwingDetail() {
                       {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
                       {isPlaying ? 'Pause' : 'Play'}
                     </Button>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Speed:</span>
+                      <select
+                        value={playbackSpeed}
+                        onChange={(e) => handlePlaybackSpeedChange(Number(e.target.value))}
+                        className="text-sm border rounded-xl px-2 py-1 bg-background"
+                      >
+                        <option value="0.25">0.25x</option>
+                        <option value="0.5">0.5x</option>
+                        <option value="0.75">0.75x</option>
+                        <option value="1">1x</option>
+                      </select>
+                    </div>
                     
                     <select
                       value={selectedPhase}
