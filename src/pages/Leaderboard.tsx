@@ -298,59 +298,66 @@ export default function Leaderboard() {
   return (
     <div className="min-h-screen bg-white pb-safe">
       {/* Gradient Header with Shimmer */}
-      <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 pt-safe rounded-b-[2rem] pb-8 px-6 shadow-lg relative overflow-hidden shimmer-bg sticky top-0 z-10 header-blur">
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="h-10 w-10 p-0 text-white hover:bg-white/20 rounded-xl transition-all">
+      <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 pt-safe rounded-b-[2rem] pb-6 px-6 shadow-lg relative overflow-hidden shimmer-bg sticky top-0 z-10 header-blur">
+        <div className="flex items-center justify-center mb-6 relative">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate('/')} 
+            className="absolute left-0 h-10 w-10 p-0 text-white hover:bg-white/20 rounded-xl transition-all"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-3xl font-black text-white tracking-tight animate-fade-in-up">🏆 Leaderboard</h1>
-          <div className="w-10"></div>
+          <div className="flex items-center gap-2">
+            <Trophy className="w-8 h-8 text-yellow-300" />
+            <h1 className="text-3xl font-black text-white tracking-tight">Leaderboard</h1>
+          </div>
         </div>
 
         {/* Tabs inside header */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-3">
           <button
             onClick={() => setActiveTab('total_swings')}
-            className={`py-3 px-2 rounded-xl font-bold text-xs transition-all ${
+            className={`py-4 px-2 rounded-2xl font-semibold text-xs transition-all flex flex-col items-center gap-2 ${
               activeTab === 'total_swings'
-                ? 'bg-white/20 backdrop-blur-sm text-white scale-105'
-                : 'text-white/70 hover:text-white hover:bg-white/10'
+                ? 'bg-white/20 backdrop-blur-sm text-white'
+                : 'text-white/80 hover:text-white hover:bg-white/10'
             }`}
           >
-            <Activity className="w-4 h-4 mx-auto mb-1" />
+            <Activity className="w-5 h-5" />
             <span>Active</span>
           </button>
           <button
             onClick={() => setActiveTab('average_score')}
-            className={`py-3 px-2 rounded-xl font-bold text-xs transition-all ${
+            className={`py-4 px-2 rounded-2xl font-semibold text-xs transition-all flex flex-col items-center gap-2 ${
               activeTab === 'average_score'
-                ? 'bg-white/20 backdrop-blur-sm text-white scale-105'
-                : 'text-white/70 hover:text-white hover:bg-white/10'
+                ? 'bg-white/20 backdrop-blur-sm text-white'
+                : 'text-white/80 hover:text-white hover:bg-white/10'
             }`}
           >
-            <Target className="w-4 h-4 mx-auto mb-1" />
+            <Target className="w-5 h-5" />
             <span>Average</span>
           </button>
           <button
             onClick={() => setActiveTab('max_score')}
-            className={`py-3 px-2 rounded-xl font-bold text-xs transition-all ${
+            className={`py-4 px-2 rounded-2xl font-semibold text-xs transition-all flex flex-col items-center gap-2 ${
               activeTab === 'max_score'
-                ? 'bg-white/20 backdrop-blur-sm text-white scale-105'
-                : 'text-white/70 hover:text-white hover:bg-white/10'
+                ? 'bg-white/20 backdrop-blur-sm text-white'
+                : 'text-white/80 hover:text-white hover:bg-white/10'
             }`}
           >
-            <TrendingUp className="w-4 h-4 mx-auto mb-1" />
+            <TrendingUp className="w-5 h-5" />
             <span>Best</span>
           </button>
           <button
             onClick={() => setActiveTab('bat_speed')}
-            className={`py-3 px-2 rounded-xl font-bold text-xs transition-all ${
+            className={`py-4 px-2 rounded-2xl font-semibold text-xs transition-all flex flex-col items-center gap-2 ${
               activeTab === 'bat_speed'
-                ? 'bg-white/20 backdrop-blur-sm text-white scale-105'
-                : 'text-white/70 hover:text-white hover:bg-white/10'
+                ? 'bg-white/20 backdrop-blur-sm text-white'
+                : 'text-white/80 hover:text-white hover:bg-white/10'
             }`}
           >
-            <Zap className="w-4 h-4 mx-auto mb-1" />
+            <Zap className="w-5 h-5" />
             <span>Speed</span>
           </button>
         </div>
