@@ -1,6 +1,8 @@
 import { scorePhase1FromValues } from "@/lib/phase1-scoring";
 import { metricSpecs } from "@/config/phase1_metrics";
 import { supabase } from "@/integrations/supabase/client";
+import { CUE_MAP } from "@/lib/cues";
+import { metricDisplayNames } from "@/lib/metrics";
 
 interface SwingMetric {
   name: string;
@@ -61,17 +63,42 @@ export async function evaluateSwing(values: Record<string, number>) {
     console.log('AI coaching response received:', JSON.stringify(aiCoaching, null, 2));
 
     // Transform AI response into coaching cards format
-    const cards = aiCoaching.cues.map((cue: string, index: number) => ({
-      metric: aiCoaching.focusAreas[index] || 'general',
-      cue,
-      why: aiCoaching.explanations[index] || 'Focus on fundamentals',
-      instructions: `Practice this focus area: ${cue}`,
-      drill: {
-        name: `Custom Drill for ${aiCoaching.focusAreas[index] || 'General'}`,
-        how_to: aiCoaching.explanations[index] || 'Work on this area during practice',
-        equipment: 'Basic equipment'
+    const cards = aiCoaching.cues.map((cue: string, index: number) => {
+      const focusArea = aiCoaching.focusAreas[index] || 'general';
+      
+      // Try to match focus area to a metric name (convert from display name back to metric key)
+      let metricKey = '';
+      const displayNames = metricDisplayNames();
+      
+      // Check if focus area matches any display names
+      for (const [key, displayName] of Object.entries(displayNames)) {
+        if (displayName.toLowerCase() === focusArea.toLowerCase() || 
+            key === focusArea || 
+            key.replace(/_/g, ' ').toLowerCase() === focusArea.toLowerCase()) {
+          metricKey = key;
+          break;
+        }
       }
-    }));
+      
+      // Get the proper drill info from CUE_MAP if we found a matching metric
+      const cueConfig = metricKey ? CUE_MAP[metricKey] : null;
+      
+      return {
+        metric: focusArea,
+        cue,
+        why: aiCoaching.explanations[index] || 'Focus on fundamentals',
+        instructions: `Practice this focus area: ${cue}`,
+        drill: cueConfig ? {
+          name: cueConfig.drillName,
+          how_to: cueConfig.instructions,
+          equipment: getEquipmentForMetric(metricKey)
+        } : {
+          name: `Drill for ${focusArea}`,
+          how_to: aiCoaching.explanations[index] || 'Work on this area during practice',
+          equipment: 'Basic equipment'
+        }
+      };
+    });
 
     return { 
       score, 
