@@ -43,8 +43,8 @@ export const IDEAL_SWING_KEYPOINTS: Record<SwingPhase, IdealKeypoints> = {
     right_shoulder: { x: 0.47, y: 0.33 },
     left_elbow: { x: 0.58, y: 0.43 },
     right_elbow: { x: 0.42, y: 0.43 },
-    left_wrist: { x: 0.60, y: 0.48 },
-    right_wrist: { x: 0.40, y: 0.48 },
+    left_wrist: { x: 0.52, y: 0.50 },  // Hands close together on bat
+    right_wrist: { x: 0.48, y: 0.48 },  // Bottom hand slightly lower
     left_hip: { x: 0.52, y: 0.54 },
     right_hip: { x: 0.48, y: 0.54 },
     left_knee: { x: 0.54, y: 0.72 },
@@ -60,9 +60,9 @@ export const IDEAL_SWING_KEYPOINTS: Record<SwingPhase, IdealKeypoints> = {
     left_shoulder: { x: 0.52, y: 0.34 },
     right_shoulder: { x: 0.44, y: 0.35 },  // Shoulders start rotating back
     left_elbow: { x: 0.57, y: 0.45 },
-    right_elbow: { x: 0.36, y: 0.42 },  // Back elbow up and back
-    left_wrist: { x: 0.59, y: 0.51 },
-    right_wrist: { x: 0.32, y: 0.46 },  // Hands loaded back
+    right_elbow: { x: 0.38, y: 0.42 },  // Back elbow up and back
+    left_wrist: { x: 0.50, y: 0.52 },  // Hands loaded back together on bat
+    right_wrist: { x: 0.46, y: 0.50 },  // Bottom hand slightly lower
     left_hip: { x: 0.51, y: 0.55 },
     right_hip: { x: 0.44, y: 0.54 },  // Back hip loaded, slightly rotated
     left_knee: { x: 0.53, y: 0.73 },
@@ -78,9 +78,9 @@ export const IDEAL_SWING_KEYPOINTS: Record<SwingPhase, IdealKeypoints> = {
     left_shoulder: { x: 0.54, y: 0.34 },
     right_shoulder: { x: 0.46, y: 0.35 },
     left_elbow: { x: 0.62, y: 0.44 },
-    right_elbow: { x: 0.38, y: 0.41 },
-    left_wrist: { x: 0.66, y: 0.50 },  // Hands still back despite body moving forward
-    right_wrist: { x: 0.34, y: 0.45 },
+    right_elbow: { x: 0.40, y: 0.42 },
+    left_wrist: { x: 0.54, y: 0.52 },  // Hands still back together despite body moving
+    right_wrist: { x: 0.50, y: 0.50 },
     left_hip: { x: 0.53, y: 0.54 },  // Hips start opening
     right_hip: { x: 0.47, y: 0.53 },
     left_knee: { x: 0.62, y: 0.71 },  // Front knee flexed, ready to block
@@ -97,9 +97,9 @@ export const IDEAL_SWING_KEYPOINTS: Record<SwingPhase, IdealKeypoints> = {
     left_shoulder: { x: 0.58, y: 0.35 },  // Shoulders square to pitch
     right_shoulder: { x: 0.50, y: 0.36 },
     left_elbow: { x: 0.68, y: 0.41 },  // Front arm extended
-    right_elbow: { x: 0.44, y: 0.38 },  // Back elbow "slotted"
-    left_wrist: { x: 0.74, y: 0.44 },  // Hands through zone, slight upward path
-    right_wrist: { x: 0.40, y: 0.42 },
+    right_elbow: { x: 0.48, y: 0.40 },  // Back elbow "slotted"
+    left_wrist: { x: 0.64, y: 0.46 },  // Hands through zone, close together
+    right_wrist: { x: 0.60, y: 0.44 },  // slight upward path
     left_hip: { x: 0.56, y: 0.54 },  // Hips fully open/rotated
     right_hip: { x: 0.50, y: 0.53 },
     left_knee: { x: 0.64, y: 0.71 },  // Front leg firm (blocking)
@@ -115,9 +115,9 @@ export const IDEAL_SWING_KEYPOINTS: Record<SwingPhase, IdealKeypoints> = {
     left_shoulder: { x: 0.62, y: 0.37 },
     right_shoulder: { x: 0.54, y: 0.37 },
     left_elbow: { x: 0.72, y: 0.39 },  // Full extension
-    right_elbow: { x: 0.48, y: 0.37 },
-    left_wrist: { x: 0.78, y: 0.40 },  // Arms extended through ball
-    right_wrist: { x: 0.44, y: 0.38 },
+    right_elbow: { x: 0.52, y: 0.38 },
+    left_wrist: { x: 0.70, y: 0.42 },  // Arms extended, hands still close
+    right_wrist: { x: 0.66, y: 0.40 },  // through ball
     left_hip: { x: 0.58, y: 0.56 },  // Full rotation
     right_hip: { x: 0.53, y: 0.55 },
     left_knee: { x: 0.66, y: 0.72 },
@@ -133,9 +133,9 @@ export const IDEAL_SWING_KEYPOINTS: Record<SwingPhase, IdealKeypoints> = {
     left_shoulder: { x: 0.66, y: 0.39 },  // Full body rotation
     right_shoulder: { x: 0.58, y: 0.39 },
     left_elbow: { x: 0.76, y: 0.43 },
-    right_elbow: { x: 0.54, y: 0.34 },  // High finish
-    left_wrist: { x: 0.80, y: 0.47 },
-    right_wrist: { x: 0.50, y: 0.30 },  // Hands high
+    right_elbow: { x: 0.58, y: 0.36 },  // High finish
+    left_wrist: { x: 0.74, y: 0.46 },  // Hands high together
+    right_wrist: { x: 0.70, y: 0.44 },  // completing follow-through
     left_hip: { x: 0.62, y: 0.57 },
     right_hip: { x: 0.57, y: 0.56 },
     left_knee: { x: 0.68, y: 0.73 },  // Front leg stable
