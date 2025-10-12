@@ -315,16 +315,18 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* HEADER SECTION with gradient */}
-      <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 pb-20 pt-6 px-6">
-        {/* Logo at top */}
-        <div className="flex items-center gap-2 mb-6">
+      {/* Logo Bar - White background */}
+      <div className="bg-white border-b border-gray-200 py-4">
+        <div className="flex items-center justify-center gap-2">
           <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
             <span className="text-white font-black text-xl">S</span>
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">SwingSense</h1>
+          <h1 className="text-2xl font-black text-black tracking-tight">SwingSense</h1>
         </div>
+      </div>
 
+      {/* HEADER SECTION with gradient */}
+      <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 pb-20 pt-6 px-6">
         {/* Top bar */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
