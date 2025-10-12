@@ -277,18 +277,18 @@ export default function Leaderboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as LeaderboardType)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white rounded-3xl p-1 shadow-lg">
-            <TabsTrigger value="total_swings" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm">
+          <TabsList className="grid w-full grid-cols-3 bg-white rounded-3xl p-1 shadow-lg h-12">
+            <TabsTrigger value="total_swings" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm h-10 px-3">
               <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Most Active</span>
               <span className="sm:hidden">Active</span>
             </TabsTrigger>
-            <TabsTrigger value="average_score" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm">
+            <TabsTrigger value="average_score" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm h-10 px-3">
               <Target className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Best Average</span>
               <span className="sm:hidden">Average</span>
             </TabsTrigger>
-            <TabsTrigger value="max_score" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm">
+            <TabsTrigger value="max_score" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm h-10 px-3">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Highest Score</span>
               <span className="sm:hidden">Best</span>
