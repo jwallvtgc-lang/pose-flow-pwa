@@ -45,8 +45,16 @@ export function SwingScoring({ analysisResults, onScoreComplete }: SwingScoringP
       const analysisMetrics = analysisResults?.metrics || {};
       setMetrics(analysisMetrics);
 
+      // Debug logging
+      console.log('=== SWING METRICS DEBUG ===');
+      console.log('Raw metrics:', analysisMetrics);
+      
       // Evaluate swing using the real metrics
       const { score, cards } = await evaluateSwing(analysisMetrics);
+      
+      console.log('Final score:', score);
+      console.log('Coaching cards:', cards);
+      console.log('=========================');
       
       trackCapture.scoreReady();
       onScoreComplete(score, cards);

@@ -4,6 +4,9 @@ export function scorePhase1FromValues(
   values: Record<string, number>,
   specs: MetricSpecs = metricSpecs
 ) {
+  console.log('=== SCORING DEBUG ===');
+  console.log('Input values:', values);
+  
   let totalWeight = 0;
   let acc = 0;
   const contributions: { metric: string; score: number; weight: number }[] = [];
@@ -47,6 +50,15 @@ export function scorePhase1FromValues(
   }
 
   const finalScore = totalWeight > 0 ? Math.round((acc / totalWeight) * 100) : 0;
+
+  console.log('Contributions by metric:');
+  contributions.forEach(c => {
+    const spec = specs[c.metric];
+    const rawValue = values[c.metric];
+    console.log(`  ${c.metric}: raw=${rawValue?.toFixed(2)}, normalized=${c.score.toFixed(3)}, weight=${c.weight}, target=[${spec.target[0]}, ${spec.target[1]}]`);
+  });
+  console.log('Final score:', finalScore);
+  console.log('===================');
 
   // Sort by weakest (lowest normalized score)
   contributions.sort((a, b) => a.score - b.score);
