@@ -760,6 +760,11 @@ export default function SwingDetail() {
                     videoElement={videoRef.current}
                     keypointsByFrame={swing.pose_data.keypointsByFrame}
                     canvasRef={canvasRef}
+                    showIdealPose={showIdealForm}
+                    showDetectedPose={showMyForm}
+                    idealOpacity={idealOpacity}
+                    selectedPhase={selectedPhase as any}
+                    autoProgress={true}
                   />
                 )}
                 

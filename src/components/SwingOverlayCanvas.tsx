@@ -24,6 +24,11 @@ interface SwingOverlayCanvasProps {
   keypointsByFrame: FrameData[];
   currentTime?: number;
   canvasRef: React.RefObject<HTMLCanvasElement>;
+  showIdealPose?: boolean;
+  showDetectedPose?: boolean;
+  idealOpacity?: number;
+  selectedPhase?: SwingPhase;
+  autoProgress?: boolean;
 }
 
 export function SwingOverlayCanvas({
@@ -31,6 +36,11 @@ export function SwingOverlayCanvas({
   keypointsByFrame,
   currentTime,
   canvasRef,
+  showIdealPose: externalShowIdeal,
+  showDetectedPose: externalShowDetected,
+  idealOpacity: externalIdealOpacity,
+  selectedPhase: externalSelectedPhase,
+  autoProgress: externalAutoProgress,
 }: SwingOverlayCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedPhase, setSelectedPhase] = useState<SwingPhase>('contact');
@@ -40,6 +50,13 @@ export function SwingOverlayCanvas({
   const [idealOpacity, setIdealOpacity] = useState([70]);
   const [similarity, setSimilarity] = useState<number>(0);
   const [detailedScores, setDetailedScores] = useState<Record<string, number>>({});
+  
+  // Use external props if provided, otherwise use internal state
+  const effectiveShowIdeal = externalShowIdeal ?? showIdealPose;
+  const effectiveShowDetected = externalShowDetected ?? showDetectedPose;
+  const effectiveIdealOpacity = externalIdealOpacity !== undefined ? externalIdealOpacity * 100 : idealOpacity[0];
+  const effectiveSelectedPhase = externalSelectedPhase ?? selectedPhase;
+  const effectiveAutoProgress = externalAutoProgress ?? autoProgressPhase;
 
   // Setup canvas dimensions - ensure they match video
   useEffect(() => {
@@ -222,18 +239,18 @@ export function SwingOverlayCanvas({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       // Auto-progress phase based on video time if enabled
-      const currentPhase = autoProgressPhase ? getCurrentPhase() : selectedPhase;
+      const currentPhase = effectiveAutoProgress ? getCurrentPhase() : effectiveSelectedPhase;
       
       // Draw ideal pose (normalized coordinates)
-      if (showIdealPose) {
+      if (effectiveShowIdeal) {
         const idealKeypoints = IDEAL_SWING_KEYPOINTS[currentPhase];
-        drawSkeleton(ctx, idealKeypoints, '#22c55e', idealOpacity[0] / 100, 4, true);
+        drawSkeleton(ctx, idealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 4, true);
       }
       
       // Draw detected pose (pixel coordinates)
-      if (showDetectedPose) {
+      if (effectiveShowDetected) {
         // Use phase-specific frame when auto-progress is off, otherwise use current video time
-        const currentFrame = autoProgressPhase ? getCurrentFrame() : getFrameForPhase(currentPhase);
+        const currentFrame = effectiveAutoProgress ? getCurrentFrame() : getFrameForPhase(currentPhase);
         if (currentFrame) {
           const detectedKeypoints = convertDetectedKeypoints(currentFrame);
           console.log('🔵 Drawing blue pose, keypoints:', Object.keys(detectedKeypoints).length);
@@ -286,7 +303,7 @@ export function SwingOverlayCanvas({
       videoElement.removeEventListener('pause', handleTimeUpdate);
       videoElement.removeEventListener('seeked', handleTimeUpdate);
     };
-  }, [videoElement, selectedPhase, showIdealPose, showDetectedPose, idealOpacity, keypointsByFrame, currentTime]);
+  }, [videoElement, selectedPhase, showIdealPose, showDetectedPose, idealOpacity, keypointsByFrame, currentTime, effectiveShowIdeal, effectiveShowDetected, effectiveIdealOpacity, effectiveSelectedPhase, effectiveAutoProgress]);
 
   const phases: SwingPhase[] = ['setup', 'load', 'stride', 'contact', 'extension', 'finish'];
 
