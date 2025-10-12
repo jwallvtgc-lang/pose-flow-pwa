@@ -783,6 +783,7 @@ function DetailedMetricCard({ title, description, average, unit, targetRange, ch
   const metricName = getMetricName(title);
   const metricData = chartData.allMetricsSeries[metricName] || [];
   const lastSevenValues = metricData.slice(-7);
+  const latestValue = metricData.length > 0 ? metricData[metricData.length - 1].value : undefined;
 
   const isInTargetRange = (value: number, title: string): boolean => {
     switch (title) {
@@ -847,10 +848,17 @@ function DetailedMetricCard({ title, description, average, unit, targetRange, ch
           </div>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-black">
-            {average ? `${average.toFixed(1)}` : '—'}
+          <div className="flex flex-col items-end gap-0.5">
+            <div className="text-2xl font-black">
+              {average ? `${average.toFixed(1)}` : '—'}
+            </div>
+            <div className="text-xs text-gray-500">{unit}</div>
+            {latestValue !== undefined && metricData.length >= 2 && (
+              <div className="text-[10px] text-gray-400 mt-1">
+                Latest: {latestValue.toFixed(1)}
+              </div>
+            )}
           </div>
-          <div className="text-xs text-gray-500">{unit}</div>
         </div>
       </div>
 
