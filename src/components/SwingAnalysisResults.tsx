@@ -22,6 +22,7 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
   const [videoUrl, setVideoUrl] = useState<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isVideoReady, setIsVideoReady] = useState(false);
 
   useEffect(() => {
     // Reset all state for new video
@@ -183,11 +184,16 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
                 className="w-full rounded-lg"
                 muted
                 playsInline
-                onLoadStart={() => console.log('Video load started')}
-                onLoadedMetadata={(e) => console.log('Video metadata loaded:', e.currentTarget.duration)}
-                onCanPlay={() => console.log('Video can play')}
+                onLoadedMetadata={(e) => {
+                  console.log('Video metadata loaded:', e.currentTarget.videoWidth, e.currentTarget.videoHeight);
+                  // Setup canvas dimensions immediately
+                  if (canvasRef.current) {
+                    canvasRef.current.width = e.currentTarget.videoWidth;
+                    canvasRef.current.height = e.currentTarget.videoHeight;
+                  }
+                  setIsVideoReady(true);
+                }}
                 onError={(e) => console.error('Video error:', e.currentTarget.error)}
-                onLoadedData={() => console.log('Video data loaded')}
               />
               <canvas
                 ref={canvasRef}
@@ -196,7 +202,7 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
               />
             </div>
             
-            {videoRef.current && (
+            {isVideoReady && videoRef.current && canvasRef.current && (
               <SwingOverlayCanvas
                 videoElement={videoRef.current}
                 keypointsByFrame={results.keypointsByFrame}
@@ -277,7 +283,7 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
             onClick={() => onComplete(results)} 
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-semibold py-6 text-lg"
           >
-            Save Analysis & Continue
+            Save & View Full Results
           </Button>
         )}
         <div className="flex gap-3">

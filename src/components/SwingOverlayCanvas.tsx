@@ -40,14 +40,17 @@ export function SwingOverlayCanvas({
   const [similarity, setSimilarity] = useState<number>(0);
   const [detailedScores, setDetailedScores] = useState<Record<string, number>>({});
 
-  // Setup canvas dimensions
+  // Setup canvas dimensions - ensure they match video
   useEffect(() => {
     const setupCanvas = () => {
       if (!canvasRef.current || !videoElement) return;
       
       const canvas = canvasRef.current;
-      canvas.width = videoElement.videoWidth || videoElement.clientWidth;
-      canvas.height = videoElement.videoHeight || videoElement.clientHeight;
+      if (videoElement.videoWidth > 0 && videoElement.videoHeight > 0) {
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+        console.log('Canvas sized:', canvas.width, canvas.height);
+      }
     };
 
     setupCanvas();
@@ -169,12 +172,13 @@ export function SwingOverlayCanvas({
         drawSkeleton(ctx, idealKeypoints, '#22c55e', idealOpacity[0] / 100, 4);
       }
       
-      // Draw detected pose
+      // Draw detected pose (blue)
       if (showDetectedPose) {
         const currentFrame = getCurrentFrame();
         if (currentFrame) {
           const detectedKeypoints = convertDetectedKeypoints(currentFrame);
-          drawSkeleton(ctx, detectedKeypoints, '#3b82f6', 0.8, 3);
+          // Draw with higher opacity and thicker lines to be more visible
+          drawSkeleton(ctx, detectedKeypoints, '#3b82f6', 0.9, 4);
           
           // Calculate similarity
           const idealKeypoints = IDEAL_SWING_KEYPOINTS[selectedPhase];
