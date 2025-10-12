@@ -34,6 +34,7 @@ export function SwingOverlayCanvas({
 }: SwingOverlayCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedPhase, setSelectedPhase] = useState<SwingPhase>('contact');
+  const [autoProgressPhase, setAutoProgressPhase] = useState(true);
   const [showIdealPose, setShowIdealPose] = useState(true);
   const [showDetectedPose, setShowDetectedPose] = useState(true);
   const [idealOpacity, setIdealOpacity] = useState([70]);
@@ -61,6 +62,18 @@ export function SwingOverlayCanvas({
       videoElement.removeEventListener('loadedmetadata', setupCanvas);
     };
   }, [videoElement, canvasRef, keypointsByFrame]);
+
+  // Get current swing phase based on video progress
+  const getCurrentPhase = (): SwingPhase => {
+    if (!videoElement || videoElement.duration === 0) return 'contact';
+    
+    const progress = videoElement.currentTime / videoElement.duration;
+    const phases: SwingPhase[] = ['setup', 'load', 'stride', 'contact', 'extension', 'finish'];
+    
+    // Divide video into equal segments for each phase
+    const phaseIndex = Math.min(Math.floor(progress * phases.length), phases.length - 1);
+    return phases[phaseIndex];
+  };
 
   // Get current frame based on video time
   const getCurrentFrame = (): FrameData | null => {
@@ -179,9 +192,12 @@ export function SwingOverlayCanvas({
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
+      // Auto-progress phase based on video time if enabled
+      const currentPhase = autoProgressPhase ? getCurrentPhase() : selectedPhase;
+      
       // Draw ideal pose (normalized coordinates)
       if (showIdealPose) {
-        const idealKeypoints = IDEAL_SWING_KEYPOINTS[selectedPhase];
+        const idealKeypoints = IDEAL_SWING_KEYPOINTS[currentPhase];
         drawSkeleton(ctx, idealKeypoints, '#22c55e', idealOpacity[0] / 100, 4, true);
       }
       
@@ -195,7 +211,7 @@ export function SwingOverlayCanvas({
           drawSkeleton(ctx, detectedKeypoints, '#3b82f6', 0.9, 4, false);
           
           // Calculate similarity - normalize detected keypoints first
-          const idealKeypoints = IDEAL_SWING_KEYPOINTS[selectedPhase];
+          const idealKeypoints = IDEAL_SWING_KEYPOINTS[currentPhase];
           // Normalize detected keypoints to 0-1 range for comparison
           const normalizedDetected: Record<string, { x: number; y: number; score?: number }> = {};
           Object.entries(detectedKeypoints).forEach(([key, point]) => {
@@ -258,24 +274,40 @@ export function SwingOverlayCanvas({
           )}
         </div>
 
+        {/* Auto-Progress Toggle */}
+        <div className="flex items-center justify-between">
+          <Label htmlFor="auto-progress" className="text-sm">Auto-progress phases</Label>
+          <Switch
+            id="auto-progress"
+            checked={autoProgressPhase}
+            onCheckedChange={setAutoProgressPhase}
+          />
+        </div>
+
         {/* Phase Selection */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Swing Phase</Label>
+          <Label className="text-sm font-medium">
+            Swing Phase {autoProgressPhase && "(Auto)"}
+          </Label>
           <div className="grid grid-cols-3 gap-2">
             {phases.map((phase) => (
               <Button
                 key={phase}
                 variant={selectedPhase === phase ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedPhase(phase)}
+                onClick={() => {
+                  setSelectedPhase(phase);
+                  setAutoProgressPhase(false);
+                }}
                 className="capitalize"
+                disabled={autoProgressPhase}
               >
                 {phase}
               </Button>
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            {PHASE_DESCRIPTIONS[selectedPhase]}
+            {PHASE_DESCRIPTIONS[autoProgressPhase ? getCurrentPhase() : selectedPhase]}
           </p>
         </div>
 
