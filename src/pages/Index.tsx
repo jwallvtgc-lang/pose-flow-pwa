@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera, BarChart3, TrendingUp, Activity, Bell, Star, Play, Award, Settings, Zap, Target, Trophy } from 'lucide-react';
+import { Camera, BarChart3, TrendingUp, Activity, Star, Play, Award, Settings, Zap, Target, Trophy } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -341,23 +341,11 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <Link to="/profile">
-              <button className="relative w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
-                <Bell className="w-5 h-5 text-white" />
-                {stats.todayCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs font-bold flex items-center justify-center">
-                    {stats.todayCount}
-                  </span>
-                )}
-              </button>
-            </Link>
-            <Link to="/profile">
-              <button className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
-                <Settings className="w-5 h-5 text-white" />
-              </button>
-            </Link>
-          </div>
+          <Link to="/profile">
+            <button className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
+              <Settings className="w-5 h-5 text-white" />
+            </button>
+          </Link>
         </div>
 
         {/* Large score card */}
