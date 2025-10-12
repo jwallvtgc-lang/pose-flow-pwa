@@ -194,13 +194,23 @@ export function SwingOverlayCanvas({
           // Draw with pixel coordinates (not normalized), higher opacity and thicker lines
           drawSkeleton(ctx, detectedKeypoints, '#3b82f6', 0.9, 4, false);
           
-          // Calculate similarity
+          // Calculate similarity - normalize detected keypoints first
           const idealKeypoints = IDEAL_SWING_KEYPOINTS[selectedPhase];
-          const sim = calculatePoseSimilarity(detectedKeypoints, idealKeypoints);
+          // Normalize detected keypoints to 0-1 range for comparison
+          const normalizedDetected: Record<string, { x: number; y: number; score?: number }> = {};
+          Object.entries(detectedKeypoints).forEach(([key, point]) => {
+            normalizedDetected[key] = {
+              x: point.x / canvas.width,
+              y: point.y / canvas.height,
+              score: point.score
+            };
+          });
+          
+          const sim = calculatePoseSimilarity(normalizedDetected, idealKeypoints);
           console.log('📊 Similarity calculated:', sim, '%');
           setSimilarity(sim);
           
-          const detailed = getDetailedSimilarity(detectedKeypoints, idealKeypoints);
+          const detailed = getDetailedSimilarity(normalizedDetected, idealKeypoints);
           console.log('🎯 Detailed scores:', detailed);
           setDetailedScores(detailed);
         } else {
@@ -221,8 +231,8 @@ export function SwingOverlayCanvas({
     videoElement.addEventListener('pause', handleTimeUpdate);
     videoElement.addEventListener('seeked', handleTimeUpdate);
     
-    // Initial draw
-    updateCanvas();
+    // Initial draw and redraw when phase changes
+    requestAnimationFrame(updateCanvas);
 
     return () => {
       videoElement.removeEventListener('timeupdate', handleTimeUpdate);
