@@ -42,8 +42,14 @@ function angleBetweenVectors(v1: {x: number, y: number}, v2: {x: number, y: numb
 function angleFromVertical(p1: any, p2: any): number {
   if (!p1 || !p2) return 0;
   const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  return Math.atan2(dx, dy) * (180 / Math.PI);
+  const dy = p2.y - p1.y; // Note: y increases downward in screen coords
+  
+  // Calculate angle from vertical axis
+  // atan2(dx, dy) gives angle from vertical (0° = straight up)
+  let angle = Math.atan2(dx, -dy) * (180 / Math.PI); // Use -dy because y increases downward
+  
+  // Ensure result is in [0, 180] range
+  return Math.abs(angle);
 }
 
 // Calculate trajectory angle over a window of frames
@@ -62,8 +68,14 @@ function calculateTrajectoryAngle(frames: FrameData[], centerIdx: number, window
   const dx = endPoint.x - startPoint.x;
   const dy = endPoint.y - startPoint.y;
   
-  // Return angle in degrees (negative = downward trajectory)
-  return Math.atan2(-dy, dx) * (180 / Math.PI);
+  // Attack angle: measure angle from horizontal
+  // Positive = upward swing, Negative = downward swing
+  // Note: y increases downward in screen coords, so negate dy
+  const angle = Math.atan2(-dy, dx) * (180 / Math.PI);
+  
+  // Return the vertical component of the angle
+  // 0° = horizontal, +90° = straight up, -90° = straight down
+  return angle;
 }
 
 // Estimate pixels per cm using hip-to-ankle distance as body height proxy
@@ -183,8 +195,14 @@ export function computePhase1Metrics(
   
   // 2. Attack angle at contact
   if (contactIdx && contactIdx < keypointsByFrame.length) {
-    const attackAngle = calculateTrajectoryAngle(keypointsByFrame, contactIdx, 3, 'left_wrist');
-    metrics.attack_angle_deg = attackAngle !== 0 ? attackAngle : null;
+    // Use a larger window for more stable angle measurement
+    const attackAngle = calculateTrajectoryAngle(keypointsByFrame, contactIdx, 2, 'left_wrist');
+    
+    // Log for debugging
+    console.log('📐 Attack angle calculated:', attackAngle.toFixed(1), '° (target: 5-20°)');
+    
+    // Only set if we got a valid measurement
+    metrics.attack_angle_deg = (attackAngle !== 0 && !isNaN(attackAngle)) ? attackAngle : null;
   } else {
     metrics.attack_angle_deg = null;
   }
@@ -267,7 +285,12 @@ export function computePhase1Metrics(
         y: (leftHip.y + rightHip.y) / 2
       };
       
-      metrics.torso_tilt_deg = Math.abs(angleFromVertical(hipCenter, shoulderCenter));
+      const tiltAngle = angleFromVertical(hipCenter, shoulderCenter);
+      
+      // Log for debugging
+      console.log('📐 Torso tilt calculated:', tiltAngle.toFixed(1), '° (target: 20-35°)');
+      
+      metrics.torso_tilt_deg = tiltAngle;
     } else {
       metrics.torso_tilt_deg = null;
     }
