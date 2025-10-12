@@ -5,7 +5,6 @@ import { Camera, BarChart3, TrendingUp, Activity, Bell, Star, Play, Award } from
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import AddToHomeScreen from "@/components/AddToHomeScreen";
 import { HamburgerMenu } from "@/components/HamburgerMenu";
 
 const Index = () => {
@@ -638,8 +637,6 @@ const Index = () => {
             </Link>
           </div>
         </Card>
-
-        <AddToHomeScreen />
       </div>
     </div>
   );
