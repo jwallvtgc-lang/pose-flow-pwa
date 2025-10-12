@@ -370,11 +370,31 @@ export default function SwingDetail() {
     let progress = 0;
 
     if ('invert' in spec && spec.invert) {
+      // For inverted metrics (lower is better)
       isInTarget = value <= max;
-      progress = Math.max(0, Math.min(1, (max - value) / (max - min)));
+      if (value <= max) {
+        // Within or below target - calculate progress
+        progress = Math.max(0, Math.min(1, (max - value) / (max - min)));
+      } else {
+        // Above max (bad) - penalize with negative progress
+        const excessRatio = (value - max) / (max - min);
+        progress = Math.max(0, 1 - excessRatio); // Decreases as value exceeds max
+      }
     } else {
+      // For normal metrics (higher/within range is better)
       isInTarget = value >= min && value <= max;
-      progress = Math.max(0, Math.min(1, (value - min) / (max - min)));
+      if (value < min) {
+        // Below min (bad) - calculate how far below
+        const deficitRatio = (min - value) / (max - min);
+        progress = Math.max(0, -deficitRatio); // Negative progress
+      } else if (value > max) {
+        // Above max (bad) - penalize with reduced progress
+        const excessRatio = (value - max) / (max - min);
+        progress = Math.max(0, 1 - excessRatio); // Decreases as value exceeds max
+      } else {
+        // Within range - normal calculation
+        progress = (value - min) / (max - min);
+      }
     }
 
     if (isInTarget) {
