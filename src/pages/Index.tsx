@@ -418,22 +418,6 @@ const Index = () => {
 
       {/* Main content area */}
       <div className="px-6 pb-24 space-y-6">{/* Added pb-24 for bottom nav space */}
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4">
-          <Link to={user ? "/analysis" : "/auth"}>
-            <Button className="w-full h-24 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2">
-              <Camera className="w-8 h-8" />
-              <span className="font-bold">Record Swing</span>
-            </Button>
-          </Link>
-          <Link to={user ? "/progress" : "/auth"}>
-            <Button className="w-full h-24 bg-gradient-to-br from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2">
-              <BarChart3 className="w-8 h-8" />
-              <span className="font-bold">View Stats</span>
-            </Button>
-          </Link>
-        </div>
-
         {/* Latest Analysis Section */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-5">
