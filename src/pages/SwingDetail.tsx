@@ -27,6 +27,7 @@ interface SwingData {
   drill_id: string | null;
   video_url: string | null;
   pose_data?: any;
+  bat_speed_peak?: number | null;
 }
 
 interface SwingMetric {
@@ -258,7 +259,7 @@ export default function SwingDetail() {
 
       const { data: swingData, error: swingError } = await supabase
         .from('swings')
-        .select('id, created_at, score_phase1, cues, drill_id, drill_data, video_url, pose_data')
+        .select('id, created_at, score_phase1, cues, drill_id, drill_data, video_url, pose_data, bat_speed_peak')
         .eq('id', swingId)
         .maybeSingle();
 
@@ -828,9 +829,11 @@ export default function SwingDetail() {
               
               <Card className="p-4 rounded-2xl min-w-[150px]">
                 <div className="text-center">
-                  <Activity className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-                  <div className="text-2xl font-bold">1.2s</div>
-                  <div className="text-xs text-muted-foreground">Duration</div>
+                  <Zap className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
+                  <div className="text-2xl font-bold">
+                    {swing.bat_speed_peak ? `${swing.bat_speed_peak.toFixed(1)}` : 'N/A'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Bat Speed (MPH)</div>
                 </div>
               </Card>
             </div>
