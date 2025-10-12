@@ -660,29 +660,31 @@ const Index = () => {
           )}
         </div>
 
-        {/* Bottom CTA Card */}
-        <Card className="p-8 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl mb-8 text-white relative overflow-hidden shadow-2xl border-0">
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
-          
-          <div className="text-center relative z-10">
-            <div className="w-16 h-16 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-              <Award className="w-8 h-8 text-white" />
+        {/* Bottom CTA Card - Only for non-logged-in users */}
+        {!user && (
+          <Card className="p-8 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl mb-8 text-white relative overflow-hidden shadow-2xl border-0">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+            
+            <div className="text-center relative z-10">
+              <div className="w-16 h-16 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                <Award className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold mb-4 leading-tight">
+                Ready to improve your<br />swing?
+              </h2>
+              <p className="text-blue-100 text-base mb-8 leading-relaxed max-w-sm mx-auto">
+                Join thousands of players using AI-powered analysis to perfect their baseball swing
+              </p>
+              <Link to="/auth">
+                <Button className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold text-lg h-14 px-8 rounded-2xl shadow-lg transition-all duration-300 hover:scale-105">
+                  Get Started Now
+                </Button>
+              </Link>
             </div>
-            <h2 className="text-2xl font-bold mb-4 leading-tight">
-              Ready to improve your<br />swing?
-            </h2>
-            <p className="text-blue-100 text-base mb-8 leading-relaxed max-w-sm mx-auto">
-              Join thousands of players using AI-powered analysis to perfect their baseball swing
-            </p>
-            <Link to={user ? "/analysis" : "/auth"}>
-              <Button className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold text-lg h-14 px-8 rounded-2xl shadow-lg transition-all duration-300 hover:scale-105">
-                {user ? 'Record New Swing' : 'Get Started Now'}
-              </Button>
-            </Link>
-          </div>
-        </Card>
+          </Card>
+        )}
       </div>
 
       {/* Bottom Navigation Bar */}
