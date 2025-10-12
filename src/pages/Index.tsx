@@ -5,7 +5,7 @@ import { Camera, TrendingUp, Award, Settings, Zap, Trophy, ArrowRight } from 'lu
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -26,7 +26,7 @@ const Index = () => {
     isLoading: true
   });
   
-  const [userProfile, setUserProfile] = useState<{ full_name: string | null; current_streak: number | null } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ full_name: string | null; current_streak: number | null; avatar_url: string | null } | null>(null);
   const [latestSwing, setLatestSwing] = useState<any>(null);
   const [topDrills, setTopDrills] = useState<Array<{name: string; count: number; description: string}>>([]);
   const [leaderboardRank, setLeaderboardRank] = useState<{ rank: number; totalUsers: number; averageScore: number } | null>(null);
@@ -178,7 +178,7 @@ const Index = () => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('full_name, current_streak')
+        .select('full_name, current_streak, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -394,6 +394,7 @@ const Index = () => {
         <div className="flex items-center justify-between mb-8 relative z-10">
           <div className="flex items-center gap-3">
             <Avatar className="w-12 h-12 border-2 border-white/30 animate-fade-in-up">
+              <AvatarImage src={userProfile?.avatar_url || undefined} />
               <AvatarFallback className="bg-white/20 text-white font-bold text-lg backdrop-blur-sm">
                 {user ? getFirstName()[0] : 'P'}
               </AvatarFallback>

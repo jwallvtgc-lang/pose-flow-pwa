@@ -4,11 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, Save, Loader2, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface ProfileData {
   full_name: string;
@@ -18,6 +19,7 @@ interface ProfileData {
   weight_lbs: number | '';
   primary_position: string;
   current_team: string;
+  avatar_url: string | null;
 }
 
 const positions = ['1B', '2B', 'SS', '3B', 'P', 'C', 'LF', 'RF', 'CF'];
@@ -28,6 +30,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [profile, setProfile] = useState<ProfileData>({
     full_name: '',
     email: '',
@@ -36,6 +39,7 @@ export default function Profile() {
     weight_lbs: '',
     primary_position: '',
     current_team: '',
+    avatar_url: null,
   });
 
   useEffect(() => {
@@ -65,6 +69,7 @@ export default function Profile() {
           weight_lbs: data.weight_lbs || '',
           primary_position: data.primary_position || '',
           current_team: data.current_team || '',
+          avatar_url: data.avatar_url || null,
         });
       } else {
         // Create profile if it doesn't exist
@@ -90,6 +95,87 @@ export default function Profile() {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    const file = event.target.files[0];
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file",
+        description: "Please upload an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Delete old avatar if exists
+      if (profile.avatar_url) {
+        const oldPath = profile.avatar_url.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('avatars')
+            .remove([`${user.id}/${oldPath}`]);
+        }
+      }
+
+      // Upload new avatar
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
+
+      toast({
+        title: "Success",
+        description: "Profile photo updated successfully",
+      });
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload profile photo",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -125,6 +211,7 @@ export default function Profile() {
         weight_lbs: profile.weight_lbs === '' ? null : Number(profile.weight_lbs),
         primary_position: profile.primary_position,
         current_team: profile.current_team,
+        avatar_url: profile.avatar_url,
       };
 
       const { error } = await supabase
@@ -171,8 +258,27 @@ export default function Profile() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="text-center flex-1">
-            <div className="bg-gradient-to-r from-blue-500 to-teal-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-white" />
+            <div className="relative mx-auto mb-4 w-24 h-24">
+              <Avatar className="w-24 h-24 border-4 border-gray-200">
+                <AvatarImage src={profile.avatar_url || undefined} />
+                <AvatarFallback className="bg-gradient-to-r from-blue-500 to-teal-500 text-white text-2xl">
+                  {profile.full_name ? profile.full_name[0].toUpperCase() : <User className="w-12 h-12" />}
+                </AvatarFallback>
+              </Avatar>
+              <label 
+                htmlFor="avatar-upload" 
+                className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-all shadow-lg"
+              >
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+              </label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                disabled={uploading}
+                className="hidden"
+              />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile</h1>
             <p className="text-gray-600">Update your personal information and baseball details</p>
