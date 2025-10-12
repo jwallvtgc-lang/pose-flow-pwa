@@ -57,6 +57,7 @@ export type Database = {
           how_to: string | null
           id: string
           name: string | null
+          video_url: string | null
         }
         Insert: {
           equipment?: string | null
@@ -64,6 +65,7 @@ export type Database = {
           how_to?: string | null
           id?: string
           name?: string | null
+          video_url?: string | null
         }
         Update: {
           equipment?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           how_to?: string | null
           id?: string
           name?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }
