@@ -767,6 +767,7 @@ export default function SwingDetail() {
                     autoProgress={true}
                     cameraView="front"
                     handedness="right"
+                    hideControls={true}
                   />
                 )}
                 

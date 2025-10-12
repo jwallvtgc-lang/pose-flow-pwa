@@ -33,6 +33,7 @@ interface SwingOverlayCanvasProps {
   autoProgress?: boolean;
   cameraView?: CameraView;
   handedness?: Handedness;
+  hideControls?: boolean;
 }
 
 export function SwingOverlayCanvas({
@@ -47,6 +48,7 @@ export function SwingOverlayCanvas({
   autoProgress: externalAutoProgress,
   cameraView = 'front',
   handedness = 'right',
+  hideControls = false,
 }: SwingOverlayCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedPhase, setSelectedPhase] = useState<SwingPhase>('contact');
@@ -312,6 +314,11 @@ export function SwingOverlayCanvas({
   }, [videoElement, selectedPhase, showIdealPose, showDetectedPose, idealOpacity, keypointsByFrame, currentTime, effectiveShowIdeal, effectiveShowDetected, effectiveIdealOpacity, effectiveSelectedPhase, effectiveAutoProgress, cameraView, handedness]);
 
   const phases: SwingPhase[] = ['setup', 'load', 'stride', 'contact', 'extension', 'finish'];
+
+  // If hideControls is true, don't render the control card
+  if (hideControls) {
+    return null;
+  }
 
   return (
     <div ref={containerRef}>
