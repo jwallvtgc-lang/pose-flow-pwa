@@ -368,7 +368,7 @@ export default function Progress() {
               <div>
                 <h3 className="text-lg font-anton font-black">Score Trend</h3>
                 <p className="text-blue-100 text-sm">
-                  Last {swings.length} swings • Avg: {chartData.averages['score']?.toFixed(1) || '—'}
+                  Last {chartData.scoreSeries.length} swings • Avg: {chartData.averages['score']?.toFixed(1) || '—'}
                 </p>
               </div>
               {latestScore && (
@@ -500,7 +500,7 @@ export default function Progress() {
   );
 }
 
-// Enhanced Score Bar Chart Component - Shows up to 25 recent swings with detailed analysis
+// Enhanced Score Bar Chart Component - Shows all available swings
 function ScoreBarChart({ data }: { data: ChartPoint[] }) {
   if (!data.length) {
     return (
@@ -510,7 +510,8 @@ function ScoreBarChart({ data }: { data: ChartPoint[] }) {
     );
   }
 
-  const recentScores = data.slice(-25);
+  // Show all available swings (no artificial limit)
+  const recentScores = data;
   const average = recentScores.reduce((sum, point) => sum + point.value, 0) / recentScores.length;
   
   // Fixed scale from 0-100 for consistency
@@ -559,13 +560,14 @@ function ScoreBarChart({ data }: { data: ChartPoint[] }) {
 
         {/* Bar Chart */}
         <div 
-          className="ml-8 flex items-end gap-1 bg-white/10 rounded p-3 overflow-x-auto" 
+          className="ml-8 flex items-end gap-0.5 bg-white/10 rounded p-3 overflow-x-auto" 
           style={{ height: `${maxBarHeight + 20}px` }}
         >
           {recentScores.map((point, index) => {
+            // Ensure bars have proper height (minimum 2px for visibility)
             const barHeight = Math.max(
               ((point.value - chartMin) / (chartMax - chartMin)) * maxBarHeight,
-              4
+              2
             );
             
             const isLatest = index === recentScores.length - 1;
@@ -575,7 +577,10 @@ function ScoreBarChart({ data }: { data: ChartPoint[] }) {
               <div 
                 key={`bar-${point.t}-${index}`} 
                 className="flex flex-col items-center group relative"
-                style={{ minWidth: recentScores.length > 15 ? '12px' : '16px', flex: '0 0 auto' }}
+                style={{ 
+                  minWidth: recentScores.length > 30 ? '10px' : recentScores.length > 20 ? '14px' : '18px',
+                  flex: '0 0 auto' 
+                }}
               >
                 {/* Tooltip on hover */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-16 left-1/2 transform -translate-x-1/2 z-20">
@@ -595,13 +600,14 @@ function ScoreBarChart({ data }: { data: ChartPoint[] }) {
                 
                 {/* Bar */}
                 <div 
-                  className={`w-full rounded-sm transition-all duration-300 border-2 ${
+                  className={`w-full rounded-t-sm transition-all duration-300 ${
                     isLatest 
-                      ? 'ring-2 ring-white/50 ' + getScoreColor(point.value)
-                      : getScoreColor(point.value) + ' opacity-80'
-                  } hover:opacity-100`}
+                      ? 'ring-2 ring-white/50 ' + getScoreColor(point.value).replace('border-', 'shadow-lg shadow-')
+                      : getScoreColor(point.value).split(' ')[0] + ' opacity-90'
+                  } hover:opacity-100 hover:scale-105`}
                   style={{ 
-                    height: `${Math.round(barHeight)}px`
+                    height: `${Math.round(barHeight)}px`,
+                    minHeight: '2px'
                   }}
                 />
                 
