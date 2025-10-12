@@ -62,7 +62,10 @@ export default function SwingAnalysis() {
     setCurrentStep('score');
   };
 
-  const handleAnalysisComplete = async (result: PoseAnalysisResult) => {
+  const handleAnalysisComplete = async (
+    result: PoseAnalysisResult, 
+    batSpeedData?: { peak: number; avg: number } | null
+  ) => {
     console.log('🟡 === ANALYSIS COMPLETE CALLED ===');
     console.log('🟡 Has result:', !!result);
     console.log('🟡 Has videoBlob:', !!videoBlob); 
@@ -129,7 +132,7 @@ export default function SwingAnalysis() {
         view: 'side'
       });
 
-      // Save swing data with keypoints
+      // Save swing data with keypoints and bat speed
       const swingId = await saveSwing({
         session_id: sessionId,
         score: evaluation.score,
@@ -139,7 +142,9 @@ export default function SwingAnalysis() {
         keypointsData: {
           keypointsByFrame: result.keypointsByFrame,
           events: result.events
-        }
+        },
+        batSpeedPeak: batSpeedData?.peak,
+        batSpeedAvg: batSpeedData?.avg
       });
 
       // Update user streak after successful swing analysis

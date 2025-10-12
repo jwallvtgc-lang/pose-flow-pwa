@@ -12,7 +12,7 @@ import { BatSpeedDisplay } from '@/components/BatSpeedDisplay';
 interface SwingAnalysisResultsProps {
   videoBlob: Blob;
   onRetake?: () => void;
-  onComplete?: (results: PoseAnalysisResult) => void;
+  onComplete?: (results: PoseAnalysisResult, batSpeedData?: { peak: number; avg: number } | null) => void;
 }
 
 export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingAnalysisResultsProps) {
@@ -292,7 +292,10 @@ export function SwingAnalysisResults({ videoBlob, onRetake, onComplete }: SwingA
       <div className="flex flex-col gap-3">
         {onComplete && (
           <Button 
-            onClick={() => onComplete(results)} 
+            onClick={() => onComplete(
+              results, 
+              batSpeed ? { peak: batSpeed.peakSpeedMph, avg: batSpeed.avgSpeedMph } : null
+            )} 
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-semibold py-6 text-lg"
           >
             Save & View Full Results

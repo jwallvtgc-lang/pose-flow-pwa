@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trophy, Medal, Award, TrendingUp, Target, Activity, ArrowLeft } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, Target, Activity, ArrowLeft, Zap } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,17 +15,19 @@ interface LeaderboardEntry {
   total_swings: number;
   average_score: number;
   max_score: number;
+  average_bat_speed: number;
   rank: number;
 }
 
-type LeaderboardType = 'total_swings' | 'average_score' | 'max_score';
+type LeaderboardType = 'total_swings' | 'average_score' | 'max_score' | 'bat_speed';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
   const [leaderboards, setLeaderboards] = useState<Record<LeaderboardType, LeaderboardEntry[]>>({
     total_swings: [],
     average_score: [],
-    max_score: []
+    max_score: [],
+    bat_speed: []
   });
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<LeaderboardType>('total_swings');
@@ -48,6 +50,8 @@ export default function Leaderboard() {
         .select(`
           id,
           score_phase1,
+          bat_speed_peak,
+          bat_speed_avg,
           created_at,
           session_id
         `)
@@ -80,6 +84,7 @@ export default function Leaderboard() {
         current_team?: string;
         primary_position?: string;
         scores: number[];
+        batSpeeds: number[];
       }>();
       
       if (!user) {
@@ -93,13 +98,17 @@ export default function Leaderboard() {
         // For now, attribute all swings to the current authenticated user
         // since we can't properly link swings to users through athletes table
         const validScores = swingData.map(swing => swing.score_phase1).filter((score): score is number => score !== null);
+        const validBatSpeeds = swingData
+          .map(swing => swing.bat_speed_peak)
+          .filter((speed): speed is number => speed !== null && speed > 0);
         
         userStats.set(user.id, {
           user_id: user.id,
           full_name: currentUserProfile.full_name || 'Unknown Player',
           current_team: currentUserProfile?.current_team || undefined,
           primary_position: currentUserProfile?.primary_position || undefined,
-          scores: validScores
+          scores: validScores,
+          batSpeeds: validBatSpeeds
         });
       }
 
@@ -113,6 +122,8 @@ export default function Leaderboard() {
         average_score: user.scores.length > 0 ? 
           Math.round((user.scores.reduce((sum, score) => sum + score, 0) / user.scores.length) * 10) / 10 : 0,
         max_score: user.scores.length > 0 ? Math.max(...user.scores) : 0,
+        average_bat_speed: user.batSpeeds.length > 0 ?
+          Math.round((user.batSpeeds.reduce((sum, speed) => sum + speed, 0) / user.batSpeeds.length) * 10) / 10 : 0,
         rank: 0 // Will be set below
       })).filter(entry => entry.total_swings > 0);
 
@@ -133,10 +144,17 @@ export default function Leaderboard() {
         .slice(0, 10)
         .map((entry, index) => ({ ...entry, rank: index + 1 }));
 
+      const batSpeedLeaderboard = [...entries]
+        .filter(entry => entry.average_bat_speed > 0 && entry.total_swings >= 3)
+        .sort((a, b) => b.average_bat_speed - a.average_bat_speed)
+        .slice(0, 10)
+        .map((entry, index) => ({ ...entry, rank: index + 1 }));
+
       setLeaderboards({
         total_swings: totalSwingsLeaderboard,
         average_score: averageScoreLeaderboard,
-        max_score: maxScoreLeaderboard
+        max_score: maxScoreLeaderboard,
+        bat_speed: batSpeedLeaderboard
       });
 
     } catch (error) {
@@ -181,6 +199,13 @@ export default function Leaderboard() {
           subtitle: 'Best single swing score',
           icon: TrendingUp,
           getValue: (entry: LeaderboardEntry) => `${entry.max_score} max`
+        };
+      case 'bat_speed':
+        return {
+          title: 'Fastest Bat Speed',
+          subtitle: 'Average bat speed (min. 3 swings)',
+          icon: Zap,
+          getValue: (entry: LeaderboardEntry) => `${entry.average_bat_speed} MPH`
         };
     }
   };
@@ -277,21 +302,26 @@ export default function Leaderboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as LeaderboardType)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white rounded-3xl p-1 shadow-lg h-12">
-            <TabsTrigger value="total_swings" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm h-10 px-3">
-              <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Most Active</span>
-              <span className="sm:hidden">Active</span>
+          <TabsList className="grid w-full grid-cols-4 bg-white rounded-3xl p-1 shadow-lg h-12">
+            <TabsTrigger value="total_swings" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm h-10 px-2">
+              <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+              <span className="hidden sm:inline">Active</span>
+              <span className="sm:hidden">Act</span>
             </TabsTrigger>
-            <TabsTrigger value="average_score" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm h-10 px-3">
-              <Target className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Best Average</span>
-              <span className="sm:hidden">Average</span>
+            <TabsTrigger value="average_score" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm h-10 px-2">
+              <Target className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+              <span className="hidden sm:inline">Average</span>
+              <span className="sm:hidden">Avg</span>
             </TabsTrigger>
-            <TabsTrigger value="max_score" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm h-10 px-3">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Highest Score</span>
-              <span className="sm:hidden">Best</span>
+            <TabsTrigger value="max_score" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm h-10 px-2">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+              <span className="hidden sm:inline">Best</span>
+              <span className="sm:hidden">Max</span>
+            </TabsTrigger>
+            <TabsTrigger value="bat_speed" className="rounded-2xl data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs sm:text-sm h-10 px-2">
+              <Zap className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+              <span className="hidden sm:inline">Speed</span>
+              <span className="sm:hidden">MPH</span>
             </TabsTrigger>
           </TabsList>
 
@@ -331,6 +361,20 @@ export default function Leaderboard() {
                   <TrendingUp className="w-12 h-12 mx-auto" />
                 </div>
                 <p className="text-gray-500 font-medium">No data available for the last 30 days</p>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="bat_speed" className="space-y-6">
+            {leaderboards.bat_speed.length > 0 ? (
+              renderLeaderboard(leaderboards.bat_speed, 'bat_speed')
+            ) : (
+              <Card className="p-8 text-center rounded-3xl bg-white">
+                <div className="text-gray-400 mb-2">
+                  <Zap className="w-12 h-12 mx-auto" />
+                </div>
+                <p className="text-gray-500 font-medium">No bat speed data available</p>
+                <p className="text-sm text-gray-400 mt-1">Minimum 3 swings with bat speed data required</p>
               </Card>
             )}
           </TabsContent>

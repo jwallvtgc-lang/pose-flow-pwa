@@ -230,6 +230,8 @@ export type Database = {
       }
       swings: {
         Row: {
+          bat_speed_avg: number | null
+          bat_speed_peak: number | null
           client_request_id: string | null
           created_at: string | null
           cues: Json | null
@@ -242,6 +244,8 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          bat_speed_avg?: number | null
+          bat_speed_peak?: number | null
           client_request_id?: string | null
           created_at?: string | null
           cues?: Json | null
@@ -254,6 +258,8 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          bat_speed_avg?: number | null
+          bat_speed_peak?: number | null
           client_request_id?: string | null
           created_at?: string | null
           cues?: Json | null

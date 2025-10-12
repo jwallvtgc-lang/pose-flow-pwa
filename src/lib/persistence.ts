@@ -105,7 +105,9 @@ export async function saveSwing({
   cards,
   videoUrl,
   client_request_id,
-  keypointsData
+  keypointsData,
+  batSpeedPeak,
+  batSpeedAvg
 }: {
   session_id: string;
   score: number;
@@ -113,6 +115,8 @@ export async function saveSwing({
   videoUrl?: string | null;
   client_request_id: string;
   keypointsData?: any;
+  batSpeedPeak?: number | null;
+  batSpeedAvg?: number | null;
 }): Promise<string> {
   try {
     console.log('=== SAVE SWING DEBUG ===');
@@ -149,7 +153,9 @@ export async function saveSwing({
         drill_data: drillData,
         video_url: videoUrl,
         client_request_id,
-        pose_data: keypointsData
+        pose_data: keypointsData,
+        bat_speed_peak: batSpeedPeak,
+        bat_speed_avg: batSpeedAvg
       })
       .select()
       .single();
