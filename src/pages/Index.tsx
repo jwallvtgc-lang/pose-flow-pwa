@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera, BarChart3, TrendingUp, Activity, Star, Play, Award, Settings, Zap, Target, Trophy } from 'lucide-react';
+import { Camera, BarChart3, TrendingUp, Activity, Star, Play, Award, Settings, Zap, Trophy } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +12,6 @@ const Index = () => {
   const location = useLocation();
   const [stats, setStats] = useState({
     bestScore: 0,
-    todayCount: 0,
     trendingScore: 0,
     improvement: 0,
     isLoading: true
@@ -50,7 +49,6 @@ const Index = () => {
       // Show placeholder data for non-authenticated users
       setStats({
         bestScore: 68,
-        todayCount: 12,
         trendingScore: 64.7,
         improvement: 8,
         isLoading: false
@@ -86,17 +84,12 @@ const Index = () => {
 
       console.log('Loaded swings:', swings?.length || 0);
 
-      const today = new Date().toDateString();
       const validSwings = (swings || []).filter(swing => swing.score_phase1 && swing.score_phase1 > 0);
       
       // Calculate stats
       const bestScore = validSwings.length > 0 
         ? Math.max(...validSwings.map(swing => swing.score_phase1 || 0))
         : 0;
-      
-      const todayCount = (swings || []).filter(swing => 
-        swing.created_at && new Date(swing.created_at).toDateString() === today
-      ).length;
       
       // Calculate trending score (average of last 7 swings)
       const recent7Swings = validSwings.slice(0, 7);
@@ -115,7 +108,6 @@ const Index = () => {
 
       setStats({
         bestScore,
-        todayCount,
         trendingScore,
         improvement: Math.round(improvement),
         isLoading: false
@@ -451,68 +443,52 @@ const Index = () => {
         </Card>
       </div>
 
-      {/* QUICK STATS - overlapping header */}
+      {/* KEY METRICS - 2x2 Grid */}
       <div className="px-6 -mt-6 mb-8">
-        <div className="grid grid-cols-3 gap-3">
-          {/* Streak */}
-          <Card className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mb-3">
-              <Zap className="w-5 h-5 text-white" />
+        <div className="grid grid-cols-2 gap-4">
+          {/* Day Streak */}
+          <Card className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center mb-3">
+              <Zap className="w-6 h-6 text-white" />
             </div>
-            <p className="text-2xl font-black text-gray-900 mb-1">
+            <p className="text-3xl font-black text-gray-900 mb-1">
               {stats.isLoading ? '...' : (userProfile?.current_streak || 0)}
             </p>
-            <p className="text-xs font-semibold text-gray-600">Day Streak</p>
-          </Card>
-
-          {/* This Week */}
-          <Card className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center mb-3">
-              <Target className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-2xl font-black text-gray-900 mb-1">
-              {stats.isLoading ? '...' : stats.todayCount}
-            </p>
-            <p className="text-xs font-semibold text-gray-600">This Week</p>
+            <p className="text-sm font-semibold text-gray-600">Day Streak</p>
           </Card>
 
           {/* Improvement */}
-          <Card className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center mb-3">
-              <TrendingUp className="w-5 h-5 text-white" />
+          <Card className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl flex items-center justify-center mb-3">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
-            <p className={`text-2xl font-black mb-1 ${stats.improvement > 0 ? 'text-green-600' : stats.improvement < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+            <p className={`text-3xl font-black mb-1 ${stats.improvement > 0 ? 'text-green-600' : stats.improvement < 0 ? 'text-red-600' : 'text-gray-900'}`}>
               {stats.isLoading ? '...' : stats.improvement !== 0 ? `${stats.improvement > 0 ? '+' : ''}${stats.improvement}%` : '-'}
             </p>
-            <p className="text-xs font-semibold text-gray-600">Improvement</p>
+            <p className="text-sm font-semibold text-gray-600">Improvement</p>
           </Card>
-        </div>
-      </div>
 
-      {/* Monthly Stats */}
-      <div className="px-6 mb-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-3">This Month</h3>
-        <div className="grid grid-cols-2 gap-3">
           {/* Best Score This Month */}
-          <Card className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl flex items-center justify-center mb-3">
-              <Award className="w-5 h-5 text-white" />
+          <Card className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center mb-3">
+              <Trophy className="w-6 h-6 text-white" />
             </div>
-            <p className="text-2xl font-black text-gray-900 mb-1">
+            <p className="text-3xl font-black text-gray-900 mb-1">
               {monthlyStats.isLoading ? '...' : monthlyStats.bestScoreThisMonth}
             </p>
-            <p className="text-xs font-semibold text-gray-600">Best Score</p>
+            <p className="text-sm font-semibold text-gray-600">Monthly Best</p>
           </Card>
 
           {/* Top Bat Speed This Month */}
-          <Card className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-500 rounded-xl flex items-center justify-center mb-3">
-              <Zap className="w-5 h-5 text-white" />
+          <Card className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-red-500 rounded-xl flex items-center justify-center mb-3">
+              <Zap className="w-6 h-6 text-white" />
             </div>
-            <p className="text-2xl font-black text-gray-900 mb-1">
+            <p className="text-3xl font-black text-gray-900 mb-1">
               {monthlyStats.isLoading ? '...' : monthlyStats.topBatSpeedThisMonth}
+              <span className="text-base font-semibold text-gray-500 ml-1">mph</span>
             </p>
-            <p className="text-xs font-semibold text-gray-600">Top Bat Speed</p>
+            <p className="text-sm font-semibold text-gray-600">Top Speed</p>
           </Card>
         </div>
       </div>
