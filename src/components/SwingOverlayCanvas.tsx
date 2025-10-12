@@ -49,21 +49,25 @@ export function SwingOverlayCanvas({
       if (videoElement.videoWidth > 0 && videoElement.videoHeight > 0) {
         canvas.width = videoElement.videoWidth;
         canvas.height = videoElement.videoHeight;
-        console.log('Canvas sized:', canvas.width, canvas.height);
+        console.log('🎨 Canvas sized:', canvas.width, 'x', canvas.height);
       }
     };
 
+    console.log('🔧 SwingOverlayCanvas mounted with', keypointsByFrame.length, 'frames');
     setupCanvas();
     videoElement.addEventListener('loadedmetadata', setupCanvas);
 
     return () => {
       videoElement.removeEventListener('loadedmetadata', setupCanvas);
     };
-  }, [videoElement, canvasRef]);
+  }, [videoElement, canvasRef, keypointsByFrame]);
 
   // Get current frame based on video time
   const getCurrentFrame = (): FrameData | null => {
-    if (!videoElement || keypointsByFrame.length === 0) return null;
+    if (!videoElement || keypointsByFrame.length === 0) {
+      console.log('❌ No video or keypoints:', { hasVideo: !!videoElement, frameCount: keypointsByFrame.length });
+      return null;
+    }
     
     const currentTimeMs = (currentTime ?? videoElement.currentTime) * 1000;
     
@@ -79,6 +83,7 @@ export function SwingOverlayCanvas({
       }
     }
     
+    console.log('🎯 Current frame at', currentTimeMs.toFixed(0), 'ms, frame t:', closestFrame.t, 'keypoints:', closestFrame.keypoints.length);
     return closestFrame;
   };
 
@@ -153,6 +158,10 @@ export function SwingOverlayCanvas({
       }
     });
     
+    // Log sample keypoint for debugging
+    const sampleKp = result['nose'];
+    console.log('👤 Converted keypoints sample (nose):', sampleKp, 'total points:', Object.keys(result).length);
+    
     return result;
   };
 
@@ -177,17 +186,24 @@ export function SwingOverlayCanvas({
         const currentFrame = getCurrentFrame();
         if (currentFrame) {
           const detectedKeypoints = convertDetectedKeypoints(currentFrame);
+          console.log('🔵 Drawing blue pose, keypoints:', Object.keys(detectedKeypoints).length);
           // Draw with higher opacity and thicker lines to be more visible
           drawSkeleton(ctx, detectedKeypoints, '#3b82f6', 0.9, 4);
           
           // Calculate similarity
           const idealKeypoints = IDEAL_SWING_KEYPOINTS[selectedPhase];
           const sim = calculatePoseSimilarity(detectedKeypoints, idealKeypoints);
+          console.log('📊 Similarity calculated:', sim, '%');
           setSimilarity(sim);
           
           const detailed = getDetailedSimilarity(detectedKeypoints, idealKeypoints);
+          console.log('🎯 Detailed scores:', detailed);
           setDetailedScores(detailed);
+        } else {
+          console.log('❌ No current frame found for drawing');
         }
+      } else {
+        console.log('👁️ Detected pose display is OFF');
       }
     };
 

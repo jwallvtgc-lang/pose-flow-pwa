@@ -302,7 +302,11 @@ export default function SwingDetail() {
               swingData.cues ? [String(swingData.cues)] : null
       } as SwingData & { drill_data?: any };
       setSwing(processedSwing);
-      console.log('Processed swing:', processedSwing);
+      console.log('✅ Processed swing with pose_data:', {
+        hasPoseData: !!processedSwing.pose_data,
+        keypointsCount: processedSwing.pose_data?.keypointsByFrame?.length || 0,
+        sampleFrame: processedSwing.pose_data?.keypointsByFrame?.[0]
+      });
 
       // Fetch swing metrics
       console.log('Fetching metrics for swing ID:', swingId);
@@ -653,14 +657,23 @@ export default function SwingDetail() {
                       className="w-full h-auto"
                       preload="metadata"
                       playsInline
-                      onLoadStart={() => console.log('Detail video load started')}
-                      onLoadedMetadata={(e) => console.log('Detail video metadata loaded:', e.currentTarget.duration)}
-                      onCanPlay={() => console.log('Detail video can play')}
+                      onLoadedMetadata={(e) => {
+                        console.log('📹 Video metadata loaded:', {
+                          duration: e.currentTarget.duration,
+                          videoWidth: e.currentTarget.videoWidth,
+                          videoHeight: e.currentTarget.videoHeight
+                        });
+                        // Setup canvas after video metadata loads
+                        if (canvasRef.current) {
+                          canvasRef.current.width = e.currentTarget.videoWidth;
+                          canvasRef.current.height = e.currentTarget.videoHeight;
+                          console.log('📐 Canvas dimensions set:', canvasRef.current.width, 'x', canvasRef.current.height);
+                        }
+                      }}
                       onError={(e) => {
                         console.error('Detail video error:', e.currentTarget.error);
                         setVideoError('Failed to play video. Please try again.');
                       }}
-                      onLoadedData={() => console.log('Detail video data loaded')}
                     >
                       Your browser does not support video playback.
                     </video>
@@ -671,12 +684,22 @@ export default function SwingDetail() {
                     />
                   </div>
                   
-                  {videoRef.current && swing.pose_data?.keypointsByFrame && (
-                    <SwingOverlayCanvas
-                      videoElement={videoRef.current}
-                      keypointsByFrame={swing.pose_data.keypointsByFrame}
-                      canvasRef={canvasRef}
-                    />
+                  {swing?.pose_data?.keypointsByFrame ? (
+                    videoRef.current ? (
+                      <SwingOverlayCanvas
+                        videoElement={videoRef.current}
+                        keypointsByFrame={swing.pose_data.keypointsByFrame}
+                        canvasRef={canvasRef}
+                      />
+                    ) : (
+                      <div className="text-sm text-yellow-600 p-2 bg-yellow-50 rounded">
+                        Waiting for video to load...
+                      </div>
+                    )
+                  ) : (
+                    <div className="text-sm text-gray-600 p-2 bg-gray-50 rounded">
+                      Pose overlay not available for this swing. Record a new swing to see pose analysis.
+                    </div>
                   )}
                 </div>
               )}
