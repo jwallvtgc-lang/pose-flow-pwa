@@ -182,9 +182,11 @@ export function computePhase1Metrics(
     pixelsPerCm = estimatePixelsPerCm(keypointsByFrame[launchIdx]);
   }
   
-  // 1. Hip-shoulder separation angle at launch
-  if (launchIdx && launchIdx < keypointsByFrame.length) {
-    const frame = keypointsByFrame[launchIdx];
+  // 1. Hip-shoulder separation angle at contact (not launch)
+  // This is when maximum separation occurs in the kinematic sequence
+  // Pros achieve 45-60° as hips fully rotate while shoulders lag behind
+  if (contactIdx && contactIdx < keypointsByFrame.length) {
+    const frame = keypointsByFrame[contactIdx];
     const leftShoulder = getKeypoint(frame.keypoints, 'left_shoulder');
     const rightShoulder = getKeypoint(frame.keypoints, 'right_shoulder');
     const leftHip = getKeypoint(frame.keypoints, 'left_hip');
@@ -200,7 +202,12 @@ export function computePhase1Metrics(
         y: rightHip.y - leftHip.y
       };
       
-      metrics.hip_shoulder_sep_deg = angleBetweenVectors(shoulderVector, hipVector);
+      const separation = angleBetweenVectors(shoulderVector, hipVector);
+      
+      // Log for debugging
+      console.log('📐 Hip-shoulder separation calculated:', separation.toFixed(1), '° (target: 40-60°)');
+      
+      metrics.hip_shoulder_sep_deg = separation;
     } else {
       metrics.hip_shoulder_sep_deg = null;
     }
