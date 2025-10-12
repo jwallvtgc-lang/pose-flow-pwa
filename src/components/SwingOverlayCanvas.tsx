@@ -315,9 +315,39 @@ export function SwingOverlayCanvas({
 
   const phases: SwingPhase[] = ['setup', 'load', 'stride', 'contact', 'extension', 'finish'];
 
-  // If hideControls is true, don't render the control card
+  // If hideControls is true, only show body analysis metrics
   if (hideControls) {
-    return null;
+    return (
+      <div ref={containerRef}>
+        {showDetectedPose && showIdealPose && Object.keys(detailedScores).length > 0 && (
+          <Card className="p-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Form Comparison</h3>
+                <Badge variant={similarity >= 80 ? "default" : similarity >= 60 ? "secondary" : "destructive"}>
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  {similarity}% Match
+                </Badge>
+              </div>
+              
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="text-sm font-medium">Body Part Analysis</Label>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {Object.entries(detailedScores).map(([part, score]) => (
+                    <div key={part} className="flex justify-between items-center p-2 bg-muted rounded">
+                      <span className="capitalize">{part.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      <Badge variant={score >= 70 ? "default" : "secondary"} className="text-xs">
+                        {score}%
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+    );
   }
 
   return (
