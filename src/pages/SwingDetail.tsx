@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Pause, Loader2, Target, TrendingUp, AlertCircle, Zap, Share2, Mail, ChevronDown, ChevronUp, Bot, Activity, Trophy, CheckCircle2, XCircle, Camera, Download, User, TrendingDown, Info } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Loader2, Target, TrendingUp, AlertCircle, Zap, Share2, Mail, ChevronDown, ChevronUp, Bot, Activity, Trophy, CheckCircle2, XCircle, Camera, Download, TrendingDown, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -17,7 +17,6 @@ import { Switch } from '@/components/ui/switch';
 import { getVideoSignedUrl } from '@/lib/storage';
 import { toast } from 'sonner';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
-import { getDetailedSimilarity } from '@/lib/swingSimilarity';
 import { cn } from '@/lib/utils';
 
 interface SwingData {
@@ -79,7 +78,6 @@ export default function SwingDetail() {
   // UI state
   const [expandedFocusArea, setExpandedFocusArea] = useState<number | null>(null);
   const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
-  const [expandedBodyPart, setExpandedBodyPart] = useState<string | null>(null);
   
   // Share functionality state
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -396,21 +394,6 @@ export default function SwingDetail() {
     return `${min}–${max}${suffix}`;
   };
 
-  const getBodyPartSimilarity = () => {
-    if (!swing?.pose_data?.keypointsByFrame || swing.pose_data.keypointsByFrame.length === 0) {
-      return null;
-    }
-    
-    // Use middle frame for body part analysis
-    const middleFrame = Math.floor(swing.pose_data.keypointsByFrame.length / 2);
-    const detectedPose = swing.pose_data.keypointsByFrame[middleFrame];
-    
-    // Placeholder ideal pose - in real implementation, this would come from idealSwingData
-    const idealPose = detectedPose; // For now, compare to itself
-    
-    return getDetailedSimilarity(detectedPose, idealPose);
-  };
-
   const scrollToMetric = (metricKey: string) => {
     setExpandedMetric(metricKey);
     const element = document.getElementById(`metric-${metricKey}`);
@@ -463,7 +446,6 @@ export default function SwingDetail() {
   };
 
   const quickStats = calculateQuickStats();
-  const bodyPartSimilarity = getBodyPartSimilarity();
 
   if (isLoading) {
     return (
@@ -1112,136 +1094,6 @@ export default function SwingDetail() {
             </div>
           )}
         </Card>
-
-        {/* BODY PART ANALYSIS */}
-        {bodyPartSimilarity && (
-          <Card className="p-6 rounded-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="text-lg font-bold">Body Position Analysis</h3>
-            </div>
-            
-            <div className="space-y-2">
-              {Object.entries(bodyPartSimilarity).map(([part, score]) => {
-                const percentage = typeof score === 'number' ? score : 0;
-                const color = percentage >= 70 ? 'text-green-600 bg-green-50 border-green-200' : 
-                             percentage >= 50 ? 'text-orange-600 bg-orange-50 border-orange-200' : 
-                             'text-red-600 bg-red-50 border-red-200';
-                const partLabel = part.replace(/([A-Z])/g, ' $1').trim();
-                const isExpanded = expandedBodyPart === part;
-                
-                return (
-                  <Card
-                    key={part}
-                    className={cn(
-                      "p-4 rounded-2xl border cursor-pointer transition-all",
-                      color,
-                      isExpanded ? "ring-2 ring-primary" : "hover:shadow-md"
-                    )}
-                    onClick={() => setExpandedBodyPart(isExpanded ? null : part)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {percentage >= 70 ? (
-                          <CheckCircle2 className="w-5 h-5" />
-                        ) : (
-                          <XCircle className="w-5 h-5" />
-                        )}
-                        <div>
-                          <span className="font-bold text-sm capitalize">{partLabel}</span>
-                          <div className="text-xs opacity-75 mt-0.5">
-                            {percentage >= 70 ? 'Great position' : percentage >= 50 ? 'Needs improvement' : 'Focus here'}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl font-bold">{percentage}%</span>
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
-                      </div>
-                    </div>
-                    
-                    {isExpanded && (
-                      <div className="mt-3 pt-3 border-t border-current/20">
-                        <p className="text-xs leading-relaxed">
-                          {percentage >= 70 
-                            ? `Your ${partLabel.toLowerCase()} positioning matches the ideal form closely. Continue with this technique.`
-                            : percentage >= 50
-                            ? `Your ${partLabel.toLowerCase()} is close but could be improved for better results. Review the recommended drills.`
-                            : `Your ${partLabel.toLowerCase()} needs significant attention. Focus on the practice drills to improve this area.`
-                          }
-                        </p>
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
-          </Card>
-        )}
-
-        {/* COMPARISON INSIGHTS */}
-        {bodyPartSimilarity && (
-          <Card className="p-6 rounded-2xl">
-            <h3 className="text-lg font-bold mb-4">Form vs. Ideal</h3>
-            
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-3">
-                <div className="text-4xl font-bold text-white">57%</div>
-              </div>
-              <p className="text-sm text-muted-foreground">Overall Match</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  What you're doing right:
-                </h4>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Good leg positioning and balance</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Solid torso rotation</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Proper head stability</span>
-                  </li>
-                </ul>
-              </div>
-              
-              <div>
-                <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
-                  <XCircle className="w-4 h-4 text-red-600" />
-                  Areas to improve:
-                </h4>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2 text-sm">
-                    <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <span>Arm extension during contact - keep arms extended longer</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <span>Hip-shoulder separation - rotate hips earlier</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm">
-                    <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <span>Weight transfer - shift weight more aggressively</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </Card>
-        )}
 
         {/* ACTION BUTTONS */}
         <div className="space-y-3 pb-8">
