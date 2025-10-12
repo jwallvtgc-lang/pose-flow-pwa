@@ -54,7 +54,7 @@ export default function RecentSwings() {
       if (dateFilter) {
         query = query.gte('created_at', dateFilter);
       } else {
-        query = query.limit(50); // Limit for 'all' to avoid performance issues
+        query = query.limit(500); // Increased limit for 'all' view
       }
 
       const { data: swingsData, error: swingsError } = await query;
