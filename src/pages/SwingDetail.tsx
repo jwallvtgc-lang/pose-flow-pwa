@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Loader2, Target, TrendingUp, AlertCircle, Zap, Award, Share2, Mail } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Loader2, Target, TrendingUp, AlertCircle, Zap, Share2, Mail, ChevronDown, ChevronUp, Bot, Activity, Trophy, CheckCircle2, XCircle, Camera, Download, User, TrendingDown, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -12,10 +12,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { getVideoSignedUrl } from '@/lib/storage';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
+import { getDetailedSimilarity } from '@/lib/swingSimilarity';
+import { cn } from '@/lib/utils';
 
 interface SwingData {
   id: string;
@@ -35,7 +38,7 @@ interface SwingMetric {
 }
 
 interface DrillInfo {
-  id: string | null; // Allow null for embedded drills
+  id: string | null;
   name: string | null;
   how_to: string | null;
   equipment: string | null;
@@ -51,17 +54,6 @@ interface AICoaching {
 export default function SwingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, session, loading } = useAuth();
-  
-  console.log('SwingDetail render - auth state:', {
-    hasUser: !!user,
-    userEmail: user?.email,
-    userId: user?.id,
-    hasSession: !!session,
-    sessionValid: !!(session?.access_token),
-    authLoading: loading,
-    swingId: id
-  });
   
   const [swing, setSwing] = useState<SwingData | null>(null);
   const [metrics, setMetrics] = useState<SwingMetric[]>([]);
@@ -73,8 +65,21 @@ export default function SwingDetail() {
   const [videoError, setVideoError] = useState<string>('');
   const [aiCoaching, setAiCoaching] = useState<AICoaching | null>(null);
   const [isLoadingCoaching, setIsLoadingCoaching] = useState(false);
+  const [animatedScore, setAnimatedScore] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Video player state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showIdealForm, setShowIdealForm] = useState(true);
+  const [showMyForm, setShowMyForm] = useState(true);
+  const [idealOpacity, setIdealOpacity] = useState(0.5);
+  const [selectedPhase, setSelectedPhase] = useState('all');
+  
+  // UI state
+  const [expandedFocusArea, setExpandedFocusArea] = useState<number | null>(null);
+  const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
+  const [expandedBodyPart, setExpandedBodyPart] = useState<string | null>(null);
   
   // Share functionality state
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -82,6 +87,29 @@ export default function SwingDetail() {
   const [shareName, setShareName] = useState('');
   const [shareMessage, setShareMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+
+  // Animated score counter
+  useEffect(() => {
+    if (swing?.score_phase1) {
+      const targetScore = swing.score_phase1;
+      const duration = 1500;
+      const steps = 60;
+      const increment = targetScore / steps;
+      let current = 0;
+      
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= targetScore) {
+          setAnimatedScore(targetScore);
+          clearInterval(timer);
+        } else {
+          setAnimatedScore(Math.floor(current));
+        }
+      }, duration / steps);
+      
+      return () => clearInterval(timer);
+    }
+  }, [swing?.score_phase1]);
 
   useEffect(() => {
     if (id) {
@@ -94,9 +122,7 @@ export default function SwingDetail() {
     try {
       setIsVideoLoading(true);
       setVideoError('');
-      console.log('Loading video URL for path:', videoPath);
       const signedUrl = await getVideoSignedUrl(videoPath);
-      console.log('Got video URL:', signedUrl);
       setVideoUrl(signedUrl);
     } catch (err) {
       console.error('Failed to load video URL:', err);
@@ -113,7 +139,6 @@ export default function SwingDetail() {
       return;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(shareEmail.trim())) {
       toast.error('Please enter a valid email address');
@@ -124,7 +149,6 @@ export default function SwingDetail() {
 
     setIsSending(true);
     try {
-      // Prepare swing data for sharing
       const swingData = {
         id: swing.id,
         score: swing.score_phase1 || 0,
@@ -144,7 +168,6 @@ export default function SwingDetail() {
         } : undefined
       };
 
-      // Call the edge function
       const { error } = await supabase.functions.invoke('send-swing-email', {
         body: {
           toEmail: shareEmail.trim(),
@@ -171,35 +194,24 @@ export default function SwingDetail() {
   };
 
   const generateAICoaching = async (metricsData: SwingMetric[]) => {
-    if (metricsData.length === 0) {
-      console.log('No metrics data available for AI coaching');
-      return;
-    }
+    if (metricsData.length === 0) return;
     
     try {
       setIsLoadingCoaching(true);
-      console.log('Generating AI coaching for metrics:', metricsData);
       
-      // Transform metrics for AI coaching
       const aiMetrics = metricsData.map(metric => {
         const metricName = metric.metric || '';
         const spec = metricSpecs[metricName as keyof typeof metricSpecs];
         const value = metric.value || 0;
         
-        if (!spec) {
-          console.log('No spec found for metric:', metricName);
-          return null;
-        }
+        if (!spec) return null;
         
-        // Calculate percentile rank based on target range
         const [min, max] = spec.target;
-        let percentileRank = 50; // Default to average
+        let percentileRank = 50;
         
         if ('invert' in spec && spec.invert) {
-          // Lower is better (like head drift)
           percentileRank = value <= min ? 90 : (value >= max ? 10 : 90 - ((value - min) / (max - min)) * 80);
         } else {
-          // Higher is better (like hip-shoulder separation)
           percentileRank = value >= max ? 90 : (value <= min ? 10 : 10 + ((value - min) / (max - min)) * 80);
         }
         
@@ -212,35 +224,21 @@ export default function SwingDetail() {
         };
       }).filter(Boolean);
 
-      console.log('Processed AI metrics:', aiMetrics);
-
-      console.log('Calling generate-swing-coaching with:', { metrics: aiMetrics, playerLevel: 'high_school', previousScore: swing?.score_phase1 });
-      
       const response = await supabase.functions.invoke('generate-swing-coaching', {
         body: {
           metrics: aiMetrics,
-          playerLevel: 'high_school', // 12-18 year olds
+          playerLevel: 'high_school',
           previousScore: swing?.score_phase1
         }
       });
       
-      console.log('Generate-swing-coaching response:', response);
-      
       const { data, error } = response;
 
-      if (error) {
-        console.error('AI coaching API error:', error);
-        if (error.message?.includes('401') || error.status === 401) {
-          console.error('401 Unauthorized error detected in AI coaching call');
-        }
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('AI coaching response:', data);
       setAiCoaching(data);
     } catch (err) {
       console.error('Failed to generate AI coaching:', err);
-      // Set fallback coaching
       setAiCoaching({
         cues: ["Stay balanced through contact", "Keep your eye on the ball"],
         explanations: [
@@ -259,29 +257,15 @@ export default function SwingDetail() {
     try {
       setIsLoading(true);
       setError('');
-      console.log('Loading swing detail for ID:', swingId);
-      
-      // Get current session properly
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      console.log('Current auth state:', { 
-        hasSession: !!currentSession, 
-        userEmail: currentSession?.user?.email,
-        contextUser: !!user 
-      });
 
-      // Fetch swing data including pose_data
       const { data: swingData, error: swingError } = await supabase
         .from('swings')
         .select('id, created_at, score_phase1, cues, drill_id, drill_data, video_url, pose_data')
         .eq('id', swingId)
-        .maybeSingle(); // Use maybeSingle() instead of single() to handle missing data gracefully
-
-      console.log('Swing query result:', swingData, swingError);
+        .maybeSingle();
 
       if (swingError) {
-        console.error('Error loading swing:', swingError);
         if (swingError.message?.includes('401') || swingError.code === '401') {
-          console.log('401 error detected, redirecting to auth...');
           navigate('/auth');
           return;
         } else {
@@ -291,7 +275,6 @@ export default function SwingDetail() {
       }
       
       if (!swingData) {
-        console.error('No swing found with ID:', swingId);
         throw new Error('Swing not found');
       }
       
@@ -302,25 +285,20 @@ export default function SwingDetail() {
               swingData.cues ? [String(swingData.cues)] : null
       } as SwingData & { drill_data?: any };
       setSwing(processedSwing);
-      console.log('✅ Processed swing with pose_data:', {
-        hasPoseData: !!processedSwing.pose_data,
-        keypointsCount: processedSwing.pose_data?.keypointsByFrame?.length || 0,
-        sampleFrame: processedSwing.pose_data?.keypointsByFrame?.[0]
-      });
 
-      // Fetch swing metrics
-      console.log('Fetching metrics for swing ID:', swingId);
+      // Load video automatically
+      if (processedSwing.video_url) {
+        loadVideoUrl(processedSwing.video_url);
+      }
+
       const { data: metricsData, error: metricsError } = await supabase
         .from('swing_metrics')
         .select('swing_id, metric, value, unit')
         .eq('swing_id', swingId)
         .eq('phase', 1);
 
-      console.log('Metrics query result:', metricsData, metricsError);
       if (metricsError) {
-        console.error('Error loading metrics:', metricsError);
         if (metricsError.message?.includes('401') || metricsError.code === '401') {
-          console.log('401 error detected on metrics, redirecting to auth...');
           navigate('/auth');
           return;
         } else {
@@ -335,14 +313,10 @@ export default function SwingDetail() {
         unit: metric.unit || ''
       })) as SwingMetric[];
       setMetrics(processedMetrics);
-      console.log('Processed metrics:', processedMetrics);
 
-      // Generate AI coaching
       await generateAICoaching(processedMetrics);
 
-      // Handle drill information - check both drill_id and embedded drill_data
       if (processedSwing.drill_id) {
-        // Fetch drill from drills table
         const { data: drillData, error: drillError } = await supabase
           .from('drills')
           .select('id, name, how_to, equipment')
@@ -350,35 +324,26 @@ export default function SwingDetail() {
           .single();
 
         if (!drillError && drillData) {
-          const processedDrill = {
-            ...drillData,
-            name: drillData.name || ''
-          } as DrillInfo;
-          setDrill(processedDrill);
+          setDrill(drillData as DrillInfo);
         }
       } else if (processedSwing.drill_data) {
-        // Use embedded drill data from fallback coaching
         const drillData = processedSwing.drill_data;
         if (drillData && drillData.name) {
-          const processedDrill = {
-            id: null, // No ID for embedded drills
+          setDrill({
+            id: null,
             name: drillData.name || '',
             how_to: drillData.how_to || '',
             equipment: drillData.equipment || ''
-          } as DrillInfo;
-          setDrill(processedDrill);
+          });
         }
       }
 
     } catch (err) {
       console.error('Failed to load swing detail:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load swing details';
-      console.error('Error details:', errorMessage);
       setError(errorMessage);
-      // Show error in toast as well for immediate user feedback
       toast.error(`Failed to load swing: ${errorMessage}`);
     } finally {
-      console.log('Loading complete, setting isLoading to false');
       setIsLoading(false);
     }
   };
@@ -390,28 +355,35 @@ export default function SwingDetail() {
     return 'Needs Work';
   };
 
-  const getMetricStatus = (metricName: string, value: number): { color: string; status: string; progress: number } => {
+  const getScoreIcon = (score: number | null) => {
+    if (!score) return null;
+    if (score >= 80) return <Trophy className="w-6 h-6" />;
+    if (score >= 60) return <Target className="w-6 h-6" />;
+    return <TrendingUp className="w-6 h-6" />;
+  };
+
+  const getMetricStatus = (metricName: string, value: number): { color: string; status: string; progress: number; borderColor: string; bgColor: string } => {
     const spec = metricSpecs[metricName as keyof typeof metricSpecs];
-    if (!spec) return { color: 'bg-muted', status: 'Unknown', progress: 0 };
+    if (!spec) return { color: 'text-muted-foreground', status: 'Unknown', progress: 0, borderColor: 'border-l-gray-300', bgColor: 'bg-gray-50' };
 
     const [min, max] = spec.target;
     let isInTarget = false;
     let progress = 0;
 
     if ('invert' in spec && spec.invert) {
-      // Lower is better
       isInTarget = value <= max;
       progress = Math.max(0, Math.min(1, (max - value) / (max - min)));
     } else {
-      // Higher is better or within range
       isInTarget = value >= min && value <= max;
       progress = Math.max(0, Math.min(1, (value - min) / (max - min)));
     }
 
     if (isInTarget) {
-      return { color: 'text-green-600', status: 'Great!', progress: progress * 100 };
+      return { color: 'text-green-600', status: 'Great!', progress: progress * 100, borderColor: 'border-l-green-500', bgColor: 'bg-green-50' };
+    } else if (progress > 0.3 && progress < 0.7) {
+      return { color: 'text-orange-600', status: 'Good', progress: progress * 100, borderColor: 'border-l-orange-500', bgColor: 'bg-orange-50' };
     } else {
-      return { color: 'text-red-600', status: 'Needs Work', progress: progress * 100 };
+      return { color: 'text-red-600', status: 'Needs Work', progress: progress * 100, borderColor: 'border-l-red-500', bgColor: 'bg-red-50' };
     }
   };
 
@@ -424,20 +396,87 @@ export default function SwingDetail() {
     return `${min}–${max}${suffix}`;
   };
 
+  const getBodyPartSimilarity = () => {
+    if (!swing?.pose_data?.keypointsByFrame || swing.pose_data.keypointsByFrame.length === 0) {
+      return null;
+    }
+    
+    // Use middle frame for body part analysis
+    const middleFrame = Math.floor(swing.pose_data.keypointsByFrame.length / 2);
+    const detectedPose = swing.pose_data.keypointsByFrame[middleFrame];
+    
+    // Placeholder ideal pose - in real implementation, this would come from idealSwingData
+    const idealPose = detectedPose; // For now, compare to itself
+    
+    return getDetailedSimilarity(detectedPose, idealPose);
+  };
+
+  const scrollToMetric = (metricKey: string) => {
+    setExpandedMetric(metricKey);
+    const element = document.getElementById(`metric-${metricKey}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const handleVideoPlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  // Calculate quick stats
+  const calculateQuickStats = () => {
+    if (metrics.length === 0) return null;
+    
+    let bestMetric = { name: '', value: 0, score: 0 };
+    let worstMetric = { name: '', value: 0, score: 100 };
+    
+    metrics.forEach(metric => {
+      if (!metric.metric || metric.value === null) return;
+      const status = getMetricStatus(metric.metric, metric.value);
+      const normalizedScore = status.progress;
+      
+      if (normalizedScore > bestMetric.score) {
+        bestMetric = {
+          name: metricDisplayNames()[metric.metric] || metric.metric,
+          value: metric.value,
+          score: normalizedScore
+        };
+      }
+      
+      if (normalizedScore < worstMetric.score) {
+        worstMetric = {
+          name: metricDisplayNames()[metric.metric] || metric.metric,
+          value: metric.value,
+          score: normalizedScore
+        };
+      }
+    });
+    
+    return { bestMetric, worstMetric };
+  };
+
+  const quickStats = calculateQuickStats();
+  const bodyPartSimilarity = getBodyPartSimilarity();
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-6 max-w-lg">
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-6 max-w-2xl">
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div className="h-6 bg-muted rounded animate-pulse w-32"></div>
+            <div className="h-10 w-10 bg-muted rounded-2xl animate-pulse"></div>
+            <div className="h-8 bg-muted rounded animate-pulse w-48"></div>
           </div>
           
           <div className="space-y-4">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} className="p-6 rounded-3xl">
+            {[...Array(5)].map((_, i) => (
+              <Card key={i} className="p-6 rounded-2xl">
                 <div className="animate-pulse space-y-3">
                   <div className="h-4 bg-muted rounded w-3/4"></div>
                   <div className="h-20 bg-muted rounded"></div>
@@ -452,17 +491,18 @@ export default function SwingDetail() {
 
   if (error || !swing) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-6 max-w-lg">
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-6 max-w-2xl">
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <ArrowLeft className="w-4 h-4" />
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-2xl">
+              <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-2xl font-anton font-black">Swing Details</h1>
+            <h1 className="text-2xl font-bold">Swing Details</h1>
           </div>
 
-          <Card className="p-6 text-center rounded-3xl">
-            <h3 className="text-lg font-anton font-black mb-2">
+          <Card className="p-6 text-center rounded-2xl">
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
+            <h3 className="text-lg font-bold mb-2">
               {error ? 'Error Loading Swing' : 'Swing Not Found'}
             </h3>
             <p className="text-muted-foreground mb-4">
@@ -480,402 +520,784 @@ export default function SwingDetail() {
   const swingDate = swing.created_at ? new Date(swing.created_at) : new Date();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6 max-w-lg">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="h-10 w-10 p-0 rounded-2xl">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <h1 className="text-2xl font-anton font-black text-gray-900">Swing Analysis</h1>
-        </div>
-
-        <div className="space-y-6">
-          {/* Score & Date Card */}
-          <Card className="p-6 bg-gradient-to-br from-blue-600 to-purple-700 rounded-3xl text-white relative overflow-hidden">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="text-blue-100 text-sm font-medium mb-1">
-                  {swingDate.toLocaleDateString('en-US', { 
-                    weekday: 'long',
-                    month: 'short', 
-                    day: 'numeric' 
-                  })}
-                </div>
-                <div className="text-blue-200 text-xs">
-                  {swingDate.toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                {swing.score_phase1 && (
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-2">
-                      <span className="text-3xl font-anton font-black">{swing.score_phase1}</span>
-                    </div>
-                    <Badge variant="secondary" className="bg-white/20 text-white border-0 rounded-full text-xs">
-                      {getScoreLabel(swing.score_phase1)}
-                    </Badge>
-                  </div>
-                )}
-                
-                <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-white/30 rounded-2xl">
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md rounded-3xl">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2 font-anton font-black">
-                        <Share2 className="w-5 h-5" />
-                        Share Swing Analysis
-                      </DialogTitle>
-                      <DialogDescription>
-                        Send this detailed swing analysis to a coach, parent, or friend via email.
-                      </DialogDescription>
-                    </DialogHeader>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="shareEmail" className="font-medium">Email Address *</Label>
-                        <Input
-                          id="shareEmail"
-                          type="email"
-                          placeholder="coach@example.com"
-                          value={shareEmail}
-                          onChange={(e) => setShareEmail(e.target.value)}
-                          className="rounded-2xl mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="shareName" className="font-medium">Your Name (optional)</Label>
-                        <Input
-                          id="shareName"
-                          type="text"
-                          placeholder="Your name"
-                          value={shareName}
-                          onChange={(e) => setShareName(e.target.value)}
-                          className="rounded-2xl mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="shareMessage" className="font-medium">Personal Message (optional)</Label>
-                        <Textarea
-                          id="shareMessage"
-                          placeholder="Hey coach, here's my latest swing analysis..."
-                          value={shareMessage}
-                          onChange={(e) => setShareMessage(e.target.value)}
-                          rows={3}
-                          className="rounded-2xl mt-1"
-                        />
-                      </div>
-                    </div>
-
-                    <DialogFooter>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setIsShareDialogOpen(false)}
-                        disabled={isSending}
-                        className="rounded-2xl"
-                      >
-                        Cancel
-                      </Button>
-                      <Button onClick={handleShareSwing} disabled={isSending} className="rounded-2xl">
-                        {isSending ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Sending...
-                          </>
-                        ) : (
-                        <>
-                          <Mail className="w-4 h-4 mr-2" />
-                          Send Email
-                        </>
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
+    <div className="min-h-screen bg-background">
+      {/* STICKY HEADER */}
+      <div className="sticky top-0 z-50 backdrop-blur-lg bg-gradient-to-r from-blue-500 via-blue-600 to-purple-600 border-b border-white/10">
+        <div className="container mx-auto px-4 py-4 max-w-2xl">
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/')}
+              className="rounded-2xl text-white hover:bg-white/20"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            
+            <div className="flex-1 text-center">
+              <h1 className="text-lg font-bold text-white">Swing Analysis</h1>
+              <p className="text-xs text-white/80">
+                {swingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
+                {swingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
             </div>
-          </Card>
-
-          {/* Video Playback - Move to top */}
-          {swing.video_url && (
-            <Card className="p-6 rounded-3xl">
-              <h3 className="text-lg font-anton font-black text-gray-900 mb-4">Your Swing Video</h3>
-              
-              {!videoUrl && !isVideoLoading && !videoError && (
-                <div className="bg-gray-100 rounded-2xl p-6 text-center">
-                  <Play className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                  <p className="text-gray-600 font-medium mb-4">Ready to watch your swing</p>
-                  <Button 
-                    onClick={() => loadVideoUrl(swing.video_url!)}
-                    className="rounded-2xl"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Load Video
-                  </Button>
-                </div>
-              )}
-
-              {isVideoLoading && (
-                <div className="bg-gray-100 rounded-2xl p-8 text-center">
-                  <Loader2 className="w-12 h-12 mx-auto mb-3 text-primary animate-spin" />
-                  <p className="text-gray-600">Loading your video...</p>
-                </div>
-              )}
-
-              {videoError && (
-                <div className="bg-red-50 rounded-2xl p-6 text-center">
-                  <AlertCircle className="w-12 h-12 mx-auto mb-3 text-red-500" />
-                  <p className="text-red-700 font-medium mb-4">{videoError}</p>
-                  <Button 
-                    variant="outline"
-                    onClick={() => loadVideoUrl(swing.video_url!)}
-                    className="rounded-2xl"
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              )}
-
-              {videoUrl && (
+            
+            <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="rounded-2xl text-white hover:bg-white/20"
+                >
+                  <Share2 className="w-5 h-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Share2 className="w-5 h-5" />
+                    Share Swing Analysis
+                  </DialogTitle>
+                  <DialogDescription>
+                    Send this analysis to a coach, parent, or friend.
+                  </DialogDescription>
+                </DialogHeader>
+                
                 <div className="space-y-4">
-                  <div className="bg-black rounded-2xl overflow-hidden relative">
-                    <video
-                      ref={videoRef}
-                      src={videoUrl}
-                      controls
-                      className="w-full h-auto"
-                      preload="metadata"
-                      playsInline
-                      onLoadedMetadata={(e) => {
-                        console.log('📹 Video metadata loaded:', {
-                          duration: e.currentTarget.duration,
-                          videoWidth: e.currentTarget.videoWidth,
-                          videoHeight: e.currentTarget.videoHeight
-                        });
-                        // Setup canvas after video metadata loads
-                        if (canvasRef.current) {
-                          canvasRef.current.width = e.currentTarget.videoWidth;
-                          canvasRef.current.height = e.currentTarget.videoHeight;
-                          console.log('📐 Canvas dimensions set:', canvasRef.current.width, 'x', canvasRef.current.height);
-                        }
-                      }}
-                      onError={(e) => {
-                        console.error('Detail video error:', e.currentTarget.error);
-                        setVideoError('Failed to play video. Please try again.');
-                      }}
-                    >
-                      Your browser does not support video playback.
-                    </video>
-                    <canvas
-                      ref={canvasRef}
-                      className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                      style={{ zIndex: 10 }}
+                  <div>
+                    <Label htmlFor="shareEmail">Email Address *</Label>
+                    <Input
+                      id="shareEmail"
+                      type="email"
+                      placeholder="coach@example.com"
+                      value={shareEmail}
+                      onChange={(e) => setShareEmail(e.target.value)}
+                      className="rounded-2xl mt-1"
                     />
                   </div>
                   
-                  {swing?.pose_data?.keypointsByFrame ? (
-                    videoRef.current ? (
-                      <SwingOverlayCanvas
-                        videoElement={videoRef.current}
-                        keypointsByFrame={swing.pose_data.keypointsByFrame}
-                        canvasRef={canvasRef}
-                      />
-                    ) : (
-                      <div className="text-sm text-yellow-600 p-2 bg-yellow-50 rounded">
-                        Waiting for video to load...
-                      </div>
-                    )
-                  ) : (
-                    <div className="text-sm text-gray-600 p-2 bg-gray-50 rounded">
-                      Pose overlay not available for this swing. Record a new swing to see pose analysis.
-                    </div>
-                  )}
+                  <div>
+                    <Label htmlFor="shareName">Your Name (optional)</Label>
+                    <Input
+                      id="shareName"
+                      type="text"
+                      placeholder="Your name"
+                      value={shareName}
+                      onChange={(e) => setShareName(e.target.value)}
+                      className="rounded-2xl mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="shareMessage">Personal Message (optional)</Label>
+                    <Textarea
+                      id="shareMessage"
+                      placeholder="Hey coach, check out my latest swing..."
+                      value={shareMessage}
+                      onChange={(e) => setShareMessage(e.target.value)}
+                      rows={3}
+                      className="rounded-2xl mt-1"
+                    />
+                  </div>
                 </div>
-              )}
-            </Card>
-          )}
 
-          {/* AI Coach Feedback - Enhanced with better error handling */}
-          {isLoadingCoaching ? (
-            <Card className="p-6 rounded-3xl">
-              <div className="flex items-center gap-3 mb-4">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                <h3 className="text-lg font-anton font-black">Getting your coach feedback...</h3>
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsShareDialogOpen(false)}
+                    disabled={isSending}
+                    className="rounded-2xl"
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={handleShareSwing} disabled={isSending} className="rounded-2xl">
+                    {isSending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4 mr-2" />
+                        Send Email
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-6 max-w-2xl space-y-4">
+        {/* HERO SCORE CARD */}
+        <Card className="p-6 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-2xl text-white border-0 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-white/90 text-sm font-medium mb-1">
+                {swingDate.toLocaleDateString('en-US', { 
+                  weekday: 'long',
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
               </div>
-            </Card>
-          ) : aiCoaching ? (
-            <Card className="p-6 rounded-3xl border-l-4 border-primary">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
+              <div className="text-white/70 text-xs">
+                {swingDate.toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                {getScoreIcon(swing.score_phase1)}
+                <div className="text-6xl font-bold">
+                  {animatedScore}
+                </div>
+              </div>
+              <Badge className="bg-white/20 text-white border-0 rounded-full backdrop-blur-sm">
+                {getScoreLabel(swing.score_phase1)}
+              </Badge>
+            </div>
+          </div>
+        </Card>
+
+        {/* VIDEO PLAYER SECTION */}
+        {swing.video_url && (
+          <Card className="p-0 rounded-2xl overflow-hidden shadow-sm">
+            {videoUrl ? (
+              <div className="relative">
+                <div className="relative bg-black">
+                  <video
+                    ref={videoRef}
+                    src={videoUrl}
+                    className="w-full h-auto"
+                    preload="metadata"
+                    playsInline
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    onLoadedMetadata={(e) => {
+                      if (canvasRef.current) {
+                        canvasRef.current.width = e.currentTarget.videoWidth;
+                        canvasRef.current.height = e.currentTarget.videoHeight;
+                      }
+                    }}
+                    onError={() => setVideoError('Failed to play video')}
+                  >
+                    Your browser does not support video playback.
+                  </video>
+                  <canvas
+                    ref={canvasRef}
+                    className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                    style={{ zIndex: 10 }}
+                  />
+                  
+                  {/* Video Overlay Controls */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {/* Play/Pause Button */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Button
+                        size="icon"
+                        onClick={handleVideoPlayPause}
+                        className="pointer-events-auto w-16 h-16 rounded-full bg-white/90 hover:bg-white text-black"
+                      >
+                        {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+                      </Button>
+                    </div>
+                    
+                    {/* Top Right Controls */}
+                    <div className="absolute top-4 right-4 space-y-2 pointer-events-auto">
+                      <div className="bg-black/70 backdrop-blur-sm rounded-xl p-3 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-white text-xs font-medium">Ideal Form</span>
+                          <Switch
+                            checked={showIdealForm}
+                            onCheckedChange={setShowIdealForm}
+                            className="data-[state=checked]:bg-green-500"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-white text-xs font-medium">My Form</span>
+                          <Switch
+                            checked={showMyForm}
+                            onCheckedChange={setShowMyForm}
+                            className="data-[state=checked]:bg-blue-500"
+                          />
+                        </div>
+                        {showIdealForm && (
+                          <div className="pt-2 border-t border-white/20">
+                            <span className="text-white text-xs">Opacity</span>
+                            <Slider
+                              value={[idealOpacity * 100]}
+                              onValueChange={(value) => setIdealOpacity(value[0] / 100)}
+                              max={100}
+                              step={10}
+                              className="mt-2"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Match Badge */}
+                    {showIdealForm && showMyForm && (
+                      <div className="absolute top-4 left-4 pointer-events-none">
+                        <Badge className="bg-white/90 text-black border-0 text-sm font-bold">
+                          57% Match
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {swing?.pose_data?.keypointsByFrame && videoRef.current && (
+                  <SwingOverlayCanvas
+                    videoElement={videoRef.current}
+                    keypointsByFrame={swing.pose_data.keypointsByFrame}
+                    canvasRef={canvasRef}
+                  />
+                )}
+                
+                {/* Video Controls Bar */}
+                <div className="p-4 bg-card border-t">
+                  <div className="flex items-center gap-2 justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleVideoPlayPause}
+                      className="rounded-xl"
+                    >
+                      {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                      {isPlaying ? 'Pause' : 'Play'}
+                    </Button>
+                    
+                    <select
+                      value={selectedPhase}
+                      onChange={(e) => setSelectedPhase(e.target.value)}
+                      className="text-sm border rounded-xl px-3 py-2 bg-background"
+                    >
+                      <option value="all">All Phases</option>
+                      <option value="setup">Setup</option>
+                      <option value="load">Load</option>
+                      <option value="stride">Stride</option>
+                      <option value="contact">Contact</option>
+                      <option value="extension">Extension</option>
+                      <option value="finish">Finish</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ) : isVideoLoading ? (
+              <div className="p-12 text-center">
+                <Loader2 className="w-12 h-12 mx-auto mb-3 text-primary animate-spin" />
+                <p className="text-muted-foreground">Loading video...</p>
+              </div>
+            ) : videoError ? (
+              <div className="p-12 text-center">
+                <AlertCircle className="w-12 h-12 mx-auto mb-3 text-destructive" />
+                <p className="text-destructive font-medium mb-4">{videoError}</p>
+                <Button 
+                  variant="outline"
+                  onClick={() => loadVideoUrl(swing.video_url!)}
+                  className="rounded-2xl"
+                >
+                  Try Again
+                </Button>
+              </div>
+            ) : null}
+          </Card>
+        )}
+
+        {/* QUICK STATS ROW */}
+        {quickStats && swing.score_phase1 && (
+          <div className="overflow-x-auto -mx-4 px-4">
+            <div className="flex gap-3 min-w-max pb-2">
+              <Card className="p-4 rounded-2xl min-w-[150px] cursor-pointer hover:shadow-md transition-shadow">
+                <div className="text-center">
+                  <Activity className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+                  <div className="text-2xl font-bold">{swing.score_phase1}%</div>
+                  <div className="text-xs text-muted-foreground">Overall Score</div>
+                </div>
+              </Card>
+              
+              <Card 
+                className="p-4 rounded-2xl min-w-[150px] cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => scrollToMetric(quickStats.bestMetric.name)}
+              >
+                <div className="text-center">
+                  <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                  <div className="text-sm font-bold text-green-600">Best Metric</div>
+                  <div className="text-xs text-muted-foreground truncate">{quickStats.bestMetric.name}</div>
+                </div>
+              </Card>
+              
+              <Card 
+                className="p-4 rounded-2xl min-w-[150px] cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => scrollToMetric(quickStats.worstMetric.name)}
+              >
+                <div className="text-center">
+                  <XCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
+                  <div className="text-sm font-bold text-red-600">Needs Work</div>
+                  <div className="text-xs text-muted-foreground truncate">{quickStats.worstMetric.name}</div>
+                </div>
+              </Card>
+              
+              <Card className="p-4 rounded-2xl min-w-[150px]">
+                <div className="text-center">
+                  <Activity className="w-8 h-8 mx-auto mb-2 text-purple-500" />
+                  <div className="text-2xl font-bold">1.2s</div>
+                  <div className="text-xs text-muted-foreground">Duration</div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* AI COACHING SECTION */}
+        {isLoadingCoaching ? (
+          <Card className="p-6 rounded-2xl">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Generating AI coaching...</p>
+            </div>
+          </Card>
+        ) : aiCoaching ? (
+          <Card className="p-0 rounded-2xl overflow-hidden border-2 border-primary/20">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-6 border-b">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-anton font-black text-gray-900">Your Coach Says</h3>
-                  <p className="text-sm text-gray-600">AI-powered feedback just for you</p>
+                  <h3 className="text-lg font-bold">Your AI Coach</h3>
+                  <p className="text-sm text-muted-foreground">Personalized feedback</p>
                 </div>
               </div>
-              
+            </div>
+            
+            <div className="p-6 space-y-4">
               {aiCoaching.encouragement && (
-                <div className="bg-blue-50 rounded-2xl p-4 mb-4">
-                  <p className="text-blue-800 font-medium text-sm leading-relaxed">
+                <div className="bg-primary/10 rounded-2xl p-4">
+                  <p className="text-sm font-medium leading-relaxed">
                     {aiCoaching.encouragement}
                   </p>
                 </div>
               )}
 
-              {aiCoaching.cues && aiCoaching.cues.length > 0 ? (
+              {aiCoaching.cues && aiCoaching.cues.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="font-anton font-black text-gray-900 mb-2">Focus Areas:</h4>
+                  <h4 className="font-bold text-sm">Focus Areas:</h4>
                   {aiCoaching.cues.map((cue, index) => (
-                    <div key={index} className="bg-white rounded-2xl p-4 border border-gray-200">
+                    <Card 
+                      key={index}
+                      className={cn(
+                        "p-4 rounded-2xl cursor-pointer transition-all",
+                        expandedFocusArea === index ? "ring-2 ring-primary" : ""
+                      )}
+                      onClick={() => setExpandedFocusArea(expandedFocusArea === index ? null : index)}
+                    >
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-white text-sm font-bold">{index + 1}</span>
+                        <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Zap className="w-4 h-4 text-white" />
                         </div>
                         <div className="flex-1">
-                          <h5 className="font-bold text-gray-900 mb-2 text-sm">{cue}</h5>
-                          {aiCoaching.explanations && aiCoaching.explanations[index] && (
-                            <p className="text-gray-600 text-sm leading-relaxed">
-                              {aiCoaching.explanations[index]}
-                            </p>
+                          <div className="flex items-center justify-between">
+                            <h5 className="font-bold text-sm">Work on your {aiCoaching.focusAreas[index] || 'technique'}!</h5>
+                            {expandedFocusArea === index ? (
+                              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {cue}
+                          </p>
+                          {expandedFocusArea === index && aiCoaching.explanations && aiCoaching.explanations[index] && (
+                            <div className="mt-3 pt-3 border-t">
+                              <p className="text-xs leading-relaxed">
+                                {aiCoaching.explanations[index]}
+                              </p>
+                              {drill && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="mt-3 rounded-xl"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    document.getElementById('drill-section')?.scrollIntoView({ behavior: 'smooth' });
+                                  }}
+                                >
+                                  View Drill
+                                </Button>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center text-gray-500 py-4">
-                  <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm">No specific coaching tips available</p>
-                </div>
               )}
-            </Card>
-          ) : (
-            <Card className="p-6 rounded-3xl border border-dashed border-gray-300">
-              <div className="text-center text-gray-500 py-4">
-                <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm">AI coaching not available for this swing</p>
-                <p className="text-xs text-gray-400 mt-1">Try recording a new swing for personalized feedback</p>
-              </div>
-            </Card>
-          )}
+            </div>
+          </Card>
+        ) : null}
 
-          {/* Recommended Drill */}
-          {drill && (
-            <Card className="p-6 rounded-3xl border-l-4 border-green-500">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-green-500 rounded-2xl flex items-center justify-center">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-anton font-black text-gray-900">Practice Drill</h3>
-                  <p className="text-sm text-gray-600">Recommended for you</p>
+        {/* PRACTICE DRILL SECTION */}
+        {drill && (
+          <Card id="drill-section" className="p-6 rounded-2xl border-2 border-green-500/20">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center">
+                <Target className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Recommended Drill</h3>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Activity className="w-3 h-3" />
+                  <span>Personalized for you</span>
                 </div>
               </div>
-              
-              <div className="bg-green-50 rounded-2xl p-4">
-                <h4 className="font-bold text-green-900 mb-2">{drill.name}</h4>
-                {drill.how_to && (
-                  <p className="text-green-800 text-sm leading-relaxed mb-2">{drill.how_to}</p>
-                )}
-                {drill.equipment && (
-                  <div className="flex items-center gap-2">
-                    <Award className="w-4 h-4 text-green-600" />
-                    <span className="text-green-700 text-xs font-medium">
-                      Equipment: {drill.equipment}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </Card>
-          )}
-
-
-          {/* Swing Metrics - Compact Version */}
-          <Card className="p-4 rounded-3xl">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-purple-500 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-base font-anton font-black text-gray-900">Your Numbers</h3>
             </div>
             
-            {metrics.length === 0 ? (
-              <div className="text-center py-4">
-                <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-2">
-                  <TrendingUp className="w-6 h-6 text-gray-400" />
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-2xl p-5 space-y-3">
+              <h4 className="font-bold text-lg">{drill.name}</h4>
+              {drill.how_to && (
+                <p className="text-sm leading-relaxed">{drill.how_to}</p>
+              )}
+              {drill.equipment && (
+                <div className="flex items-center gap-2 pt-2 border-t border-green-200/50">
+                  <Target className="w-4 h-4 text-green-600" />
+                  <span className="text-xs font-medium">Equipment: {drill.equipment}</span>
                 </div>
-                <p className="text-gray-600 text-sm">No metrics available for this swing</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-2">
-                {Object.entries(metricSpecs).map(([metricKey]) => {
+              )}
+              <Button className="w-full mt-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">
+                Start Drill
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* METRICS BREAKDOWN */}
+        <Card className="p-6 rounded-2xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-purple-500 rounded-2xl flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-lg font-bold">Detailed Metrics</h3>
+          </div>
+          
+          {metrics.length === 0 ? (
+            <div className="text-center py-8">
+              <Activity className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-muted-foreground text-sm">No metrics available</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(metricSpecs)
+                .map(([metricKey]) => {
                   const metric = metrics.find(m => m.metric === metricKey);
+                  if (!metric || metric.value === null || metric.value === undefined) return null;
+                  
                   const displayName = metricDisplayNames()[metricKey] || metricKey.replace(/_/g, ' ');
-                  const value = metric?.value;
-                  const unit = metric?.unit || '';
-                  
-                  if (value === null || value === undefined) return null;
-                  
+                  const value = metric.value;
+                  const unit = metric.unit || '';
                   const status = getMetricStatus(metricKey, value);
+                  const isExpanded = expandedMetric === metricKey;
+                  
+                  return {
+                    metricKey,
+                    displayName,
+                    value,
+                    unit,
+                    status,
+                    isExpanded,
+                    priority: status.status === 'Needs Work' ? 0 : status.status === 'Good' ? 1 : 2
+                  };
+                })
+                .filter(Boolean)
+                .sort((a, b) => a!.priority - b!.priority)
+                .map((item) => {
+                  if (!item) return null;
+                  const { metricKey, displayName, value, unit, status, isExpanded } = item;
                   
                   return (
-                    <div key={metricKey} className="bg-white rounded-xl p-3 border border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900 text-sm">{displayName}</h4>
-                          <div className="flex items-baseline gap-2 mt-1">
-                            <span className="text-lg font-anton font-black text-gray-900">
-                              {value.toFixed(1)}{unit}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              Target: {formatTargetRange(metricKey)}
-                            </span>
-                          </div>
+                    <Card
+                      key={metricKey}
+                      id={`metric-${metricKey}`}
+                      className={cn(
+                        "p-4 rounded-2xl border-l-4 cursor-pointer transition-all",
+                        status.borderColor,
+                        isExpanded ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md"
+                      )}
+                      onClick={() => setExpandedMetric(isExpanded ? null : metricKey)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", status.bgColor)}>
+                          <Activity className={cn("w-5 h-5", status.color)} />
                         </div>
-                        <Badge 
-                          variant="outline" 
-                          className={`${status.color} border-current rounded-full text-xs ml-2`}
-                        >
-                          {status.status}
-                        </Badge>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <h4 className="font-bold text-sm">{displayName}</h4>
+                              <div className="flex items-baseline gap-2 mt-1">
+                                <span className="text-2xl font-bold">
+                                  {value.toFixed(1)}{unit}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <Badge className={cn("rounded-full text-xs", status.color, "bg-transparent border border-current")}>
+                                {status.status}
+                              </Badge>
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                            <Target className="w-3 h-3" />
+                            <span>Target: {formatTargetRange(metricKey)}</span>
+                          </div>
+                          
+                          {/* Progress Bar */}
+                          <div className="mt-3">
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className={cn("h-full transition-all", status.color.replace('text-', 'bg-'))}
+                                style={{ width: `${Math.min(100, Math.max(0, status.progress))}%` }}
+                              />
+                            </div>
+                          </div>
+                          
+                          {isExpanded && (
+                            <div className="mt-4 pt-4 border-t space-y-3">
+                              <div className="flex items-start gap-2">
+                                <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                                <div className="text-xs leading-relaxed">
+                                  <p className="font-medium mb-1">What this means:</p>
+                                  <p className="text-muted-foreground">
+                                    {status.status === 'Great!' 
+                                      ? `Your ${displayName.toLowerCase()} is in the optimal range. Keep up the great work!`
+                                      : status.status === 'Good'
+                                      ? `Your ${displayName.toLowerCase()} is decent but has room for improvement.`
+                                      : `Your ${displayName.toLowerCase()} needs attention. Focus on the recommended drills.`
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {status.status !== 'Great!' && (
+                                <div className="flex items-center gap-2">
+                                  {status.progress > 50 ? (
+                                    <TrendingUp className="w-4 h-4 text-green-500" />
+                                  ) : (
+                                    <TrendingDown className="w-4 h-4 text-red-500" />
+                                  )}
+                                  <span className="text-xs text-muted-foreground">
+                                    {status.progress > 50 ? 'Improving' : 'Work on this'}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </Card>
                   );
                 })}
-              </div>
-            )}
-          </Card>
+            </div>
+          )}
+        </Card>
 
-          {/* Action Buttons */}
-          <div className="space-y-3 pb-6">
+        {/* BODY PART ANALYSIS */}
+        {bodyPartSimilarity && (
+          <Card className="p-6 rounded-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-lg font-bold">Body Position Analysis</h3>
+            </div>
+            
+            <div className="space-y-2">
+              {Object.entries(bodyPartSimilarity).map(([part, score]) => {
+                const percentage = typeof score === 'number' ? score : 0;
+                const color = percentage >= 70 ? 'text-green-600 bg-green-50 border-green-200' : 
+                             percentage >= 50 ? 'text-orange-600 bg-orange-50 border-orange-200' : 
+                             'text-red-600 bg-red-50 border-red-200';
+                const partLabel = part.replace(/([A-Z])/g, ' $1').trim();
+                const isExpanded = expandedBodyPart === part;
+                
+                return (
+                  <Card
+                    key={part}
+                    className={cn(
+                      "p-4 rounded-2xl border cursor-pointer transition-all",
+                      color,
+                      isExpanded ? "ring-2 ring-primary" : "hover:shadow-md"
+                    )}
+                    onClick={() => setExpandedBodyPart(isExpanded ? null : part)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {percentage >= 70 ? (
+                          <CheckCircle2 className="w-5 h-5" />
+                        ) : (
+                          <XCircle className="w-5 h-5" />
+                        )}
+                        <div>
+                          <span className="font-bold text-sm capitalize">{partLabel}</span>
+                          <div className="text-xs opacity-75 mt-0.5">
+                            {percentage >= 70 ? 'Great position' : percentage >= 50 ? 'Needs improvement' : 'Focus here'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-bold">{percentage}%</span>
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
+                    </div>
+                    
+                    {isExpanded && (
+                      <div className="mt-3 pt-3 border-t border-current/20">
+                        <p className="text-xs leading-relaxed">
+                          {percentage >= 70 
+                            ? `Your ${partLabel.toLowerCase()} positioning matches the ideal form closely. Continue with this technique.`
+                            : percentage >= 50
+                            ? `Your ${partLabel.toLowerCase()} is close but could be improved for better results. Review the recommended drills.`
+                            : `Your ${partLabel.toLowerCase()} needs significant attention. Focus on the practice drills to improve this area.`
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+
+        {/* COMPARISON INSIGHTS */}
+        {bodyPartSimilarity && (
+          <Card className="p-6 rounded-2xl">
+            <h3 className="text-lg font-bold mb-4">Form vs. Ideal</h3>
+            
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-3">
+                <div className="text-4xl font-bold text-white">57%</div>
+              </div>
+              <p className="text-sm text-muted-foreground">Overall Match</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  What you're doing right:
+                </h4>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Good leg positioning and balance</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Solid torso rotation</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Proper head stability</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
+                  <XCircle className="w-4 h-4 text-red-600" />
+                  Areas to improve:
+                </h4>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2 text-sm">
+                    <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                    <span>Arm extension during contact - keep arms extended longer</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                    <span>Hip-shoulder separation - rotate hips earlier</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                    <span>Weight transfer - shift weight more aggressively</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* ACTION BUTTONS */}
+        <div className="space-y-3 pb-8">
+          <Button 
+            className="w-full rounded-2xl h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+            onClick={() => drill && document.getElementById('drill-section')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            <Target className="w-5 h-5 mr-2" />
+            Practice Recommended Drills
+          </Button>
+          
+          <div className="grid grid-cols-2 gap-3">
             <Button 
-              onClick={() => navigate('/analysis')} 
-              className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg"
+              variant="outline" 
+              className="rounded-2xl h-11"
+              onClick={() => {
+                if (videoUrl) {
+                  const a = document.createElement('a');
+                  a.href = videoUrl;
+                  a.download = `swing-${swing.id}.mp4`;
+                  a.click();
+                }
+              }}
             >
-              Record Another Swing
+              <Download className="w-4 h-4 mr-2" />
+              Save Video
             </Button>
             <Button 
-              onClick={() => navigate('/')} 
               variant="outline" 
-              className="w-full h-12 rounded-2xl border-2"
+              className="rounded-2xl h-11"
+              onClick={() => setIsShareDialogOpen(true)}
             >
-              Back to Home
+              <Share2 className="w-4 h-4 mr-2" />
+              Share Results
             </Button>
           </div>
+          
+          <Button 
+            className="w-full rounded-2xl h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+            onClick={() => navigate('/swing-analysis')}
+          >
+            <Camera className="w-5 h-5 mr-2" />
+            Record Another Swing
+          </Button>
         </div>
+      </div>
+
+      {/* Floating Action Button */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <Button
+          size="icon"
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg"
+          onClick={() => navigate('/swing-analysis')}
+        >
+          <Camera className="w-6 h-6" />
+        </Button>
       </div>
     </div>
   );
