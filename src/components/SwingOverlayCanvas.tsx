@@ -202,17 +202,16 @@ export function SwingOverlayCanvas({
     const detectedBox = getBox(normalizedDetected);
     const idealBox = getBox(idealKeypoints);
     
-    // Calculate scale to match detected pose size (use the smaller scale to fit)
+    // Scale X and Y independently to match detected pose dimensions
     const scaleX = (detectedBox.width || 1) / (idealBox.width || 1);
     const scaleY = (detectedBox.height || 1) / (idealBox.height || 1);
-    const scale = Math.min(scaleX, scaleY) || 1;
     
     // Scale and translate ideal pose to match detected pose
     const scaled: Record<string, { x: number; y: number }> = {};
     Object.entries(idealKeypoints).forEach(([key, point]) => {
-      // Center at origin, scale, then move to detected position
-      const centeredX = (point.x - idealBox.centerX) * scale;
-      const centeredY = (point.y - idealBox.centerY) * scale;
+      // Center at origin, scale independently on X and Y, then move to detected position
+      const centeredX = (point.x - idealBox.centerX) * scaleX;
+      const centeredY = (point.y - idealBox.centerY) * scaleY;
       
       scaled[key] = {
         x: centeredX + detectedBox.centerX,
