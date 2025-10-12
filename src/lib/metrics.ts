@@ -45,17 +45,29 @@ function angleFromVertical(p1: any, p2: any): number {
   const dy = p2.y - p1.y; // Note: y increases downward in screen coords
   
   // Calculate angle from vertical axis
-  // atan2(dx, dy) gives angle from vertical (0° = straight up)
-  let angle = Math.atan2(dx, -dy) * (180 / Math.PI); // Use -dy because y increases downward
+  // Since y increases downward, negate dy to get proper vertical reference
+  // atan2(dx, -dy) gives angle from vertical where 0° = straight up
+  const angle = Math.atan2(dx, -dy) * (180 / Math.PI);
   
-  // Ensure result is in [0, 180] range
-  return Math.abs(angle);
+  // Normalize to [0, 90] range - we only care about magnitude of tilt
+  // If angle > 90, the body is leaning more than 90° which means we measured the wrong direction
+  // In that case, take 180 - angle to get the actual tilt
+  const normalizedAngle = Math.abs(angle);
+  
+  if (normalizedAngle > 90) {
+    // We're measuring the angle on the wrong side, flip it
+    return 180 - normalizedAngle;
+  }
+  
+  return normalizedAngle;
 }
 
 // Calculate trajectory angle over a window of frames
 function calculateTrajectoryAngle(frames: FrameData[], centerIdx: number, windowSize: number, keypointName: string): number {
-  const startIdx = Math.max(0, centerIdx - windowSize);
-  const endIdx = Math.min(frames.length - 1, centerIdx + windowSize);
+  // Use a larger window for more stable measurement
+  const actualWindowSize = Math.max(windowSize, 3);
+  const startIdx = Math.max(0, centerIdx - actualWindowSize);
+  const endIdx = Math.min(frames.length - 1, centerIdx + actualWindowSize);
   
   const startFrame = frames[startIdx];
   const endFrame = frames[endIdx];
@@ -70,11 +82,14 @@ function calculateTrajectoryAngle(frames: FrameData[], centerIdx: number, window
   
   // Attack angle: measure angle from horizontal
   // Positive = upward swing, Negative = downward swing
-  // Note: y increases downward in screen coords, so negate dy
-  const angle = Math.atan2(-dy, dx) * (180 / Math.PI);
+  // Note: y increases downward in screen coords, so negate dy to get proper vertical direction
+  let angle = Math.atan2(-dy, dx) * (180 / Math.PI);
   
-  // Return the vertical component of the angle
-  // 0° = horizontal, +90° = straight up, -90° = straight down
+  // Clamp to reasonable range for baseball swing: -45° to 45°
+  // Values outside this range likely indicate measurement error
+  if (angle > 45) angle = 45;
+  if (angle < -45) angle = -45;
+  
   return angle;
 }
 
@@ -195,14 +210,33 @@ export function computePhase1Metrics(
   
   // 2. Attack angle at contact
   if (contactIdx && contactIdx < keypointsByFrame.length) {
-    // Use a larger window for more stable angle measurement
-    const attackAngle = calculateTrajectoryAngle(keypointsByFrame, contactIdx, 2, 'left_wrist');
+    // Use right wrist for more accurate bat path (typically bottom hand on bat)
+    // Try both wrists and use the one with higher confidence
+    const leftWristAngle = calculateTrajectoryAngle(keypointsByFrame, contactIdx, 3, 'left_wrist');
+    const rightWristAngle = calculateTrajectoryAngle(keypointsByFrame, contactIdx, 3, 'right_wrist');
+    
+    const leftWrist = getKeypoint(keypointsByFrame[contactIdx].keypoints, 'left_wrist');
+    const rightWrist = getKeypoint(keypointsByFrame[contactIdx].keypoints, 'right_wrist');
+    
+    const leftScore = leftWrist?.score || 0;
+    const rightScore = rightWrist?.score || 0;
+    
+    // Use the wrist with higher confidence, or average if both are good
+    let attackAngle;
+    if (leftScore > 0.5 && rightScore > 0.5) {
+      attackAngle = (leftWristAngle + rightWristAngle) / 2;
+    } else if (leftScore >= rightScore) {
+      attackAngle = leftWristAngle;
+    } else {
+      attackAngle = rightWristAngle;
+    }
     
     // Log for debugging
-    console.log('📐 Attack angle calculated:', attackAngle.toFixed(1), '° (target: 5-20°)');
+    console.log('📐 Attack angle calculated:', attackAngle.toFixed(1), '° (target: 5-20°)', 
+                'L:', leftWristAngle.toFixed(1), 'R:', rightWristAngle.toFixed(1));
     
     // Only set if we got a valid measurement
-    metrics.attack_angle_deg = (attackAngle !== 0 && !isNaN(attackAngle)) ? attackAngle : null;
+    metrics.attack_angle_deg = !isNaN(attackAngle) ? attackAngle : null;
   } else {
     metrics.attack_angle_deg = null;
   }

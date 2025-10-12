@@ -208,8 +208,15 @@ function calculateAttackAngle(v1, v2) {
   if (deltaX === 0) return 0; // Vertical movement
   
   // Calculate angle in radians, then convert to degrees
-  const angleRad = Math.atan2(-deltaY, deltaX); // Negative deltaY because screen coordinates are inverted
-  return angleRad * (180 / Math.PI);
+  // Negative deltaY because screen coordinates are inverted (y increases downward)
+  let angleRad = Math.atan2(-deltaY, deltaX);
+  let angleDeg = angleRad * (180 / Math.PI);
+  
+  // Clamp to reasonable range for baseball swing: -45° to 45°
+  if (angleDeg > 45) angleDeg = 45;
+  if (angleDeg < -45) angleDeg = -45;
+  
+  return angleDeg;
 }
 
 function estimatePixelsPerCm(frame) {
@@ -446,9 +453,73 @@ function computeMetrics(keypointsByFrame, events, fps, recentStrideLengths = [])
     metrics.contact_timing_frames = contactTiming;
   }
   
-  // Add some basic metrics with reasonable values for other measurements
-  metrics.bat_lag_deg = 60 + Math.random() * 10;
-  metrics.torso_tilt_deg = 25 + Math.random() * 10;
+  // 7. Bat lag angle at launch
+  if (launchIdx && launchIdx < keypointsByFrame.length) {
+    const frame = keypointsByFrame[launchIdx];
+    const leftElbow = getKeypoint(frame.keypoints, 'left_elbow');
+    const leftWrist = getKeypoint(frame.keypoints, 'left_wrist');
+    const rightElbow = getKeypoint(frame.keypoints, 'right_elbow');
+    const rightWrist = getKeypoint(frame.keypoints, 'right_wrist');
+    
+    if (leftElbow && leftWrist && rightElbow && rightWrist) {
+      // Lead forearm vector
+      const forearmVector = {
+        x: leftWrist.x - leftElbow.x,
+        y: leftWrist.y - leftElbow.y
+      };
+      
+      // Barrel proxy: mid-elbows to mid-wrists
+      const midElbows = {
+        x: (leftElbow.x + rightElbow.x) / 2,
+        y: (leftElbow.y + rightElbow.y) / 2
+      };
+      const midWrists = {
+        x: (leftWrist.x + rightWrist.x) / 2,
+        y: (leftWrist.y + rightWrist.y) / 2
+      };
+      const barrelVector = {
+        x: midWrists.x - midElbows.x,
+        y: midWrists.y - midElbows.y
+      };
+      
+      metrics.bat_lag_deg = angleBetweenVectors(forearmVector, barrelVector);
+    }
+  }
+  
+  // 8. Torso tilt angle at launch
+  if (launchIdx && launchIdx < keypointsByFrame.length) {
+    const frame = keypointsByFrame[launchIdx];
+    const leftShoulder = getKeypoint(frame.keypoints, 'left_shoulder');
+    const rightShoulder = getKeypoint(frame.keypoints, 'right_shoulder');
+    const leftHip = getKeypoint(frame.keypoints, 'left_hip');
+    const rightHip = getKeypoint(frame.keypoints, 'right_hip');
+    
+    if (leftShoulder && rightShoulder && leftHip && rightHip) {
+      const shoulderCenter = {
+        x: (leftShoulder.x + rightShoulder.x) / 2,
+        y: (leftShoulder.y + rightShoulder.y) / 2
+      };
+      const hipCenter = {
+        x: (leftHip.x + rightHip.x) / 2,
+        y: (leftHip.y + rightHip.y) / 2
+      };
+      
+      // Calculate angle from vertical
+      const dx = shoulderCenter.x - hipCenter.x;
+      const dy = shoulderCenter.y - hipCenter.y;
+      
+      // atan2(dx, -dy) gives angle from vertical where 0° = straight up
+      const angle = Math.atan2(dx, -dy) * (180 / Math.PI);
+      const normalizedAngle = Math.abs(angle);
+      
+      // Normalize to [0, 90] range
+      if (normalizedAngle > 90) {
+        metrics.torso_tilt_deg = 180 - normalizedAngle;
+      } else {
+        metrics.torso_tilt_deg = normalizedAngle;
+      }
+    }
+  }
   
   return metrics;
 }
