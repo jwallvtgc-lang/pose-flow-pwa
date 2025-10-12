@@ -17,6 +17,12 @@ const Index = () => {
     isLoading: true
   });
   
+  const [monthlyStats, setMonthlyStats] = useState({
+    bestScoreThisMonth: 0,
+    topBatSpeedThisMonth: 0,
+    isLoading: true
+  });
+  
   const [userProfile, setUserProfile] = useState<{ full_name: string | null; current_streak: number | null } | null>(null);
   const [latestSwing, setLatestSwing] = useState<any>(null);
   const [topDrills, setTopDrills] = useState<Array<{name: string; count: number; description: string}>>([]);
@@ -33,6 +39,7 @@ const Index = () => {
     if (user) {
       console.log('User authenticated, loading data for user:', user.email);
       loadStats().catch(err => console.error('loadStats failed:', err));
+      loadMonthlyStats().catch(err => console.error('loadMonthlyStats failed:', err));
       loadUserProfile().catch(err => console.error('loadUserProfile failed:', err));
       loadLatestSwing().catch(err => console.error('loadLatestSwing failed:', err));
       loadTopDrills().catch(err => console.error('loadTopDrills failed:', err));
@@ -44,6 +51,11 @@ const Index = () => {
         bestScore: 68,
         todayCount: 12,
         trendingScore: 64.7,
+        isLoading: false
+      });
+      setMonthlyStats({
+        bestScoreThisMonth: 72,
+        topBatSpeedThisMonth: 68,
         isLoading: false
       });
       setTopDrills([
@@ -100,6 +112,48 @@ const Index = () => {
     } catch (error) {
       console.error('Failed to load stats:', error);
       setStats(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const loadMonthlyStats = async () => {
+    try {
+      // Calculate first day of current month
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      
+      // Get swings from this month
+      const { data: swings, error: swingsError } = await supabase
+        .from('swings')
+        .select('score_phase1, bat_speed_peak')
+        .gte('created_at', firstDayOfMonth.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (swingsError) {
+        console.error('Error loading monthly stats:', swingsError);
+        return;
+      }
+
+      // Calculate best score this month
+      const validSwings = (swings || []).filter(swing => swing.score_phase1 && swing.score_phase1 > 0);
+      const bestScoreThisMonth = validSwings.length > 0 
+        ? Math.max(...validSwings.map(swing => swing.score_phase1 || 0))
+        : 0;
+
+      // Calculate top bat speed this month
+      const swingsWithBatSpeed = (swings || []).filter(swing => swing.bat_speed_peak && swing.bat_speed_peak > 0);
+      const topBatSpeedThisMonth = swingsWithBatSpeed.length > 0
+        ? Math.max(...swingsWithBatSpeed.map(swing => swing.bat_speed_peak || 0))
+        : 0;
+
+      setMonthlyStats({
+        bestScoreThisMonth,
+        topBatSpeedThisMonth: Math.round(topBatSpeedThisMonth),
+        isLoading: false
+      });
+
+    } catch (error) {
+      console.error('Failed to load monthly stats:', error);
+      setMonthlyStats(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -412,6 +466,34 @@ const Index = () => {
             </div>
             <p className="text-2xl font-black text-gray-900 mb-1">+8%</p>
             <p className="text-xs font-semibold text-gray-600">Improvement</p>
+          </Card>
+        </div>
+      </div>
+
+      {/* Monthly Stats */}
+      <div className="px-6 mb-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-3">This Month</h3>
+        <div className="grid grid-cols-2 gap-3">
+          {/* Best Score This Month */}
+          <Card className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl flex items-center justify-center mb-3">
+              <Award className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-2xl font-black text-gray-900 mb-1">
+              {monthlyStats.isLoading ? '...' : monthlyStats.bestScoreThisMonth}
+            </p>
+            <p className="text-xs font-semibold text-gray-600">Best Score</p>
+          </Card>
+
+          {/* Top Bat Speed This Month */}
+          <Card className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-500 rounded-xl flex items-center justify-center mb-3">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-2xl font-black text-gray-900 mb-1">
+              {monthlyStats.isLoading ? '...' : monthlyStats.topBatSpeedThisMonth}
+            </p>
+            <p className="text-xs font-semibold text-gray-600">Top Bat Speed</p>
           </Card>
         </div>
       </div>
