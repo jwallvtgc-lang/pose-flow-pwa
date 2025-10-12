@@ -75,6 +75,35 @@ export function SwingOverlayCanvas({
     return phases[phaseIndex];
   };
 
+  // Get frame for a specific phase (when manually selecting phases)
+  const getFrameForPhase = (phase: SwingPhase): FrameData | null => {
+    if (!videoElement || keypointsByFrame.length === 0 || videoElement.duration === 0) {
+      return null;
+    }
+    
+    const phases: SwingPhase[] = ['setup', 'load', 'stride', 'contact', 'extension', 'finish'];
+    const phaseIndex = phases.indexOf(phase);
+    
+    // Calculate the midpoint time for this phase
+    const phaseProgress = (phaseIndex + 0.5) / phases.length;
+    const targetTimeMs = phaseProgress * videoElement.duration * 1000;
+    
+    // Find closest frame to this time
+    let closestFrame = keypointsByFrame[0];
+    let minDiff = Math.abs(closestFrame.t - targetTimeMs);
+    
+    for (const frame of keypointsByFrame) {
+      const diff = Math.abs(frame.t - targetTimeMs);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestFrame = frame;
+      }
+    }
+    
+    console.log('🎯 Frame for phase', phase, 'at', targetTimeMs.toFixed(0), 'ms, frame t:', closestFrame.t);
+    return closestFrame;
+  };
+
   // Get current frame based on video time
   const getCurrentFrame = (): FrameData | null => {
     if (!videoElement || keypointsByFrame.length === 0) {
@@ -203,7 +232,8 @@ export function SwingOverlayCanvas({
       
       // Draw detected pose (pixel coordinates)
       if (showDetectedPose) {
-        const currentFrame = getCurrentFrame();
+        // Use phase-specific frame when auto-progress is off, otherwise use current video time
+        const currentFrame = autoProgressPhase ? getCurrentFrame() : getFrameForPhase(currentPhase);
         if (currentFrame) {
           const detectedKeypoints = convertDetectedKeypoints(currentFrame);
           console.log('🔵 Drawing blue pose, keypoints:', Object.keys(detectedKeypoints).length);
