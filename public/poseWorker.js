@@ -539,7 +539,7 @@ function smooth(series, window = 5) {
   return smoothed;
 }
 
-// Segment swing phases with variation based on analysis data
+// Segment swing phases based on actual motion analysis
 function segmentSwing(frames) {
   const events = {};
   
@@ -547,25 +547,136 @@ function segmentSwing(frames) {
   
   const totalFrames = frames.length;
   
-  // Create timing variations based on keypoint analysis
-  // Use first frame's keypoint positions to create timing variations
-  const firstFrame = frames[0];
-  const seed = firstFrame.keypoints.reduce((sum, kp) => sum + kp.x + kp.y, 0) % 100;
+  // Calculate velocity and acceleration for key body parts
+  const wristVelocities = [];
+  const hipRotations = [];
+  const shoulderRotations = [];
   
-  // Create realistic timing variations (±10% from base timing)
-  const variance = 0.1;
-  const baseTimings = [0.1, 0.3, 0.5, 0.7, 0.8, 0.9];
-  const variations = baseTimings.map(base => {
-    const randomOffset = ((seed + base * 100) % 20 - 10) / 100 * variance;
-    return Math.max(0.05, Math.min(0.95, base + randomOffset));
-  });
+  for (let i = 1; i < frames.length; i++) {
+    const prevFrame = frames[i - 1];
+    const currFrame = frames[i];
+    
+    // Calculate wrist velocity (average of both wrists)
+    const prevLeftWrist = getKeypoint(prevFrame.keypoints, 'left_wrist');
+    const currLeftWrist = getKeypoint(currFrame.keypoints, 'left_wrist');
+    const prevRightWrist = getKeypoint(prevFrame.keypoints, 'right_wrist');
+    const currRightWrist = getKeypoint(currFrame.keypoints, 'right_wrist');
+    
+    let wristVel = 0;
+    if (prevLeftWrist && currLeftWrist) {
+      wristVel += distance(prevLeftWrist, currLeftWrist);
+    }
+    if (prevRightWrist && currRightWrist) {
+      wristVel += distance(prevRightWrist, currRightWrist);
+    }
+    wristVelocities.push(wristVel / 2);
+    
+    // Calculate hip rotation (angle of hip line)
+    const currLeftHip = getKeypoint(currFrame.keypoints, 'left_hip');
+    const currRightHip = getKeypoint(currFrame.keypoints, 'right_hip');
+    if (currLeftHip && currRightHip) {
+      const hipAngle = Math.atan2(currRightHip.y - currLeftHip.y, currRightHip.x - currLeftHip.x);
+      hipRotations.push(hipAngle);
+    } else {
+      hipRotations.push(0);
+    }
+    
+    // Calculate shoulder rotation
+    const currLeftShoulder = getKeypoint(currFrame.keypoints, 'left_shoulder');
+    const currRightShoulder = getKeypoint(currFrame.keypoints, 'right_shoulder');
+    if (currLeftShoulder && currRightShoulder) {
+      const shoulderAngle = Math.atan2(currRightShoulder.y - currLeftShoulder.y, currRightShoulder.x - currLeftShoulder.x);
+      shoulderRotations.push(shoulderAngle);
+    } else {
+      shoulderRotations.push(0);
+    }
+  }
   
-  events.load_start = Math.floor(totalFrames * variations[0]);
-  events.stride_plant = Math.floor(totalFrames * variations[1]);
-  events.launch = Math.floor(totalFrames * variations[2]);
-  events.contact = Math.floor(totalFrames * variations[3]);
-  events.extension = Math.floor(totalFrames * variations[4]);
-  events.finish = Math.floor(totalFrames * variations[5]);
+  // Smooth the velocities to reduce noise
+  const smoothedWristVel = smooth(wristVelocities, 5);
+  
+  // Find load_start: first significant wrist movement (>20% of max velocity)
+  const maxWristVel = Math.max(...smoothedWristVel);
+  const velocityThreshold = maxWristVel * 0.2;
+  let loadStart = 0;
+  for (let i = 0; i < smoothedWristVel.length; i++) {
+    if (smoothedWristVel[i] > velocityThreshold) {
+      loadStart = i;
+      break;
+    }
+  }
+  events.load_start = Math.max(0, loadStart);
+  
+  // Find contact: peak wrist velocity
+  let contactIdx = 0;
+  let maxVel = 0;
+  for (let i = loadStart; i < smoothedWristVel.length; i++) {
+    if (smoothedWristVel[i] > maxVel) {
+      maxVel = smoothedWristVel[i];
+      contactIdx = i;
+    }
+  }
+  events.contact = Math.min(contactIdx + 1, totalFrames - 1);
+  
+  // Find launch: point of maximum hip-shoulder separation before contact
+  // This is where hips have rotated but shoulders are still back
+  let maxSeparation = 0;
+  let launchIdx = Math.floor(contactIdx * 0.7);
+  for (let i = Math.max(loadStart, Math.floor(contactIdx * 0.5)); i < contactIdx; i++) {
+    if (i >= hipRotations.length || i >= shoulderRotations.length) break;
+    
+    const separation = Math.abs(hipRotations[i] - shoulderRotations[i]);
+    if (separation > maxSeparation) {
+      maxSeparation = separation;
+      launchIdx = i;
+    }
+  }
+  events.launch = Math.min(launchIdx + 1, totalFrames - 1);
+  
+  // Find stride_plant: halfway between load and launch
+  events.stride_plant = Math.floor((loadStart + launchIdx) / 2);
+  
+  // Find extension: when wrists are furthest from body center after contact
+  let maxExtension = 0;
+  let extensionIdx = contactIdx;
+  for (let i = contactIdx; i < Math.min(frames.length, contactIdx + 20); i++) {
+    const frame = frames[i];
+    const leftWrist = getKeypoint(frame.keypoints, 'left_wrist');
+    const rightWrist = getKeypoint(frame.keypoints, 'right_wrist');
+    const leftShoulder = getKeypoint(frame.keypoints, 'left_shoulder');
+    const rightShoulder = getKeypoint(frame.keypoints, 'right_shoulder');
+    
+    if (leftWrist && rightWrist && leftShoulder && rightShoulder) {
+      const shoulderCenter = {
+        x: (leftShoulder.x + rightShoulder.x) / 2,
+        y: (leftShoulder.y + rightShoulder.y) / 2
+      };
+      const wristCenter = {
+        x: (leftWrist.x + rightWrist.x) / 2,
+        y: (leftWrist.y + rightWrist.y) / 2
+      };
+      const extension = distance(shoulderCenter, wristCenter);
+      
+      if (extension > maxExtension) {
+        maxExtension = extension;
+        extensionIdx = i;
+      }
+    }
+  }
+  events.extension = Math.min(extensionIdx, totalFrames - 1);
+  
+  // Find finish: when wrist velocity drops below 30% of max after extension
+  const finishThreshold = maxWristVel * 0.3;
+  let finishIdx = Math.min(totalFrames - 1, extensionIdx + 10);
+  for (let i = extensionIdx; i < smoothedWristVel.length; i++) {
+    if (smoothedWristVel[i] < finishThreshold) {
+      finishIdx = i;
+      break;
+    }
+  }
+  events.finish = Math.min(finishIdx + 1, totalFrames - 1);
+  
+  console.log('Detected swing events:', events);
   
   return events;
 }
