@@ -14,6 +14,7 @@ const Index = () => {
     bestScore: 0,
     todayCount: 0,
     trendingScore: 0,
+    improvement: 0,
     isLoading: true
   });
   
@@ -51,6 +52,7 @@ const Index = () => {
         bestScore: 68,
         todayCount: 12,
         trendingScore: 64.7,
+        improvement: 8,
         isLoading: false
       });
       setMonthlyStats({
@@ -102,10 +104,20 @@ const Index = () => {
         ? recent7Swings.reduce((sum, swing) => sum + (swing.score_phase1 || 0), 0) / recent7Swings.length
         : 0;
 
+      // Calculate improvement (compare recent 7 to previous 7)
+      const previous7Swings = validSwings.slice(7, 14);
+      let improvement = 0;
+      
+      if (recent7Swings.length > 0 && previous7Swings.length > 0) {
+        const previousAvg = previous7Swings.reduce((sum, swing) => sum + (swing.score_phase1 || 0), 0) / previous7Swings.length;
+        improvement = ((trendingScore - previousAvg) / previousAvg) * 100;
+      }
+
       setStats({
         bestScore,
         todayCount,
         trendingScore,
+        improvement: Math.round(improvement),
         isLoading: false
       });
 
@@ -414,10 +426,12 @@ const Index = () => {
                 <span className="text-5xl font-black leading-none">
                   {stats.isLoading ? '...' : Math.round(stats.trendingScore)}
                 </span>
-                <div className="bg-green-500/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1 mb-1">
-                  <TrendingUp className="w-4 h-4" />
-                  <span className="text-sm font-bold">+8</span>
-                </div>
+                {stats.improvement !== 0 && (
+                  <div className={`${stats.improvement > 0 ? 'bg-green-500/90' : 'bg-red-500/90'} backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1 mb-1`}>
+                    <TrendingUp className={`w-4 h-4 ${stats.improvement < 0 ? 'rotate-180' : ''}`} />
+                    <span className="text-sm font-bold">{stats.improvement > 0 ? '+' : ''}{stats.improvement}%</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="text-right">
@@ -467,7 +481,9 @@ const Index = () => {
             <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center mb-3">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
-            <p className="text-2xl font-black text-gray-900 mb-1">+8%</p>
+            <p className={`text-2xl font-black mb-1 ${stats.improvement > 0 ? 'text-green-600' : stats.improvement < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+              {stats.isLoading ? '...' : stats.improvement !== 0 ? `${stats.improvement > 0 ? '+' : ''}${stats.improvement}%` : '-'}
+            </p>
             <p className="text-xs font-semibold text-gray-600">Improvement</p>
           </Card>
         </div>
