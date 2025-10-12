@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera, BarChart3, TrendingUp, Activity, Bell, Star, Play, Award, Settings, Zap, Target } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Camera, BarChart3, TrendingUp, Activity, Bell, Star, Play, Award, Settings, Zap, Target, Trophy } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const [stats, setStats] = useState({
     bestScore: 0,
     todayCount: 0,
@@ -418,7 +419,7 @@ const Index = () => {
       </div>
 
       {/* Main content area */}
-      <div className="px-6 pb-6 space-y-6">
+      <div className="px-6 pb-24 space-y-6">{/* Added pb-24 for bottom nav space */}
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4">
           <Link to={user ? "/analysis" : "/auth"}>
@@ -615,6 +616,40 @@ const Index = () => {
             </Link>
           </div>
         </Card>
+      </div>
+
+      {/* Bottom Navigation Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom z-50">
+        <div className="max-w-lg mx-auto px-6 py-3">
+          <div className="flex items-center justify-around">
+            <Link to={user ? "/progress" : "/auth"} className="flex flex-col items-center gap-1 py-2 px-4">
+              <div className={`${location.pathname === '/progress' ? 'text-blue-600' : 'text-gray-500'}`}>
+                <TrendingUp className="w-6 h-6" />
+              </div>
+              <span className={`text-xs font-medium ${location.pathname === '/progress' ? 'text-blue-600' : 'text-gray-500'}`}>
+                Progress
+              </span>
+            </Link>
+
+            <Link to={user ? "/analysis" : "/auth"} className="flex flex-col items-center gap-1 -mt-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white">
+                <Camera className="w-8 h-8 text-white" />
+              </div>
+              <span className="text-xs font-medium text-gray-900 mt-1">
+                Record
+              </span>
+            </Link>
+
+            <Link to={user ? "/leaderboard" : "/auth"} className="flex flex-col items-center gap-1 py-2 px-4">
+              <div className={`${location.pathname === '/leaderboard' ? 'text-blue-600' : 'text-gray-500'}`}>
+                <Trophy className="w-6 h-6" />
+              </div>
+              <span className={`text-xs font-medium ${location.pathname === '/leaderboard' ? 'text-blue-600' : 'text-gray-500'}`}>
+                Leaderboard
+              </span>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
