@@ -93,7 +93,8 @@ export function SwingOverlayCanvas({
     keypoints: Record<string, { x: number; y: number; score?: number }>,
     color: string,
     opacity: number,
-    lineWidth: number = 3
+    lineWidth: number = 3,
+    isNormalized: boolean = true  // ideal poses are normalized, detected poses are pixel coords
   ) => {
     const canvas = ctx.canvas;
     
@@ -113,8 +114,14 @@ export function SwingOverlayCanvas({
       if (endPoint.score !== undefined && endPoint.score < 0.3) continue;
       
       ctx.beginPath();
-      ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
-      ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+      // Only multiply by dimensions if keypoints are normalized (0-1 range)
+      const startX = isNormalized ? startPoint.x * canvas.width : startPoint.x;
+      const startY = isNormalized ? startPoint.y * canvas.height : startPoint.y;
+      const endX = isNormalized ? endPoint.x * canvas.width : endPoint.x;
+      const endY = isNormalized ? endPoint.y * canvas.height : endPoint.y;
+      
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
       ctx.stroke();
     }
     
@@ -123,14 +130,11 @@ export function SwingOverlayCanvas({
     for (const point of Object.values(keypoints)) {
       if (point.score !== undefined && point.score < 0.3) continue;
       
+      const x = isNormalized ? point.x * canvas.width : point.x;
+      const y = isNormalized ? point.y * canvas.height : point.y;
+      
       ctx.beginPath();
-      ctx.arc(
-        point.x * canvas.width,
-        point.y * canvas.height,
-        lineWidth * 1.5,
-        0,
-        2 * Math.PI
-      );
+      ctx.arc(x, y, lineWidth * 1.5, 0, 2 * Math.PI);
       ctx.fill();
     }
     
@@ -175,20 +179,20 @@ export function SwingOverlayCanvas({
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Draw ideal pose
+      // Draw ideal pose (normalized coordinates)
       if (showIdealPose) {
         const idealKeypoints = IDEAL_SWING_KEYPOINTS[selectedPhase];
-        drawSkeleton(ctx, idealKeypoints, '#22c55e', idealOpacity[0] / 100, 4);
+        drawSkeleton(ctx, idealKeypoints, '#22c55e', idealOpacity[0] / 100, 4, true);
       }
       
-      // Draw detected pose (blue)
+      // Draw detected pose (pixel coordinates)
       if (showDetectedPose) {
         const currentFrame = getCurrentFrame();
         if (currentFrame) {
           const detectedKeypoints = convertDetectedKeypoints(currentFrame);
           console.log('🔵 Drawing blue pose, keypoints:', Object.keys(detectedKeypoints).length);
-          // Draw with higher opacity and thicker lines to be more visible
-          drawSkeleton(ctx, detectedKeypoints, '#3b82f6', 0.9, 4);
+          // Draw with pixel coordinates (not normalized), higher opacity and thicker lines
+          drawSkeleton(ctx, detectedKeypoints, '#3b82f6', 0.9, 4, false);
           
           // Calculate similarity
           const idealKeypoints = IDEAL_SWING_KEYPOINTS[selectedPhase];
