@@ -76,6 +76,7 @@ export type Drill = {
   goal_metric?: string | null;
   how_to?: string | null;
   equipment?: string | null;
+  video_url?: string | null;
 };
 
 // 3) A formatted coaching card we can render
