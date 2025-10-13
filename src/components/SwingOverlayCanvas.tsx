@@ -558,9 +558,9 @@ export function SwingOverlayCanvas({
       
       // Draw ideal pose (scaled and aligned to detected pose)
       if (effectiveShowIdeal) {
-        drawSkeleton(ctx, scaledIdealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 3, true);
+        drawSkeleton(ctx, scaledIdealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 6, true);
         // Draw bat for ideal pose
-        drawBat(ctx, scaledIdealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 6, true, currentPhase);
+        drawBat(ctx, scaledIdealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 8, true, currentPhase);
       }
       
       // Draw detected pose with difference highlighting
@@ -572,14 +572,14 @@ export function SwingOverlayCanvas({
             normalizedIdeal[key] = { x: point.x, y: point.y };
           });
           
-          drawSkeletonWithDifference(ctx, normalizedDetected, normalizedIdeal, 0.9, 4);
+          drawSkeletonWithDifference(ctx, normalizedDetected, normalizedIdeal, 0.9, 6);
         } else {
           // Standard blue skeleton
-          drawSkeleton(ctx, normalizedDetected, '#3b82f6', 0.9, 4, true);
+          drawSkeleton(ctx, normalizedDetected, '#3b82f6', 0.9, 6, true);
         }
         // Draw bat for detected pose
         const detectedColor = showDifferenceHighlight && effectiveShowIdeal ? '#ef4444' : '#3b82f6';
-        drawBat(ctx, normalizedDetected, detectedColor, 0.9, 6, true, currentPhase);
+        drawBat(ctx, normalizedDetected, detectedColor, 0.9, 8, true, currentPhase);
       }
       
       // Calculate similarity
