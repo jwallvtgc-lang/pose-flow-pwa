@@ -302,6 +302,89 @@ export function SwingOverlayCanvas({
     ctx.globalAlpha = 1;
   };
 
+  // Draw bat extending from hands
+  const drawBat = (
+    ctx: CanvasRenderingContext2D,
+    keypoints: Record<string, { x: number; y: number; score?: number }>,
+    color: string,
+    opacity: number,
+    lineWidth: number = 5,
+    isNormalized: boolean = true,
+    phase: SwingPhase = 'contact'
+  ) => {
+    const canvas = ctx.canvas;
+    const leftWrist = keypoints['left_wrist'];
+    const rightWrist = keypoints['right_wrist'];
+    
+    if (!leftWrist || !rightWrist) return;
+    if (leftWrist.score !== undefined && leftWrist.score < 0.3) return;
+    if (rightWrist.score !== undefined && rightWrist.score < 0.3) return;
+    
+    // Convert to pixel coordinates
+    const lwX = isNormalized ? leftWrist.x * canvas.width : leftWrist.x;
+    const lwY = isNormalized ? leftWrist.y * canvas.height : leftWrist.y;
+    const rwX = isNormalized ? rightWrist.x * canvas.width : rightWrist.x;
+    const rwY = isNormalized ? rightWrist.y * canvas.height : rightWrist.y;
+    
+    // Calculate midpoint between hands (grip point)
+    const gripX = (lwX + rwX) / 2;
+    const gripY = (lwY + rwY) / 2;
+    
+    // Calculate angle from hands orientation
+    const handAngle = Math.atan2(rwY - lwY, rwX - lwX);
+    
+    // Bat length relative to canvas (about 34 inches / 86cm bat, scaled to body)
+    const batLength = canvas.height * 0.4;
+    
+    // Adjust bat angle based on swing phase
+    let angleAdjustment = 0;
+    switch (phase) {
+      case 'setup':
+      case 'load':
+        angleAdjustment = Math.PI / 3; // Bat up and back
+        break;
+      case 'stride':
+        angleAdjustment = Math.PI / 4; // Bat starting down
+        break;
+      case 'contact':
+        angleAdjustment = -Math.PI / 12; // Bat through zone
+        break;
+      case 'extension':
+        angleAdjustment = -Math.PI / 6; // Bat extending through
+        break;
+      case 'finish':
+        angleAdjustment = -Math.PI / 4; // Bat finishing high
+        break;
+    }
+    
+    const batAngle = handAngle + angleAdjustment;
+    
+    // Calculate bat barrel position (extending from grip)
+    const barrelX = gripX + Math.cos(batAngle) * batLength;
+    const barrelY = gripY + Math.sin(batAngle) * batLength;
+    
+    // Draw bat
+    ctx.globalAlpha = opacity;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round';
+    
+    // Draw main bat shaft
+    ctx.beginPath();
+    ctx.moveTo(gripX, gripY);
+    ctx.lineTo(barrelX, barrelY);
+    ctx.stroke();
+    
+    // Draw bat barrel (thicker end)
+    ctx.beginPath();
+    ctx.arc(barrelX, barrelY, lineWidth * 1.5, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+    
+    ctx.globalAlpha = 1;
+    ctx.lineCap = 'butt';
+  };
+
   // Draw standard skeleton (for ideal pose)
   const drawSkeleton = (
     ctx: CanvasRenderingContext2D,
@@ -476,6 +559,8 @@ export function SwingOverlayCanvas({
       // Draw ideal pose (scaled and aligned to detected pose)
       if (effectiveShowIdeal) {
         drawSkeleton(ctx, scaledIdealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 3, true);
+        // Draw bat for ideal pose
+        drawBat(ctx, scaledIdealKeypoints, '#22c55e', effectiveIdealOpacity / 100, 6, true, currentPhase);
       }
       
       // Draw detected pose with difference highlighting
@@ -492,6 +577,9 @@ export function SwingOverlayCanvas({
           // Standard blue skeleton
           drawSkeleton(ctx, normalizedDetected, '#3b82f6', 0.9, 4, true);
         }
+        // Draw bat for detected pose
+        const detectedColor = showDifferenceHighlight && effectiveShowIdeal ? '#ef4444' : '#3b82f6';
+        drawBat(ctx, normalizedDetected, detectedColor, 0.9, 6, true, currentPhase);
       }
       
       // Calculate similarity
