@@ -222,9 +222,11 @@ export function getAdjustedIdealPose(
   const baseKeypoints = IDEAL_SWING_KEYPOINTS[phase];
   
   // Base keypoints are for right-handed batter, side view (first base side)
-  // For face-on view with right-handed batter: flip horizontally
+  // From first base side, we see the batter's left (front) side
+  // For face-on view with right-handed batter: DON'T flip (use base as-is)
+  // In face-on view, RH batter's left shoulder should be on viewer's left (pitcher side)
   if (cameraView === 'front' && handedness === 'right') {
-    return flipIdealPoseHorizontally(baseKeypoints);
+    return baseKeypoints;
   }
   
   // For side view with left-handed batter: flip horizontally
@@ -232,11 +234,9 @@ export function getAdjustedIdealPose(
     return flipIdealPoseHorizontally(baseKeypoints);
   }
   
-  // For face-on view with left-handed batter: use base as-is
-  // (since base is RH side view, flipping once for front view, 
-  //  then flipping again for LH = back to original orientation)
+  // For face-on view with left-handed batter: flip horizontally
   if (cameraView === 'front' && handedness === 'left') {
-    return baseKeypoints;
+    return flipIdealPoseHorizontally(baseKeypoints);
   }
   
   // Default: side view, right-handed (matches base data)
