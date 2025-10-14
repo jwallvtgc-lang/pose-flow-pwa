@@ -315,8 +315,6 @@ export function SwingOverlayCanvas({
     const canvas = ctx.canvas;
     const leftWrist = keypoints['left_wrist'];
     const rightWrist = keypoints['right_wrist'];
-    const leftShoulder = keypoints['left_shoulder'];
-    const rightShoulder = keypoints['right_shoulder'];
     
     if (!leftWrist || !rightWrist) return;
     if (leftWrist.score !== undefined && leftWrist.score < 0.3) return;
@@ -332,43 +330,34 @@ export function SwingOverlayCanvas({
     const gripX = (lwX + rwX) / 2;
     const gripY = (lwY + rwY) / 2;
     
-    // Get shoulder orientation for reference
-    let shoulderAngle = 0;
-    if (leftShoulder && rightShoulder) {
-      const lsX = isNormalized ? leftShoulder.x * canvas.width : leftShoulder.x;
-      const lsY = isNormalized ? leftShoulder.y * canvas.height : leftShoulder.y;
-      const rsX = isNormalized ? rightShoulder.x * canvas.width : rightShoulder.x;
-      const rsY = isNormalized ? rightShoulder.y * canvas.height : rightShoulder.y;
-      shoulderAngle = Math.atan2(rsY - lsY, rsX - lsX);
-    }
-    
     // Bat length relative to canvas (about 34 inches / 86cm bat, scaled to body)
     const batLength = canvas.height * 0.4;
     
     // Determine bat angle based on swing phase
-    // Angles relative to horizontal (0 = horizontal right, PI/2 = straight down, -PI/2 = straight up)
+    // Angles: 0 = horizontal right, -PI/2 = straight up, PI/2 = straight down
+    // Negative angles point upward, positive angles point downward
     let batAngle = 0;
     switch (phase) {
       case 'setup':
       case 'load':
-        // Bat angled up and back, roughly 45-60 degrees above horizontal
-        batAngle = shoulderAngle - Math.PI / 3; // ~60 degrees up from shoulder line
+        // Bat angled up and back, 45-60 degrees above horizontal
+        batAngle = -Math.PI / 3; // ~60 degrees up
         break;
       case 'stride':
-        // Bat starting to come down, roughly 30-45 degrees above horizontal
-        batAngle = shoulderAngle - Math.PI / 6; // ~30 degrees up
+        // Bat starting to come down, 30-45 degrees above horizontal
+        batAngle = -Math.PI / 4; // ~45 degrees up
         break;
       case 'contact':
-        // Bat level to slightly upward through zone (5-15 degree attack angle)
-        batAngle = shoulderAngle + Math.PI / 24; // ~7.5 degrees up from shoulder line
+        // Bat level to slightly upward through zone (slight attack angle)
+        batAngle = -Math.PI / 12; // ~15 degrees up
         break;
       case 'extension':
         // Bat extending through, slight upward path
-        batAngle = shoulderAngle + Math.PI / 12; // ~15 degrees up
+        batAngle = -Math.PI / 18; // ~10 degrees up
         break;
       case 'finish':
         // Bat finishing high over shoulder
-        batAngle = shoulderAngle - Math.PI / 6; // ~30 degrees up
+        batAngle = -Math.PI / 6; // ~30 degrees up
         break;
     }
     
