@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, AlertCircle, Share2, Mail, Camera } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, Share2, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -520,7 +520,7 @@ export default function SwingDetail() {
         </div>
       </div>
 
-      <div className="px-4 py-6 max-w-2xl mx-auto space-y-4">
+      <div className="px-4 py-6 pb-32 max-w-2xl mx-auto space-y-4">
         {/* VIDEO PLAYER SECTION */}
         {swing.video_url && (
           <div className="rounded-2xl overflow-hidden border border-white/10 shadow-xl">
@@ -677,19 +677,26 @@ export default function SwingDetail() {
           })()}
         </div>
 
-        {/* FOOTER CTA SPACE */}
-        <div className="h-24"></div>
       </div>
 
-      {/* Floating Action Button */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <Button
-          size="icon"
-          className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg"
-          onClick={() => navigate('/swing-analysis')}
-        >
-          <Camera className="w-6 h-6" />
-        </Button>
+      {/* FIXED FOOTER BAR */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-lg border-t border-white/10 safe-area-bottom">
+        <div className="px-4 py-4 max-w-2xl mx-auto flex flex-col gap-2">
+          <Button
+            onClick={() => navigate('/swing-analysis')}
+            className="w-full rounded-xl bg-white hover:bg-white/90 text-black font-bold py-4 h-auto text-base"
+          >
+            Record new swing after drill
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-white/60 hover:text-white hover:bg-transparent text-xs"
+            onClick={() => toast.info('Comparison feature coming soon!')}
+          >
+            Compare to yesterday
+          </Button>
+        </div>
       </div>
     </div>
   );
