@@ -472,9 +472,27 @@ const Index = () => {
                   to={`/swing/${swing.id}`}
                   className="w-40 shrink-0 rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_12px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] p-3 flex flex-col gap-2 transition-all duration-200"
                 >
-                  <div className="aspect-video rounded-xl bg-white/5 relative overflow-hidden border border-white/10 flex items-center justify-center group">
-                    <div className="absolute inset-0 bg-black/40" />
-                    <Play className="w-8 h-8 text-white relative z-10 group-hover:scale-110 transition-transform" />
+                  <div className="aspect-video rounded-xl bg-black relative overflow-hidden border border-white/10 group">
+                    {swing.video_url ? (
+                      <>
+                        <video
+                          src={swing.video_url}
+                          className="w-full h-full object-cover"
+                          preload="metadata"
+                          playsInline
+                          muted
+                        />
+                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <Play className="w-8 h-8 text-white/60" />
+                      </div>
+                    )}
                   </div>
                   <div>
                     <p className="text-white font-semibold text-sm">{swing.score_phase1 || '--'}</p>
