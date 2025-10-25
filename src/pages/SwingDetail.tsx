@@ -448,7 +448,7 @@ export default function SwingDetail() {
               variant="ghost" 
               size="icon" 
               onClick={() => navigate('/')}
-              className="rounded-full text-white/60 hover:text-white hover:bg-white/10"
+              className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -666,7 +666,7 @@ export default function SwingDetail() {
               { key: 'attack_angle_deg', label: 'ATTACK ANGLE', unit: '°' },
               { key: 'bat_lag_deg', label: 'BAT LAG', unit: '°' },
               { key: 'torso_tilt_deg', label: 'TORSO TILT', unit: '°' },
-              { key: 'contact_timing_frames', label: 'CONTACT TIMING', unit: 'f' },
+              { key: 'contact_timing_frames', label: 'CONTACT TIMING', unit: '' }, // No unit shown
               { key: 'finish_balance_idx', label: 'FINISH BALANCE', unit: '' }
             ];
 
