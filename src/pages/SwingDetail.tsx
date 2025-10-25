@@ -443,11 +443,21 @@ export default function SwingDetail() {
       {/* HEADER */}
       <div className="px-4 py-4 max-w-2xl mx-auto">
         <div className="flex items-center justify-between">
-          <div>
-            <div className="text-white/60 text-xs uppercase tracking-wide mb-1">Swing from</div>
-            <div className="text-white text-sm font-medium">
-              {swingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
-              {swingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/')}
+              className="rounded-full text-white/60 hover:text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <div className="text-white/60 text-xs uppercase tracking-wide mb-1">Swing from</div>
+              <div className="text-white text-sm font-medium">
+                {swingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
+                {swingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
             </div>
           </div>
           
