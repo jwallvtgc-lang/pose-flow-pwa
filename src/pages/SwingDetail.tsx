@@ -1,9 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Pause, Loader2, Target, TrendingUp, AlertCircle, Zap, Share2, Mail, ChevronDown, ChevronUp, Bot, Activity, Trophy, CheckCircle2, XCircle, Camera, Download, TrendingDown, Info } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, Share2, Mail, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -12,8 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { getVideoSignedUrl } from '@/lib/storage';
 import { toast } from 'sonner';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
@@ -65,21 +61,14 @@ export default function SwingDetail() {
   const [videoError, setVideoError] = useState<string>('');
   const [aiCoaching, setAiCoaching] = useState<AICoaching | null>(null);
   const [isLoadingCoaching, setIsLoadingCoaching] = useState(false);
-  const [animatedScore, setAnimatedScore] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Video player state
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [showIdealForm, setShowIdealForm] = useState(true);
-  const [showMyForm, setShowMyForm] = useState(true);
-  const [idealOpacity, setIdealOpacity] = useState(0.5);
-  const [selectedPhase, setSelectedPhase] = useState('all');
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  
-  // UI state
-  const [expandedFocusArea, setExpandedFocusArea] = useState<number | null>(null);
-  const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
+  const [showIdealForm] = useState(true);
+  const [showMyForm] = useState(true);
+  const [idealOpacity] = useState(0.5);
+  const [selectedPhase] = useState('all');
   
   // Share functionality state
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -87,29 +76,6 @@ export default function SwingDetail() {
   const [shareName, setShareName] = useState('');
   const [shareMessage, setShareMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-
-  // Animated score counter
-  useEffect(() => {
-    if (swing?.score_phase1) {
-      const targetScore = swing.score_phase1;
-      const duration = 1500;
-      const steps = 60;
-      const increment = targetScore / steps;
-      let current = 0;
-      
-      const timer = setInterval(() => {
-        current += increment;
-        if (current >= targetScore) {
-          setAnimatedScore(targetScore);
-          clearInterval(timer);
-        } else {
-          setAnimatedScore(Math.floor(current));
-        }
-      }, duration / steps);
-      
-      return () => clearInterval(timer);
-    }
-  }, [swing?.score_phase1]);
 
   useEffect(() => {
     if (id) {
@@ -348,62 +314,41 @@ export default function SwingDetail() {
     }
   };
 
-  const getScoreLabel = (score: number | null) => {
-    if (!score) return 'N/A';
-    if (score >= 80) return 'Excellent';
-    if (score >= 60) return 'Good';
-    return 'Needs Work';
-  };
-
-  const getScoreIcon = (score: number | null) => {
-    if (!score) return null;
-    if (score >= 80) return <Trophy className="w-6 h-6" />;
-    if (score >= 60) return <Target className="w-6 h-6" />;
-    return <TrendingUp className="w-6 h-6" />;
-  };
-
-  const getMetricStatus = (metricName: string, value: number): { color: string; status: string; progress: number; borderColor: string; bgColor: string } => {
+  const getMetricStatus = (metricName: string, value: number): { color: string; status: string; progress: number; textColor: string } => {
     const spec = metricSpecs[metricName as keyof typeof metricSpecs];
-    if (!spec) return { color: 'text-muted-foreground', status: 'Unknown', progress: 0, borderColor: 'border-l-gray-300', bgColor: 'bg-gray-50' };
+    if (!spec) return { color: 'bg-gray-500', status: 'Unknown', progress: 0, textColor: 'text-gray-500' };
 
     const [min, max] = spec.target;
     let isInTarget = false;
     let progress = 0;
 
     if ('invert' in spec && spec.invert) {
-      // For inverted metrics (lower is better)
       isInTarget = value <= max;
       if (value <= max) {
-        // Within or below target - calculate progress
         progress = Math.max(0, Math.min(1, (max - value) / (max - min)));
       } else {
-        // Above max (bad) - penalize with negative progress
         const excessRatio = (value - max) / (max - min);
-        progress = Math.max(0, 1 - excessRatio); // Decreases as value exceeds max
+        progress = Math.max(0, 1 - excessRatio);
       }
     } else {
-      // For normal metrics (higher/within range is better)
       isInTarget = value >= min && value <= max;
       if (value < min) {
-        // Below min (bad) - calculate how far below
         const deficitRatio = (min - value) / (max - min);
-        progress = Math.max(0, -deficitRatio); // Negative progress
+        progress = Math.max(0, -deficitRatio);
       } else if (value > max) {
-        // Above max (bad) - penalize with reduced progress
         const excessRatio = (value - max) / (max - min);
-        progress = Math.max(0, 1 - excessRatio); // Decreases as value exceeds max
+        progress = Math.max(0, 1 - excessRatio);
       } else {
-        // Within range - normal calculation
         progress = (value - min) / (max - min);
       }
     }
 
     if (isInTarget) {
-      return { color: 'text-green-600', status: 'Great!', progress: progress * 100, borderColor: 'border-l-green-500', bgColor: 'bg-green-50' };
-    } else if (progress > 0.3 && progress < 0.7) {
-      return { color: 'text-orange-600', status: 'Good', progress: progress * 100, borderColor: 'border-l-orange-500', bgColor: 'bg-orange-50' };
+      return { color: 'bg-green-500', status: 'On track', progress: progress * 100, textColor: 'text-green-400' };
+    } else if (progress > 0.3) {
+      return { color: 'bg-yellow-500', status: 'Close', progress: progress * 100, textColor: 'text-yellow-400' };
     } else {
-      return { color: 'text-red-600', status: 'Needs Work', progress: progress * 100, borderColor: 'border-l-red-500', bgColor: 'bg-red-50' };
+      return { color: 'bg-red-500', status: 'Needs work', progress: progress * 100, textColor: 'text-red-400' };
     }
   };
 
@@ -416,83 +361,24 @@ export default function SwingDetail() {
     return `${min}–${max}${suffix}`;
   };
 
-  const scrollToMetric = (metricKey: string) => {
-    setExpandedMetric(metricKey);
-    const element = document.getElementById(`metric-${metricKey}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
-
-  const handleVideoPlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const handlePlaybackSpeedChange = (speed: number) => {
-    setPlaybackSpeed(speed);
-    if (videoRef.current) {
-      videoRef.current.playbackRate = speed;
-    }
-  };
-
-  // Calculate quick stats
-  const calculateQuickStats = () => {
-    if (metrics.length === 0) return null;
-    
-    let bestMetric = { name: '', value: 0, score: 0 };
-    let worstMetric = { name: '', value: 0, score: 100 };
-    
-    metrics.forEach(metric => {
-      if (!metric.metric || metric.value === null) return;
-      const status = getMetricStatus(metric.metric, metric.value);
-      const normalizedScore = status.progress;
-      
-      if (normalizedScore > bestMetric.score) {
-        bestMetric = {
-          name: metricDisplayNames()[metric.metric] || metric.metric,
-          value: metric.value,
-          score: normalizedScore
-        };
-      }
-      
-      if (normalizedScore < worstMetric.score) {
-        worstMetric = {
-          name: metricDisplayNames()[metric.metric] || metric.metric,
-          value: metric.value,
-          score: normalizedScore
-        };
-      }
-    });
-    
-    return { bestMetric, worstMetric };
-  };
-
-  const quickStats = calculateQuickStats();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
+        <div className="px-4 py-6 max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-6">
-            <div className="h-10 w-10 bg-muted rounded-2xl animate-pulse"></div>
-            <div className="h-8 bg-muted rounded animate-pulse w-48"></div>
+            <div className="h-10 w-10 bg-white/10 rounded-2xl animate-pulse"></div>
+            <div className="h-8 bg-white/10 rounded animate-pulse w-48"></div>
           </div>
           
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
-              <Card key={i} className="p-6 rounded-2xl">
+              <div key={i} className="p-6 rounded-2xl bg-white/5 border-white/10">
                 <div className="animate-pulse space-y-3">
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                  <div className="h-20 bg-muted rounded"></div>
+                  <div className="h-4 bg-white/10 rounded w-3/4"></div>
+                  <div className="h-20 bg-white/10 rounded"></div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
@@ -502,182 +388,142 @@ export default function SwingDetail() {
 
   if (error || !swing) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
+        <div className="px-4 py-6 max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-2xl">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-2xl text-white">
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-2xl font-bold">Swing Details</h1>
+            <h1 className="text-2xl font-bold text-white">Swing Details</h1>
           </div>
 
-          <Card className="p-6 text-center rounded-2xl">
-            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
-            <h3 className="text-lg font-bold mb-2">
+          <div className="p-6 text-center rounded-2xl bg-white/5 border-white/10">
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+            <h3 className="text-lg font-bold mb-2 text-white">
               {error ? 'Error Loading Swing' : 'Swing Not Found'}
             </h3>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-white/60 mb-4">
               {error || 'The requested swing could not be found.'}
             </p>
             <Button onClick={() => navigate('/')} className="rounded-2xl">
               Back to Home
             </Button>
-          </Card>
+          </div>
         </div>
       </div>
     );
   }
 
   const swingDate = swing.created_at ? new Date(swing.created_at) : new Date();
+  
+  // Get the top coaching note from AI
+  const topCoachingNote = aiCoaching?.cues?.[0] || "Keep working on your fundamentals";
+  const topCoachingStatus = aiCoaching ? getMetricStatus(aiCoaching.focusAreas[0] || '', 50) : { status: 'On track', textColor: 'text-green-400' };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* STICKY HEADER */}
-      <div className="sticky top-0 z-50 backdrop-blur-lg bg-gradient-to-r from-blue-500 via-blue-600 to-purple-600 border-b border-white/10">
-        <div className="container mx-auto px-4 py-4 max-w-2xl">
-          <div className="flex items-center justify-between">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/')}
-              className="rounded-2xl text-white hover:bg-white/20"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            
-            <div className="flex-1 text-center">
-              <h1 className="text-lg font-bold text-white">Swing Analysis</h1>
-              <p className="text-xs text-white/80">
-                {swingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
-                {swingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
+    <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
+      {/* HEADER */}
+      <div className="px-4 py-4 max-w-2xl mx-auto">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-white/60 text-xs uppercase tracking-wide mb-1">Swing from</div>
+            <div className="text-white text-sm font-medium">
+              {swingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
+              {swingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
-            
-            <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="rounded-2xl text-white hover:bg-white/20"
-                >
-                  <Share2 className="w-5 h-5" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md rounded-2xl">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <Share2 className="w-5 h-5" />
-                    Share Swing Analysis
-                  </DialogTitle>
-                  <DialogDescription>
-                    Send this analysis to a coach, parent, or friend.
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="shareEmail">Email Address *</Label>
-                    <Input
-                      id="shareEmail"
-                      type="email"
-                      placeholder="coach@example.com"
-                      value={shareEmail}
-                      onChange={(e) => setShareEmail(e.target.value)}
-                      className="rounded-2xl mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="shareName">Your Name (optional)</Label>
-                    <Input
-                      id="shareName"
-                      type="text"
-                      placeholder="Your name"
-                      value={shareName}
-                      onChange={(e) => setShareName(e.target.value)}
-                      className="rounded-2xl mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="shareMessage">Personal Message (optional)</Label>
-                    <Textarea
-                      id="shareMessage"
-                      placeholder="Hey coach, check out my latest swing..."
-                      value={shareMessage}
-                      onChange={(e) => setShareMessage(e.target.value)}
-                      rows={3}
-                      className="rounded-2xl mt-1"
-                    />
-                  </div>
-                </div>
-
-                <DialogFooter>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsShareDialogOpen(false)}
-                    disabled={isSending}
-                    className="rounded-2xl"
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleShareSwing} disabled={isSending} className="rounded-2xl">
-                    {isSending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="w-4 h-4 mr-2" />
-                        Send Email
-                      </>
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
           </div>
+          
+          <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="rounded-lg border-white/20 text-white/60 hover:text-white hover:bg-white/10"
+              >
+                Share w/ Coach
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Share2 className="w-5 h-5" />
+                  Share Swing Analysis
+                </DialogTitle>
+                <DialogDescription>
+                  Send this analysis to a coach, parent, or friend.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="shareEmail">Email Address *</Label>
+                  <Input
+                    id="shareEmail"
+                    type="email"
+                    placeholder="coach@example.com"
+                    value={shareEmail}
+                    onChange={(e) => setShareEmail(e.target.value)}
+                    className="rounded-2xl mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="shareName">Your Name (optional)</Label>
+                  <Input
+                    id="shareName"
+                    type="text"
+                    placeholder="Your name"
+                    value={shareName}
+                    onChange={(e) => setShareName(e.target.value)}
+                    className="rounded-2xl mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="shareMessage">Personal Message (optional)</Label>
+                  <Textarea
+                    id="shareMessage"
+                    placeholder="Hey coach, check out my latest swing..."
+                    value={shareMessage}
+                    onChange={(e) => setShareMessage(e.target.value)}
+                    rows={3}
+                    className="rounded-2xl mt-1"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsShareDialogOpen(false)}
+                  disabled={isSending}
+                  className="rounded-2xl"
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleShareSwing} disabled={isSending} className="rounded-2xl">
+                  {isSending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4 mr-2" />
+                      Send Email
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 max-w-2xl space-y-4">
-        {/* HERO SCORE CARD */}
-        <Card className="p-6 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-2xl text-white border-0 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-white/90 text-sm font-medium mb-1">
-                {swingDate.toLocaleDateString('en-US', { 
-                  weekday: 'long',
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </div>
-              <div className="text-white/70 text-xs">
-                {swingDate.toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                {getScoreIcon(swing.score_phase1)}
-                <div className="text-6xl font-bold">
-                  {animatedScore}
-                </div>
-              </div>
-              <Badge className="bg-white/20 text-white border-0 rounded-full backdrop-blur-sm">
-                {getScoreLabel(swing.score_phase1)}
-              </Badge>
-            </div>
-          </div>
-        </Card>
-
+      <div className="px-4 py-6 max-w-2xl mx-auto space-y-4">
         {/* VIDEO PLAYER SECTION */}
         {swing.video_url && (
-          <Card className="p-0 rounded-2xl overflow-hidden shadow-sm">
+          <div className="rounded-2xl overflow-hidden border border-white/10 shadow-xl">
             {videoUrl ? (
               <div className="relative">
                 <div className="relative bg-black">
@@ -685,10 +531,9 @@ export default function SwingDetail() {
                     ref={videoRef}
                     src={videoUrl}
                     className="w-full h-auto"
+                    controls
                     preload="metadata"
                     playsInline
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
                     onLoadedMetadata={(e) => {
                       if (canvasRef.current) {
                         canvasRef.current.width = e.currentTarget.videoWidth;
@@ -704,63 +549,6 @@ export default function SwingDetail() {
                     className="absolute top-0 left-0 w-full h-full pointer-events-none"
                     style={{ zIndex: 10 }}
                   />
-                  
-                  {/* Video Overlay Controls */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    {/* Play/Pause Button */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Button
-                        size="icon"
-                        onClick={handleVideoPlayPause}
-                        className="pointer-events-auto w-16 h-16 rounded-full bg-white/90 hover:bg-white text-black"
-                      >
-                        {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
-                      </Button>
-                    </div>
-                    
-                    {/* Top Right Controls */}
-                    <div className="absolute top-4 right-4 space-y-2 pointer-events-auto">
-                      <div className="bg-black/70 backdrop-blur-sm rounded-xl p-3 space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-white text-xs font-medium">Ideal Form</span>
-                          <Switch
-                            checked={showIdealForm}
-                            onCheckedChange={setShowIdealForm}
-                            className="data-[state=checked]:bg-green-500"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-white text-xs font-medium">My Form</span>
-                          <Switch
-                            checked={showMyForm}
-                            onCheckedChange={setShowMyForm}
-                            className="data-[state=checked]:bg-blue-500"
-                          />
-                        </div>
-                        {showIdealForm && (
-                          <div className="pt-2 border-t border-white/20">
-                            <span className="text-white text-xs">Opacity</span>
-                            <Slider
-                              value={[idealOpacity * 100]}
-                              onValueChange={(value) => setIdealOpacity(value[0] / 100)}
-                              max={100}
-                              step={10}
-                              className="mt-2"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Match Badge */}
-                    {showIdealForm && showMyForm && (
-                      <div className="absolute top-4 left-4 pointer-events-none">
-                        <Badge className="bg-white/90 text-black border-0 text-sm font-bold">
-                          57% Match
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
                 </div>
                 
                 {swing?.pose_data?.keypointsByFrame && videoRef.current && (
@@ -778,59 +566,16 @@ export default function SwingDetail() {
                     hideControls={true}
                   />
                 )}
-                
-                {/* Video Controls Bar */}
-                <div className="p-4 bg-card border-t">
-                  <div className="flex items-center gap-2 justify-between flex-wrap">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleVideoPlayPause}
-                      className="rounded-xl"
-                    >
-                      {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-                      {isPlaying ? 'Pause' : 'Play'}
-                    </Button>
-                    
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Speed:</span>
-                      <select
-                        value={playbackSpeed}
-                        onChange={(e) => handlePlaybackSpeedChange(Number(e.target.value))}
-                        className="text-sm border rounded-xl px-2 py-1 bg-background"
-                      >
-                        <option value="0.25">0.25x</option>
-                        <option value="0.5">0.5x</option>
-                        <option value="0.75">0.75x</option>
-                        <option value="1">1x</option>
-                      </select>
-                    </div>
-                    
-                    <select
-                      value={selectedPhase}
-                      onChange={(e) => setSelectedPhase(e.target.value)}
-                      className="text-sm border rounded-xl px-3 py-2 bg-background"
-                    >
-                      <option value="all">All Phases</option>
-                      <option value="setup">Setup</option>
-                      <option value="load">Load</option>
-                      <option value="stride">Stride</option>
-                      <option value="contact">Contact</option>
-                      <option value="extension">Extension</option>
-                      <option value="finish">Finish</option>
-                    </select>
-                  </div>
-                </div>
               </div>
             ) : isVideoLoading ? (
-              <div className="p-12 text-center">
-                <Loader2 className="w-12 h-12 mx-auto mb-3 text-primary animate-spin" />
-                <p className="text-muted-foreground">Loading video...</p>
+              <div className="p-12 text-center bg-black/50">
+                <Loader2 className="w-12 h-12 mx-auto mb-3 text-white/60 animate-spin" />
+                <p className="text-white/60">Loading video...</p>
               </div>
             ) : videoError ? (
-              <div className="p-12 text-center">
-                <AlertCircle className="w-12 h-12 mx-auto mb-3 text-destructive" />
-                <p className="text-destructive font-medium mb-4">{videoError}</p>
+              <div className="p-12 text-center bg-black/50">
+                <AlertCircle className="w-12 h-12 mx-auto mb-3 text-red-400" />
+                <p className="text-red-400 font-medium mb-4">{videoError}</p>
                 <Button 
                   variant="outline"
                   onClick={() => loadVideoUrl(swing.video_url!)}
@@ -840,358 +585,84 @@ export default function SwingDetail() {
                 </Button>
               </div>
             ) : null}
-          </Card>
-        )}
-
-        {/* QUICK STATS ROW */}
-        {quickStats && swing.score_phase1 && (
-          <div className="overflow-x-auto -mx-4 px-4">
-            <div className="flex gap-3 min-w-max pb-2">
-              <Card className="p-4 rounded-2xl min-w-[150px] cursor-pointer hover:shadow-md transition-shadow">
-                <div className="text-center">
-                  <Activity className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-                  <div className="text-2xl font-bold">{swing.score_phase1}%</div>
-                  <div className="text-xs text-muted-foreground">Overall Score</div>
-                </div>
-              </Card>
-              
-              <Card 
-                className="p-4 rounded-2xl min-w-[150px] cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => scrollToMetric(quickStats.bestMetric.name)}
-              >
-                <div className="text-center">
-                  <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                  <div className="text-sm font-bold text-green-600">Best Metric</div>
-                  <div className="text-xs text-muted-foreground truncate">{quickStats.bestMetric.name}</div>
-                </div>
-              </Card>
-              
-              <Card 
-                className="p-4 rounded-2xl min-w-[150px] cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => scrollToMetric(quickStats.worstMetric.name)}
-              >
-                <div className="text-center">
-                  <XCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
-                  <div className="text-sm font-bold text-red-600">Needs Work</div>
-                  <div className="text-xs text-muted-foreground truncate">{quickStats.worstMetric.name}</div>
-                </div>
-              </Card>
-              
-              <Card className="p-4 rounded-2xl min-w-[150px]">
-                <div className="text-center">
-                  <Zap className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
-                  <div className="text-2xl font-bold">
-                    {swing.bat_speed_peak ? `${swing.bat_speed_peak.toFixed(1)}` : 'N/A'}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Bat Speed (MPH)</div>
-                </div>
-              </Card>
-            </div>
           </div>
         )}
 
-        {/* AI COACHING SECTION */}
-        {isLoadingCoaching ? (
-          <Card className="p-6 rounded-2xl">
-            <div className="flex items-center gap-3">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Generating AI coaching...</p>
-            </div>
-          </Card>
-        ) : aiCoaching ? (
-          <Card className="p-0 rounded-2xl overflow-hidden border-2 border-primary/20">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-6 border-b">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
-                  <Bot className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold">Your AI Coach</h3>
-                  <p className="text-sm text-muted-foreground">Personalized feedback</p>
-                </div>
+        {/* COACH NOTE AND DRILL CARDS (Side by Side) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Coach Note Card */}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm shadow-lg">
+            <div className="text-xs text-white/60 uppercase tracking-wide mb-2">Coach Note</div>
+            {isLoadingCoaching ? (
+              <div className="flex items-center gap-2 py-4">
+                <Loader2 className="w-4 h-4 text-white/60 animate-spin" />
+                <span className="text-white/60 text-sm">Loading...</span>
               </div>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              {aiCoaching.encouragement && (
-                <div className="bg-primary/10 rounded-2xl p-4">
-                  <p className="text-sm font-medium leading-relaxed">
-                    {aiCoaching.encouragement}
-                  </p>
+            ) : (
+              <>
+                <p className="text-white text-sm leading-relaxed mb-3">
+                  {topCoachingNote}
+                </p>
+                <div className={cn("text-xs font-medium", topCoachingStatus.textColor)}>
+                  {topCoachingStatus.status}
                 </div>
-              )}
+              </>
+            )}
+          </div>
 
-              {aiCoaching.cues && aiCoaching.cues.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-bold text-sm">Focus Areas:</h4>
-                  {aiCoaching.cues.map((cue, index) => (
-                    <Card 
-                      key={index}
-                      className={cn(
-                        "p-4 rounded-2xl cursor-pointer transition-all",
-                        expandedFocusArea === index ? "ring-2 ring-primary" : ""
-                      )}
-                      onClick={() => setExpandedFocusArea(expandedFocusArea === index ? null : index)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Zap className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h5 className="font-bold text-sm">Work on your {aiCoaching.focusAreas[index] || 'technique'}!</h5>
-                            {expandedFocusArea === index ? (
-                              <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {cue}
-                          </p>
-                          {expandedFocusArea === index && aiCoaching.explanations && aiCoaching.explanations[index] && (
-                            <div className="mt-3 pt-3 border-t">
-                              <p className="text-xs leading-relaxed">
-                                {aiCoaching.explanations[index]}
-                              </p>
-                              {drill && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="mt-3 rounded-xl"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    document.getElementById('drill-section')?.scrollIntoView({ behavior: 'smooth' });
-                                  }}
-                                >
-                                  View Drill
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Card>
-        ) : null}
-
-        {/* PRACTICE DRILL SECTION */}
-        {drill && (
-          <Card id="drill-section" className="p-6 rounded-2xl border-2 border-green-500/20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center">
-                <Target className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold">Recommended Drill</h3>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Activity className="w-3 h-3" />
-                  <span>Personalized for you</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-2xl p-5 space-y-3">
-              <h4 className="font-bold text-lg">{drill.name}</h4>
-              {drill.how_to && (
-                <p className="text-sm leading-relaxed">{drill.how_to}</p>
-              )}
-              {drill.equipment && (
-                <div className="flex items-center gap-2 pt-2 border-t border-green-200/50">
-                  <Target className="w-4 h-4 text-green-600" />
-                  <span className="text-xs font-medium">Equipment: {drill.equipment}</span>
-                </div>
-              )}
-              <Button className="w-full mt-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">
-                Start Drill
+          {/* Do this drill today Card */}
+          {drill && (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm shadow-lg">
+              <div className="text-xs text-white/60 uppercase tracking-wide mb-2">Do this drill today</div>
+              <div className="text-green-400 font-bold text-base mb-1">{drill.name}</div>
+              <p className="text-white/70 text-xs mb-3 line-clamp-2">
+                {drill.how_to || "Work on your fundamentals"}
+              </p>
+              <Button 
+                size="sm" 
+                className="w-full rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30"
+                onClick={() => toast.info('Drill details coming soon!')}
+              >
+                View drill steps
               </Button>
             </div>
-          </Card>
-        )}
+          )}
+        </div>
 
-        {/* METRICS BREAKDOWN */}
-        <Card className="p-6 rounded-2xl">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-purple-500 rounded-2xl flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="text-lg font-bold">Detailed Metrics</h3>
-          </div>
-          
-          {metrics.length === 0 ? (
-            <div className="text-center py-8">
-              <Activity className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-              <p className="text-muted-foreground text-sm">No metrics available</p>
-            </div>
+        {/* STAT TILES GRID (2 columns) */}
+        <div className="grid grid-cols-2 gap-3">
+          {metrics.length > 0 ? (
+            metrics.slice(0, 6).map((metric) => {
+              if (!metric.metric || metric.value === null) return null;
+              const displayName = metricDisplayNames()[metric.metric] || metric.metric.replace(/_/g, ' ');
+              const value = metric.value;
+              const unit = metric.unit || '';
+              const status = getMetricStatus(metric.metric, value);
+              
+              return (
+                <div 
+                  key={metric.metric}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm"
+                >
+                  <div className="text-xs text-white/60 mb-1">{displayName}</div>
+                  <div className="text-white text-2xl font-bold mb-2">
+                    {value.toFixed(1)}{unit}
+                  </div>
+                  <div className={cn("text-xs font-medium", status.textColor)}>
+                    {status.status}
+                  </div>
+                </div>
+              );
+            })
           ) : (
-            <div className="space-y-3">
-              {Object.entries(metricSpecs)
-                .map(([metricKey]) => {
-                  const metric = metrics.find(m => m.metric === metricKey);
-                  if (!metric || metric.value === null || metric.value === undefined) return null;
-                  
-                  const displayName = metricDisplayNames()[metricKey] || metricKey.replace(/_/g, ' ');
-                  const value = metric.value;
-                  const unit = metric.unit || '';
-                  const status = getMetricStatus(metricKey, value);
-                  const isExpanded = expandedMetric === metricKey;
-                  
-                  return {
-                    metricKey,
-                    displayName,
-                    value,
-                    unit,
-                    status,
-                    isExpanded,
-                    priority: status.status === 'Needs Work' ? 0 : status.status === 'Good' ? 1 : 2
-                  };
-                })
-                .filter(Boolean)
-                .sort((a, b) => a!.priority - b!.priority)
-                .map((item) => {
-                  if (!item) return null;
-                  const { metricKey, displayName, value, unit, status, isExpanded } = item;
-                  
-                  return (
-                    <Card
-                      key={metricKey}
-                      id={`metric-${metricKey}`}
-                      className={cn(
-                        "p-4 rounded-2xl border-l-4 cursor-pointer transition-all",
-                        status.borderColor,
-                        isExpanded ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md"
-                      )}
-                      onClick={() => setExpandedMetric(isExpanded ? null : metricKey)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", status.bgColor)}>
-                          <Activity className={cn("w-5 h-5", status.color)} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <h4 className="font-bold text-sm">{displayName}</h4>
-                              <div className="flex items-baseline gap-2 mt-1">
-                                <span className="text-2xl font-bold">
-                                  {value.toFixed(1)}{unit}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <Badge className={cn("rounded-full text-xs", status.color, "bg-transparent border border-current")}>
-                                {status.status}
-                              </Badge>
-                              {isExpanded ? (
-                                <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                            <Target className="w-3 h-3" />
-                            <span>Target: {formatTargetRange(metricKey)}</span>
-                          </div>
-                          
-                          {/* Progress Bar */}
-                          <div className="mt-3">
-                            <div className="h-2 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className={cn("h-full transition-all", status.color.replace('text-', 'bg-'))}
-                                style={{ width: `${Math.min(100, Math.max(0, status.progress))}%` }}
-                              />
-                            </div>
-                          </div>
-                          
-                          {isExpanded && (
-                            <div className="mt-4 pt-4 border-t space-y-3">
-                              <div className="flex items-start gap-2">
-                                <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                                <div className="text-xs leading-relaxed">
-                                  <p className="font-medium mb-1">What this means:</p>
-                                  <p className="text-muted-foreground">
-                                    {status.status === 'Great!' 
-                                      ? `Your ${displayName.toLowerCase()} is in the optimal range. Keep up the great work!`
-                                      : status.status === 'Good'
-                                      ? `Your ${displayName.toLowerCase()} is decent but has room for improvement.`
-                                      : `Your ${displayName.toLowerCase()} needs attention. Focus on the recommended drills.`
-                                    }
-                                  </p>
-                                </div>
-                              </div>
-                              
-                              {status.status !== 'Great!' && (
-                                <div className="flex items-center gap-2">
-                                  {status.progress > 50 ? (
-                                    <TrendingUp className="w-4 h-4 text-green-500" />
-                                  ) : (
-                                    <TrendingDown className="w-4 h-4 text-red-500" />
-                                  )}
-                                  <span className="text-xs text-muted-foreground">
-                                    {status.progress > 50 ? 'Improving' : 'Work on this'}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+            <div className="col-span-2 text-center py-8 text-white/60">
+              No metrics available
             </div>
           )}
-        </Card>
-
-        {/* ACTION BUTTONS */}
-        <div className="space-y-3 pb-8">
-          <Button 
-            className="w-full rounded-2xl h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
-            onClick={() => drill && document.getElementById('drill-section')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            <Target className="w-5 h-5 mr-2" />
-            Practice Recommended Drills
-          </Button>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <Button 
-              variant="outline" 
-              className="rounded-2xl h-11"
-              onClick={() => {
-                if (videoUrl) {
-                  const a = document.createElement('a');
-                  a.href = videoUrl;
-                  a.download = `swing-${swing.id}.mp4`;
-                  a.click();
-                }
-              }}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Save Video
-            </Button>
-            <Button 
-              variant="outline" 
-              className="rounded-2xl h-11"
-              onClick={() => setIsShareDialogOpen(true)}
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              Share Results
-            </Button>
-          </div>
-          
-          <Button 
-            className="w-full rounded-2xl h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-            onClick={() => navigate('/swing-analysis')}
-          >
-            <Camera className="w-5 h-5 mr-2" />
-            Record Another Swing
-          </Button>
         </div>
+
+        {/* FOOTER CTA SPACE */}
+        <div className="h-24"></div>
       </div>
 
       {/* Floating Action Button */}
