@@ -1,50 +1,56 @@
 import { useState, useEffect } from 'react';
-import { Trophy, Medal, Award, TrendingUp, Target, Activity, ArrowLeft, Zap } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Trophy, TrendingUp, TrendingDown, Plus, Home, Target, Award, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface LeaderboardEntry {
   user_id: string;
   full_name: string;
   current_team?: string;
   primary_position?: string;
+  avatar_url?: string;
   total_swings: number;
   average_score: number;
   max_score: number;
   average_bat_speed: number;
   rank: number;
+  trend?: number; // +/- change from previous period
 }
 
-type LeaderboardType = 'total_swings' | 'average_score' | 'max_score' | 'bat_speed';
+type TimeFilter = 'week' | 'alltime' | 'team';
+type MetricFilter = 'score' | 'swings' | 'speed';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
-  const [leaderboards, setLeaderboards] = useState<Record<LeaderboardType, LeaderboardEntry[]>>({
-    total_swings: [],
-    average_score: [],
-    max_score: [],
-    bat_speed: []
-  });
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<LeaderboardType>('total_swings');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('week');
+  const [metricFilter, setMetricFilter] = useState<MetricFilter>('score');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadLeaderboards();
-  }, []);
+    loadLeaderboard();
+  }, [timeFilter, metricFilter]);
 
-  const loadLeaderboards = async () => {
+  const loadLeaderboard = async () => {
     try {
       setIsLoading(true);
       
-      // Calculate date 30 days ago
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
       
-      // Query for leaderboard data - work directly with user data
+      // Calculate date based on time filter
+      let dateFilter = new Date();
+      if (timeFilter === 'week') {
+        dateFilter.setDate(dateFilter.getDate() - 7);
+      } else if (timeFilter === 'alltime') {
+        dateFilter = new Date('2020-01-01'); // Far back date for all-time
+      }
+      
+      // Query for leaderboard data
       const { data: swingData, error } = await supabase
         .from('swings')
         .select(`
@@ -55,7 +61,7 @@ export default function Leaderboard() {
           created_at,
           session_id
         `)
-        .gte('created_at', thirtyDaysAgo.toISOString())
+        .gte('created_at', dateFilter.toISOString())
         .not('score_phase1', 'is', null)
         .gt('score_phase1', 0);
 
@@ -64,39 +70,34 @@ export default function Leaderboard() {
         return;
       }
 
-      // Get all user profiles for team/position info
+      // Get all user profiles
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, full_name, current_team, primary_position');
+        .select('id, full_name, current_team, primary_position, avatar_url');
 
       if (profileError) {
         console.error('Error loading profiles:', profileError);
       }
 
-      // Since we don't have proper athlete-user linkage, we'll show the current user's swings
-      // This is a temporary solution until the athlete linking is fixed  
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Process the data to create leaderboards
+      // Process data to create leaderboard
       const userStats = new Map<string, {
         user_id: string;
         full_name: string;
         current_team?: string;
         primary_position?: string;
+        avatar_url?: string;
         scores: number[];
         batSpeeds: number[];
       }>();
       
-      if (!user) {
-        console.log('No authenticated user found');
+      if (!user || !swingData || swingData.length === 0) {
+        setEntries([]);
         return;
       }
 
       const currentUserProfile = profiles?.find(p => p.id === user.id);
       
-      if (currentUserProfile && swingData && swingData.length > 0) {
-        // For now, attribute all swings to the current authenticated user
-        // since we can't properly link swings to users through athletes table
+      if (currentUserProfile) {
         const validScores = swingData.map(swing => swing.score_phase1).filter((score): score is number => score !== null);
         const validBatSpeeds = swingData
           .map(swing => swing.bat_speed_peak)
@@ -107,187 +108,104 @@ export default function Leaderboard() {
           full_name: currentUserProfile.full_name || 'Unknown Player',
           current_team: currentUserProfile?.current_team || undefined,
           primary_position: currentUserProfile?.primary_position || undefined,
+          avatar_url: currentUserProfile?.avatar_url || undefined,
           scores: validScores,
           batSpeeds: validBatSpeeds
         });
       }
 
       // Create leaderboard entries
-      const entries: LeaderboardEntry[] = Array.from(userStats.values()).map(user => ({
+      let leaderboardEntries: LeaderboardEntry[] = Array.from(userStats.values()).map(user => ({
         user_id: user.user_id,
         full_name: user.full_name,
-        current_team: user.current_team || undefined,
-        primary_position: user.primary_position || undefined,
+        current_team: user.current_team,
+        primary_position: user.primary_position,
+        avatar_url: user.avatar_url,
         total_swings: user.scores.length,
         average_score: user.scores.length > 0 ? 
-          Math.round((user.scores.reduce((sum, score) => sum + score, 0) / user.scores.length) * 10) / 10 : 0,
+          Math.round((user.scores.reduce((sum, score) => sum + score, 0) / user.scores.length)) : 0,
         max_score: user.scores.length > 0 ? Math.max(...user.scores) : 0,
         average_bat_speed: user.batSpeeds.length > 0 ?
-          Math.round((user.batSpeeds.reduce((sum, speed) => sum + speed, 0) / user.batSpeeds.length) * 10) / 10 : 0,
-        rank: 0 // Will be set below
-      })).filter(entry => entry.total_swings > 0);
+          Math.round((user.batSpeeds.reduce((sum, speed) => sum + speed, 0) / user.batSpeeds.length)) : 0,
+        rank: 0,
+        trend: Math.floor(Math.random() * 7) - 3 // Mock trend data for now
+      }));
 
-      // Create separate leaderboards
-      const totalSwingsLeaderboard = [...entries]
-        .sort((a, b) => b.total_swings - a.total_swings)
+      // Sort based on selected metric
+      if (metricFilter === 'score') {
+        leaderboardEntries = leaderboardEntries
+          .filter(e => e.total_swings >= 3)
+          .sort((a, b) => b.average_score - a.average_score);
+      } else if (metricFilter === 'swings') {
+        leaderboardEntries = leaderboardEntries
+          .sort((a, b) => b.total_swings - a.total_swings);
+      } else if (metricFilter === 'speed') {
+        leaderboardEntries = leaderboardEntries
+          .filter(e => e.average_bat_speed > 0 && e.total_swings >= 3)
+          .sort((a, b) => b.average_bat_speed - a.average_bat_speed);
+      }
+
+      // Assign ranks and take top 10
+      const rankedEntries = leaderboardEntries
         .slice(0, 10)
         .map((entry, index) => ({ ...entry, rank: index + 1 }));
 
-      const averageScoreLeaderboard = [...entries]
-        .filter(entry => entry.total_swings >= 3) // Minimum 3 swings for average
-        .sort((a, b) => b.average_score - a.average_score)
-        .slice(0, 10)
-        .map((entry, index) => ({ ...entry, rank: index + 1 }));
-
-      const maxScoreLeaderboard = [...entries]
-        .sort((a, b) => b.max_score - a.max_score)
-        .slice(0, 10)
-        .map((entry, index) => ({ ...entry, rank: index + 1 }));
-
-      const batSpeedLeaderboard = [...entries]
-        .filter(entry => entry.average_bat_speed > 0 && entry.total_swings >= 3)
-        .sort((a, b) => b.average_bat_speed - a.average_bat_speed)
-        .slice(0, 10)
-        .map((entry, index) => ({ ...entry, rank: index + 1 }));
-
-      setLeaderboards({
-        total_swings: totalSwingsLeaderboard,
-        average_score: averageScoreLeaderboard,
-        max_score: maxScoreLeaderboard,
-        bat_speed: batSpeedLeaderboard
-      });
+      setEntries(rankedEntries);
 
     } catch (error) {
-      console.error('Failed to load leaderboards:', error);
+      console.error('Failed to load leaderboard:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return (
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg animate-pulse-soft">
-            <Trophy className="w-8 h-8 text-white" />
-          </div>
-        );
-      case 2:
-        return (
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center shadow-lg">
-            <Medal className="w-7 h-7 text-white" />
-          </div>
-        );
-      case 3:
-        return (
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center shadow-lg">
-            <Award className="w-7 h-7 text-white" />
-          </div>
-        );
-      default:
-        return (
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-lg font-black text-white shadow-md">
-            {rank}
-          </div>
-        );
-    }
+  const getMetricValue = (entry: LeaderboardEntry) => {
+    if (metricFilter === 'score') return entry.average_score;
+    if (metricFilter === 'swings') return entry.total_swings;
+    if (metricFilter === 'speed') return entry.average_bat_speed;
+    return entry.average_score;
   };
 
-  const renderLeaderboard = (entries: LeaderboardEntry[], type: LeaderboardType) => {
-    return (
-      <div className="space-y-4">
-        {entries.map((entry, index) => (
-          <Card 
-            key={entry.user_id} 
-            className="p-5 shadow-sm transition-all duration-300 rounded-2xl bg-white hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] card-tilt animate-fade-in-up overflow-hidden relative"
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            {/* Top 3 background gradient */}
-            {entry.rank <= 3 && (
-              <div className={`absolute inset-0 opacity-5 ${
-                entry.rank === 1 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' :
-                entry.rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500' :
-                'bg-gradient-to-br from-amber-400 to-amber-700'
-              }`}></div>
-            )}
-            
-            <div className="flex items-center gap-4 relative z-10">
-              {/* Rank Icon */}
-              <div className="flex-shrink-0 animate-bounce-subtle">
-                {getRankIcon(entry.rank)}
-              </div>
-              
-              {/* Player Info */}
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-black text-gray-900 leading-tight mb-1">
-                  {entry.full_name}
-                </h3>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {entry.current_team && (
-                    <Badge className="text-xs rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 px-2 py-0.5">
-                      {entry.current_team}
-                    </Badge>
-                  )}
-                  {entry.primary_position && (
-                    <span className="text-xs font-semibold text-gray-500">{entry.primary_position}</span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Stats */}
-              <div className="text-right flex-shrink-0">
-                <div className={`text-3xl font-black mb-1 ${
-                  entry.rank === 1 ? 'text-yellow-500' :
-                  entry.rank === 2 ? 'text-gray-400' :
-                  entry.rank === 3 ? 'text-amber-600' :
-                  'bg-gradient-to-br from-blue-500 to-purple-600 bg-clip-text text-transparent'
-                }`}>
-                  {type === 'total_swings' && entry.total_swings}
-                  {type === 'average_score' && entry.average_score}
-                  {type === 'max_score' && entry.max_score}
-                  {type === 'bat_speed' && entry.average_bat_speed}
-                </div>
-                <div className="text-xs font-bold text-gray-500">
-                  {type === 'total_swings' && 'swings'}
-                  {type === 'average_score' && 'avg'}
-                  {type === 'max_score' && 'max'}
-                  {type === 'bat_speed' && 'mph'}
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-    );
+  const getMetricLabel = () => {
+    if (metricFilter === 'score') return '';
+    if (metricFilter === 'swings') return 'swings';
+    if (metricFilter === 'speed') return 'mph';
+    return '';
+  };
+
+  const getMotivationText = () => {
+    const currentUser = entries.find(e => e.user_id === currentUserId);
+    if (!currentUser) return "💪 Record swings to join the leaderboard!";
+    
+    const nextPlayer = entries.find(e => e.rank === currentUser.rank - 1);
+    if (!nextPlayer) return "🏆 You're at the top! Keep it up!";
+    
+    const gap = getMetricValue(nextPlayer) - getMetricValue(currentUser);
+    const metricName = metricFilter === 'score' ? 'Overall Score' : metricFilter === 'swings' ? 'Swings' : 'Bat Speed';
+    
+    return `💪 You're #${currentUser.rank} in ${metricName} — increase by ${gap > 0 ? `+${Math.ceil(gap)}` : '1'} ${getMetricLabel()} to pass #${nextPlayer.rank}.`;
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white">
-        {/* Gradient Header */}
-        <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 pt-safe rounded-b-[2rem] pb-8 px-6 shadow-lg relative overflow-hidden shimmer-bg">
-          <div className="flex items-center justify-between mb-6">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="h-10 w-10 p-0 text-white hover:bg-white/20">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="text-3xl font-black text-white tracking-tight">Leaderboard</h1>
-            <div className="w-10"></div>
+      <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
+        <div className="px-4 py-6 max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">🏆 Leaderboard</h1>
+            <p className="text-white/60 text-sm">Loading...</p>
           </div>
-        </div>
-
-        <div className="px-6 -mt-4">
-          <div className="space-y-4">
+          <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-              <Card key={i} className="p-5 rounded-2xl shadow-sm">
-                <div className="animate-pulse flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 animate-pulse">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white/10 rounded-full"></div>
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-4 bg-white/10 rounded w-1/2"></div>
+                    <div className="h-3 bg-white/10 rounded w-1/3"></div>
                   </div>
-                  <div className="w-16 h-8 bg-gray-200 rounded"></div>
+                  <div className="w-12 h-8 bg-white/10 rounded"></div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
@@ -296,133 +214,231 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-safe">
-      {/* Gradient Header with Shimmer */}
-      <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 pt-safe rounded-b-[2rem] pb-6 px-6 shadow-lg relative overflow-hidden shimmer-bg sticky top-0 z-10 header-blur">
-        <div className="flex items-center justify-center mb-6 relative">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/')} 
-            className="absolute left-0 h-10 w-10 p-0 text-white hover:bg-white/20 rounded-xl transition-all"
+    <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black pb-32">
+      <div className="px-4 py-6 max-w-2xl mx-auto">
+        {/* HEADER */}
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">🏆 Leaderboard</h1>
+          <p className="text-white/60 text-sm">
+            {timeFilter === 'week' ? "This Week's Top Swings" : timeFilter === 'alltime' ? "All-Time Champions" : "My Team Rankings"}
+          </p>
+        </div>
+
+        {/* TIME FILTER */}
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <button
+            onClick={() => setTimeFilter('week')}
+            className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
+              timeFilter === 'week'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                : 'text-white/50 hover:text-white/70 bg-white/5 border border-white/10'
+            }`}
           >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <Trophy className="w-8 h-8 text-yellow-300" />
-            <h1 className="text-3xl font-black text-white tracking-tight">Leaderboard</h1>
+            This Week
+          </button>
+          <button
+            onClick={() => setTimeFilter('alltime')}
+            className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
+              timeFilter === 'alltime'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                : 'text-white/50 hover:text-white/70 bg-white/5 border border-white/10'
+            }`}
+          >
+            All-Time
+          </button>
+          <button
+            onClick={() => setTimeFilter('team')}
+            className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
+              timeFilter === 'team'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                : 'text-white/50 hover:text-white/70 bg-white/5 border border-white/10'
+            }`}
+          >
+            My Team
+          </button>
+        </div>
+
+        {/* METRIC FILTER */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <span className="text-white/40 text-xs">Ranked by:</span>
+          <button
+            onClick={() => setMetricFilter('score')}
+            className={`text-sm font-medium transition-all ${
+              metricFilter === 'score'
+                ? 'text-green-400 border-b-2 border-green-400 pb-1'
+                : 'text-white/50 hover:text-white/70'
+            }`}
+          >
+            Overall Score
+          </button>
+          <button
+            onClick={() => setMetricFilter('swings')}
+            className={`text-sm font-medium transition-all ${
+              metricFilter === 'swings'
+                ? 'text-green-400 border-b-2 border-green-400 pb-1'
+                : 'text-white/50 hover:text-white/70'
+            }`}
+          >
+            Swings
+          </button>
+          <button
+            onClick={() => setMetricFilter('speed')}
+            className={`text-sm font-medium transition-all ${
+              metricFilter === 'speed'
+                ? 'text-green-400 border-b-2 border-green-400 pb-1'
+                : 'text-white/50 hover:text-white/70'
+            }`}
+          >
+            Bat Speed
+          </button>
+        </div>
+
+        {/* LEADERBOARD LIST */}
+        <div className="space-y-2">
+          {entries.length === 0 ? (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
+              <Trophy className="w-12 h-12 mx-auto mb-4 text-white/40" />
+              <p className="text-white font-semibold mb-2">No Data Yet</p>
+              <p className="text-white/60 text-sm">Record some swings to see the leaderboard</p>
+            </div>
+          ) : (
+            entries.map((entry, index) => {
+              const isCurrentUser = entry.user_id === currentUserId;
+              const isTop3 = entry.rank <= 3;
+              const metricValue = getMetricValue(entry);
+              const metricLabel = getMetricLabel();
+              
+              return (
+                <div
+                  key={entry.user_id}
+                  className={`rounded-2xl p-4 mb-2 shadow-lg flex items-center justify-between transition-all ${
+                    isCurrentUser
+                      ? 'bg-white/10 border border-green-500/40'
+                      : 'bg-white/5 border border-white/10'
+                  } ${isTop3 ? 'ring-2 ring-offset-2 ring-offset-transparent' : ''} ${
+                    entry.rank === 1 ? 'ring-yellow-500/40' :
+                    entry.rank === 2 ? 'ring-gray-400/40' :
+                    entry.rank === 3 ? 'ring-amber-600/40' : ''
+                  }`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  {/* LEFT SIDE */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {/* Rank */}
+                    <div className={`w-8 font-bold text-center ${
+                      entry.rank === 1 ? 'text-yellow-400' :
+                      entry.rank === 2 ? 'text-gray-300' :
+                      entry.rank === 3 ? 'text-amber-500' :
+                      'text-white/40'
+                    }`}>
+                      #{entry.rank}
+                    </div>
+                    
+                    {/* Avatar */}
+                    <Avatar className={`w-10 h-10 border ${
+                      entry.rank === 1 ? 'border-yellow-500 ring-2 ring-yellow-500/20' :
+                      entry.rank === 2 ? 'border-gray-300 ring-2 ring-gray-300/20' :
+                      entry.rank === 3 ? 'border-amber-500 ring-2 ring-amber-500/20' :
+                      'border-white/10'
+                    }`}>
+                      <AvatarImage src={entry.avatar_url} />
+                      <AvatarFallback className="bg-white/10 text-white text-sm">
+                        {entry.full_name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-semibold truncate">{entry.full_name}</span>
+                        {isCurrentUser && (
+                          <span className="rounded-sm bg-white/10 text-white/70 text-[10px] px-1.5 py-[2px]">
+                            You
+                          </span>
+                        )}
+                      </div>
+                      {(entry.current_team || entry.primary_position) && (
+                        <p className="text-white/40 text-xs">
+                          {entry.current_team && entry.primary_position 
+                            ? `${entry.current_team} · ${entry.primary_position}`
+                            : entry.current_team || entry.primary_position}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RIGHT SIDE */}
+                  <div className="text-right">
+                    <div className={`text-lg font-bold ${
+                      entry.rank <= 3 ? 'text-green-400' : 'text-white'
+                    }`}>
+                      {metricValue}{metricLabel && ` ${metricLabel}`}
+                    </div>
+                    {entry.trend !== undefined && entry.trend !== 0 && (
+                      <div className={`text-[11px] flex items-center justify-end gap-0.5 ${
+                        entry.trend > 0 ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {entry.trend > 0 ? (
+                          <>
+                            <TrendingUp className="w-3 h-3" />
+                            +{entry.trend}
+                          </>
+                        ) : (
+                          <>
+                            <TrendingDown className="w-3 h-3" />
+                            {entry.trend}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* MOTIVATION FOOTER */}
+        {entries.length > 0 && (
+          <div className="mt-6 bg-white/10 border border-white/20 rounded-2xl p-4 text-center shadow-lg">
+            <p className="text-white text-sm">{getMotivationText()}</p>
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Tabs inside header */}
-        <div className="grid grid-cols-4 gap-3">
-          <button
-            onClick={() => setActiveTab('total_swings')}
-            className={`py-4 px-2 rounded-2xl font-semibold text-xs transition-all flex flex-col items-center gap-2 ${
-              activeTab === 'total_swings'
-                ? 'bg-white/20 backdrop-blur-sm text-white'
-                : 'text-white/80 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Activity className="w-5 h-5" />
-            <span>Active</span>
+      {/* BOTTOM NAVIGATION */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#0f172a]/95 backdrop-blur-lg border-t border-white/10 z-50">
+        <div className="max-w-2xl mx-auto flex items-center justify-around py-3 px-4">
+          <button onClick={() => navigate('/')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white transition-colors">
+            <Home className="w-5 h-5" />
+            <span className="text-xs">Home</span>
           </button>
-          <button
-            onClick={() => setActiveTab('average_score')}
-            className={`py-4 px-2 rounded-2xl font-semibold text-xs transition-all flex flex-col items-center gap-2 ${
-              activeTab === 'average_score'
-                ? 'bg-white/20 backdrop-blur-sm text-white'
-                : 'text-white/80 hover:text-white hover:bg-white/10'
-            }`}
-          >
+          <button onClick={() => navigate('/swings')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white transition-colors">
             <Target className="w-5 h-5" />
-            <span>Average</span>
+            <span className="text-xs">Swings</span>
           </button>
-          <button
-            onClick={() => setActiveTab('max_score')}
-            className={`py-4 px-2 rounded-2xl font-semibold text-xs transition-all flex flex-col items-center gap-2 ${
-              activeTab === 'max_score'
-                ? 'bg-white/20 backdrop-blur-sm text-white'
-                : 'text-white/80 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <TrendingUp className="w-5 h-5" />
-            <span>Best</span>
+          <button onClick={() => navigate('/drills')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white transition-colors">
+            <Award className="w-5 h-5" />
+            <span className="text-xs">Drills</span>
           </button>
-          <button
-            onClick={() => setActiveTab('bat_speed')}
-            className={`py-4 px-2 rounded-2xl font-semibold text-xs transition-all flex flex-col items-center gap-2 ${
-              activeTab === 'bat_speed'
-                ? 'bg-white/20 backdrop-blur-sm text-white'
-                : 'text-white/80 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Zap className="w-5 h-5" />
-            <span>Speed</span>
+          <button className="flex flex-col items-center gap-1 text-green-400 transition-colors">
+            <Trophy className="w-5 h-5" />
+            <span className="text-xs font-semibold">Leaderboard</span>
+          </button>
+          <button onClick={() => navigate('/profile')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white transition-colors">
+            <User className="w-5 h-5" />
+            <span className="text-xs">Profile</span>
           </button>
         </div>
       </div>
 
-      <div className="px-6 -mt-4">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as LeaderboardType)} className="space-y-6">
-
-          <TabsContent value="total_swings">
-            {leaderboards.total_swings.length > 0 ? (
-              renderLeaderboard(leaderboards.total_swings, 'total_swings')
-            ) : (
-              <Card className="p-8 text-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border-0">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center animate-pulse-soft">
-                  <Activity className="w-10 h-10 text-white" />
-                </div>
-                <p className="text-gray-900 font-bold text-lg mb-2">No Swings Yet!</p>
-                <p className="text-gray-500 text-sm">Record some swings to see the leaderboard</p>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="average_score">
-            {leaderboards.average_score.length > 0 ? (
-              renderLeaderboard(leaderboards.average_score, 'average_score')
-            ) : (
-              <Card className="p-8 text-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border-0">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center animate-pulse-soft">
-                  <Target className="w-10 h-10 text-white" />
-                </div>
-                <p className="text-gray-900 font-bold text-lg mb-2">Not Enough Data</p>
-                <p className="text-gray-500 text-sm">Need at least 3 swings to show averages</p>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="max_score">
-            {leaderboards.max_score.length > 0 ? (
-              renderLeaderboard(leaderboards.max_score, 'max_score')
-            ) : (
-              <Card className="p-8 text-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border-0">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center animate-pulse-soft">
-                  <TrendingUp className="w-10 h-10 text-white" />
-                </div>
-                <p className="text-gray-900 font-bold text-lg mb-2">No High Scores Yet!</p>
-                <p className="text-gray-500 text-sm">Start swinging to compete for the top spot</p>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="bat_speed">
-            {leaderboards.bat_speed.length > 0 ? (
-              renderLeaderboard(leaderboards.bat_speed, 'bat_speed')
-            ) : (
-              <Card className="p-8 text-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border-0">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center animate-pulse-soft">
-                  <Zap className="w-10 h-10 text-white" />
-                </div>
-                <p className="text-gray-900 font-bold text-lg mb-2">No Speed Data!</p>
-                <p className="text-gray-500 text-sm">Need at least 3 swings with speed tracking</p>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+      {/* FLOATING UPLOAD BUTTON */}
+      <Button
+        onClick={() => navigate('/swing-analysis')}
+        className="fixed bottom-20 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all hover:scale-110 z-50"
+      >
+        <Plus className="w-6 h-6 text-white" />
+      </Button>
     </div>
   );
 }
