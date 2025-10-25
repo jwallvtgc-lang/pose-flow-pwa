@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SwingSenseLogo } from '@/components/SwingSenseLogo';
+import logoMark from '@/assets/swingsense-logo-mark.png';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -367,7 +367,30 @@ const Index = () => {
         {/* HEADER WITH LOGO AND PROFILE BUTTON */}
         <div className="flex justify-between items-center mb-8">
           <div className="w-10" /> {/* Spacer for centering */}
-          <SwingSenseLogo />
+          
+          {/* SwingSense Logo Lockup */}
+          <div className="flex items-center gap-3 animate-[logoentrance_0.6s_ease-out]">
+            <div className="relative flex items-center justify-center w-8 h-8">
+              {/* Breathing glow background */}
+              <div 
+                className="absolute inset-0 rounded-full bg-green-500/30 blur-[30px]"
+                style={{
+                  animation: 'glowpulse 7s ease-in-out infinite'
+                }}
+              />
+              {/* Logo mark */}
+              <img
+                src={logoMark}
+                alt="SwingSense logo"
+                className="h-8 w-auto relative z-10"
+              />
+            </div>
+            {/* Wordmark */}
+            <span className="text-white font-semibold text-lg tracking-wide">
+              SwingSense
+            </span>
+          </div>
+          
           <Link 
             to="/profile" 
             className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200"
@@ -604,6 +627,28 @@ const Index = () => {
       </div>
 
       <style>{`
+        @keyframes glowpulse {
+          0%, 100% {
+            opacity: 0.3;
+            filter: blur(30px);
+          }
+          50% {
+            opacity: 0.6;
+            filter: blur(40px);
+          }
+        }
+
+        @keyframes logoentrance {
+          0% {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
         @keyframes glow-breathe {
           0%, 100% {
             filter: blur(16px);
