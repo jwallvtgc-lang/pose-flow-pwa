@@ -444,25 +444,33 @@ export default function SwingDetail() {
       <div className="px-4 py-4 max-w-2xl mx-auto">
         {/* SwingSense Logo - Centered */}
         <div className="flex justify-center mb-4">
-          <div className="flex items-center gap-2 group cursor-pointer transition-all duration-300 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]">
+          <div className="flex items-center gap-2 group cursor-pointer">
             {/* Stylized S with gradient trail and glow dot */}
             <div className="relative">
+              {/* Animated glow pulse behind S */}
+              <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500/30 via-cyan-500/20 to-transparent rounded-full animate-glow-pulse"></div>
+              
               {/* Gradient trail behind S */}
               <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-8 h-6 bg-gradient-to-r from-emerald-500/30 via-cyan-500/20 to-transparent rounded-full blur-md"></div>
               
-              {/* Stylized S as a swing arc */}
-              <svg width="32" height="32" viewBox="0 0 32 32" className="relative z-10">
+              {/* Stylized S as a swing arc with draw animation */}
+              <svg width="32" height="32" viewBox="0 0 32 32" className="relative z-10 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)]">
                 <path
                   d="M 8 8 Q 14 6, 18 10 Q 22 14, 20 20 Q 18 26, 12 24 Q 6 22, 8 16"
                   stroke="url(#swingGradient)"
                   strokeWidth="3"
                   strokeLinecap="round"
                   fill="none"
-                  className="transition-all duration-300"
+                  strokeDasharray="1000"
+                  strokeDashoffset="1000"
+                  className="animate-swing-draw"
+                  style={{ 
+                    filter: 'drop-shadow(0 0 6px rgba(16,185,129,0.6))'
+                  }}
                 />
                 {/* Glowing dot at top-right for AI tracking */}
-                <circle cx="20" cy="10" r="2.5" className="fill-cyan-400 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)]">
-                  <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
+                <circle cx="20" cy="10" r="2.5" className="fill-cyan-400 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)] opacity-0" style={{ animation: 'fade-scale-in 0.4s ease-out 0.6s forwards' }}>
+                  <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" begin="0.6s" />
                 </circle>
                 <defs>
                   <linearGradient id="swingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -473,11 +481,11 @@ export default function SwingDetail() {
               </svg>
             </div>
             
-            {/* SwingSense text */}
-            <span className="text-white font-bold text-lg tracking-wide group-hover:text-green-300 transition-colors duration-300 hidden sm:inline">
+            {/* SwingSense text with fade-in */}
+            <span className="text-white font-bold text-lg tracking-wide opacity-0 animate-fade-scale-in group-hover:text-green-300 transition-colors duration-300 hidden sm:inline">
               SwingSense
             </span>
-            <span className="text-white font-bold text-base tracking-wide group-hover:text-green-300 transition-colors duration-300 sm:hidden">
+            <span className="text-white font-bold text-base tracking-wide opacity-0 animate-fade-scale-in group-hover:text-green-300 transition-colors duration-300 sm:hidden">
               SS
             </span>
           </div>
