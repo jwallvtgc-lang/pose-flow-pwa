@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, AlertTriangle, Loader2, RotateCcw, Save, TrendingUp, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
 
 // Analytics
 import { trackCapture } from '@/lib/analytics';
@@ -78,6 +79,11 @@ export default function Score() {
   const [score, setScore] = useState<number>(0);
   const [coachingCards, setCoachingCards] = useState<CoachingCard[]>([]);
   const [shouldRetake, setShouldRetake] = useState(false);
+  const [poseData, setPoseData] = useState<any>(null);
+  
+  // Video refs for overlay
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Database IDs
   const [sessionId, setSessionId] = useState<string | null>(sessionIdFromState || null);
@@ -195,6 +201,9 @@ export default function Score() {
 
       
       setProgress(50);
+      
+      // Store pose data for overlay visualization
+      setPoseData(poseAnalysisResult);
 
       // Check for low confidence or missing events
       const missingEvents = ['launch', 'contact', 'finish'].filter(
@@ -589,15 +598,46 @@ export default function Score() {
               </Card>
             )}
 
-            {/* Video Playback */}
+            {/* Video Playback with Overlay */}
             <Card className="p-4">
               <h3 className="text-lg font-semibold mb-3">Your Swing</h3>
-              <video
-                src={videoUrl}
-                controls
-                className="w-full rounded-lg"
-                muted
-              />
+              <div className="relative rounded-lg overflow-hidden bg-black">
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  controls
+                  className="w-full h-auto"
+                  muted
+                  playsInline
+                  preload="metadata"
+                  onLoadedMetadata={(e) => {
+                    if (canvasRef.current) {
+                      canvasRef.current.width = e.currentTarget.videoWidth;
+                      canvasRef.current.height = e.currentTarget.videoHeight;
+                    }
+                  }}
+                />
+                <canvas
+                  ref={canvasRef}
+                  className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                  style={{ zIndex: 10 }}
+                />
+              </div>
+              
+              {poseData?.keypointsByFrame && videoRef.current && (
+                <SwingOverlayCanvas
+                  videoElement={videoRef.current}
+                  keypointsByFrame={poseData.keypointsByFrame}
+                  canvasRef={canvasRef}
+                  showIdealPose={true}
+                  showDetectedPose={true}
+                  idealOpacity={0.5}
+                  autoProgress={true}
+                  cameraView="front"
+                  handedness="right"
+                  hideControls={true}
+                />
+              )}
             </Card>
 
             {/* Save Button */}
