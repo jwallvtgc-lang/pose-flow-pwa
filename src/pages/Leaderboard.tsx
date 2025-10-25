@@ -189,22 +189,28 @@ export default function Leaderboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
-        <div className="px-4 py-6 max-w-2xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black relative">
+        {/* Vignette overlay */}
+        <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none" />
+        
+        <div className="px-4 py-6 max-w-2xl mx-auto relative z-10">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">🏆 Leaderboard</h1>
-            <p className="text-white/60 text-sm">Loading...</p>
+            <div className="inline-flex items-center gap-2 mb-2">
+              <Trophy className="w-8 h-8 text-yellow-400 animate-pulse" />
+              <h1 className="text-2xl font-bold text-white/90 tracking-tight">Leaderboard</h1>
+            </div>
+            <p className="text-white/60 text-sm">Loading rankings...</p>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 animate-pulse">
+              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-lg animate-pulse">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-white/10 rounded-full"></div>
+                  <div className="w-12 h-12 bg-white/10 rounded-full"></div>
                   <div className="flex-1 space-y-2">
                     <div className="h-4 bg-white/10 rounded w-1/2"></div>
                     <div className="h-3 bg-white/10 rounded w-1/3"></div>
                   </div>
-                  <div className="w-12 h-8 bg-white/10 rounded"></div>
+                  <div className="w-16 h-8 bg-white/10 rounded"></div>
                 </div>
               </div>
             ))}
@@ -215,61 +221,83 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black pb-32">
-      <div className="px-4 py-6 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black pb-32 relative">
+      {/* Vignette overlay */}
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none" />
+      
+      {/* Subtle shimmer background */}
+      <div className="fixed inset-0 opacity-30 pointer-events-none" style={{
+        background: 'linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.05) 50%, transparent 100%)',
+        backgroundSize: '200% 100%',
+        animation: 'shimmer-slow 30s linear infinite'
+      }} />
+      
+      <div className="px-4 py-6 max-w-2xl mx-auto relative z-10">
         {/* BACK BUTTON */}
-        <div className="mb-4">
+        <div className="mb-6">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => navigate('/')}
-            className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
+            className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20 shadow-lg transition-all hover:scale-105"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </div>
 
         {/* SWINGSENSE LOGO */}
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-6">
           <SwingSenseLogo />
         </div>
 
         {/* HEADER */}
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">🏆 Leaderboard</h1>
-          <p className="text-white/60 text-sm">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="relative">
+              <Trophy className="w-8 h-8 text-yellow-400" style={{
+                filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))'
+              }} />
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 opacity-20 blur-xl rounded-full" />
+            </div>
+            <h1 className="text-2xl font-bold text-white/90 tracking-tight">Leaderboard</h1>
+          </div>
+          <p className="text-white/60 text-sm mb-4">
             {timeFilter === 'week' ? "This Week's Top Swings" : timeFilter === 'alltime' ? "All-Time Champions" : "My Team Rankings"}
           </p>
+          {/* Divider glow line */}
+          <div className="flex justify-center">
+            <div className="h-[1px] w-4/5 bg-gradient-to-r from-transparent via-green-500/40 to-transparent" />
+          </div>
         </div>
 
         {/* TIME FILTER */}
-        <div className="flex items-center justify-center gap-2 mb-4">
+        <div className="flex items-center justify-center gap-3 mb-6">
           <button
             onClick={() => setTimeFilter('week')}
-            className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
+            className={`px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all duration-200 ${
               timeFilter === 'week'
-                ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                : 'text-white/50 hover:text-white/70 bg-white/5 border border-white/10'
+                ? 'bg-green-500/20 text-green-300 border border-green-400/60 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105'
+                : 'text-white/50 hover:text-white/80 bg-white/5 border border-white/10 hover:bg-white/10'
             }`}
           >
             This Week
           </button>
           <button
             onClick={() => setTimeFilter('alltime')}
-            className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
+            className={`px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all duration-200 ${
               timeFilter === 'alltime'
-                ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                : 'text-white/50 hover:text-white/70 bg-white/5 border border-white/10'
+                ? 'bg-green-500/20 text-green-300 border border-green-400/60 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105'
+                : 'text-white/50 hover:text-white/80 bg-white/5 border border-white/10 hover:bg-white/10'
             }`}
           >
             All-Time
           </button>
           <button
             onClick={() => setTimeFilter('team')}
-            className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
+            className={`px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all duration-200 ${
               timeFilter === 'team'
-                ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                : 'text-white/50 hover:text-white/70 bg-white/5 border border-white/10'
+                ? 'bg-green-500/20 text-green-300 border border-green-400/60 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105'
+                : 'text-white/50 hover:text-white/80 bg-white/5 border border-white/10 hover:bg-white/10'
             }`}
           >
             My Team
@@ -277,47 +305,64 @@ export default function Leaderboard() {
         </div>
 
         {/* METRIC FILTER */}
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <span className="text-white/40 text-xs">Ranked by:</span>
-          <button
-            onClick={() => setMetricFilter('score')}
-            className={`text-sm font-medium transition-all ${
-              metricFilter === 'score'
-                ? 'text-green-400 border-b-2 border-green-400 pb-1'
-                : 'text-white/50 hover:text-white/70'
-            }`}
-          >
-            Overall Score
-          </button>
-          <button
-            onClick={() => setMetricFilter('swings')}
-            className={`text-sm font-medium transition-all ${
-              metricFilter === 'swings'
-                ? 'text-green-400 border-b-2 border-green-400 pb-1'
-                : 'text-white/50 hover:text-white/70'
-            }`}
-          >
-            Swings
-          </button>
-          <button
-            onClick={() => setMetricFilter('speed')}
-            className={`text-sm font-medium transition-all ${
-              metricFilter === 'speed'
-                ? 'text-green-400 border-b-2 border-green-400 pb-1'
-                : 'text-white/50 hover:text-white/70'
-            }`}
-          >
-            Bat Speed
-          </button>
+        <div className="mb-8">
+          <p className="text-center text-white/50 text-xs mb-3">Ranked by:</p>
+          <div className="flex items-center justify-center gap-6">
+            <button
+              onClick={() => setMetricFilter('score')}
+              className={`text-sm font-medium transition-all duration-250 pb-2 relative ${
+                metricFilter === 'score'
+                  ? 'text-green-300 font-semibold'
+                  : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Overall Score
+              {metricFilter === 'score' && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-green-400 rounded-full animate-slide-in" />
+              )}
+            </button>
+            <button
+              onClick={() => setMetricFilter('swings')}
+              className={`text-sm font-medium transition-all duration-250 pb-2 relative ${
+                metricFilter === 'swings'
+                  ? 'text-green-300 font-semibold'
+                  : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Swings
+              {metricFilter === 'swings' && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-green-400 rounded-full animate-slide-in" />
+              )}
+            </button>
+            <button
+              onClick={() => setMetricFilter('speed')}
+              className={`text-sm font-medium transition-all duration-250 pb-2 relative ${
+                metricFilter === 'speed'
+                  ? 'text-green-300 font-semibold'
+                  : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Bat Speed
+              {metricFilter === 'speed' && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-green-400 rounded-full animate-slide-in" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* LEADERBOARD LIST */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           {entries.length === 0 ? (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
-              <Trophy className="w-12 h-12 mx-auto mb-4 text-white/40" />
-              <p className="text-white font-semibold mb-2">No Data Yet</p>
-              <p className="text-white/60 text-sm">Record some swings to see the leaderboard</p>
+            <div className="rounded-2xl bg-white/5 border border-white/10 shadow-lg p-8 text-center max-w-md mx-auto">
+              <Trophy className="w-16 h-16 mx-auto mb-4 text-white/20" />
+              <p className="text-white/80 font-semibold text-lg mb-2">No Swings Yet</p>
+              <p className="text-white/50 text-sm mb-4">Upload your first swing to unlock the leaderboard!</p>
+              <button 
+                onClick={() => navigate('/swing-analysis')}
+                className="text-green-400 text-sm underline hover:opacity-80 transition-opacity"
+              >
+                Get started now
+              </button>
             </div>
           ) : (
             entries.map((entry, index) => {
@@ -329,86 +374,109 @@ export default function Leaderboard() {
               return (
                 <div
                   key={entry.user_id}
-                  className={`rounded-2xl p-4 mb-2 shadow-lg flex items-center justify-between transition-all ${
+                  className={`relative rounded-2xl p-5 transition-all duration-200 ${
                     isCurrentUser
-                      ? 'bg-white/10 border border-green-500/40'
-                      : 'bg-white/5 border border-white/10'
-                  } ${isTop3 ? 'ring-2 ring-offset-2 ring-offset-transparent' : ''} ${
-                    entry.rank === 1 ? 'ring-yellow-500/40' :
-                    entry.rank === 2 ? 'ring-gray-400/40' :
-                    entry.rank === 3 ? 'ring-amber-600/40' : ''
+                      ? 'bg-white/10 border border-green-500/40 shadow-[0_0_20px_rgba(16,185,129,0.25)]'
+                      : 'bg-white/5 border border-white/10 shadow-[0_0_10px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+                  } ${isTop3 ? 'ring-1 ring-offset-2 ring-offset-transparent' : ''} ${
+                    entry.rank === 1 ? 'ring-yellow-500/30' :
+                    entry.rank === 2 ? 'ring-gray-400/30' :
+                    entry.rank === 3 ? 'ring-amber-600/30' : ''
                   }`}
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  style={{ 
+                    animationDelay: `${index * 50}ms`,
+                  }}
                 >
-                  {/* LEFT SIDE */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {/* Rank */}
-                    <div className={`w-8 font-bold text-center ${
-                      entry.rank === 1 ? 'text-yellow-400' :
-                      entry.rank === 2 ? 'text-gray-300' :
-                      entry.rank === 3 ? 'text-amber-500' :
-                      'text-white/40'
-                    }`}>
-                      #{entry.rank}
-                    </div>
-                    
-                    {/* Avatar */}
-                    <Avatar className={`w-10 h-10 border ${
-                      entry.rank === 1 ? 'border-yellow-500 ring-2 ring-yellow-500/20' :
-                      entry.rank === 2 ? 'border-gray-300 ring-2 ring-gray-300/20' :
-                      entry.rank === 3 ? 'border-amber-500 ring-2 ring-amber-500/20' :
-                      'border-white/10'
-                    }`}>
-                      <AvatarImage src={entry.avatar_url} />
-                      <AvatarFallback className="bg-white/10 text-white text-sm">
-                        {entry.full_name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-semibold truncate">{entry.full_name}</span>
-                        {isCurrentUser && (
-                          <span className="rounded-sm bg-white/10 text-white/70 text-[10px] px-1.5 py-[2px]">
-                            You
-                          </span>
+                  {/* Rank watermark */}
+                  <div className="absolute left-3 top-1 text-[48px] font-black text-white/5 leading-none pointer-events-none">
+                    {entry.rank}
+                  </div>
+                  
+                  {/* Top 3 gradient glow */}
+                  {isTop3 && (
+                    <div className={`absolute inset-0 rounded-2xl opacity-10 pointer-events-none ${
+                      entry.rank === 1 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' :
+                      entry.rank === 2 ? 'bg-gradient-to-r from-gray-300 to-gray-500' :
+                      'bg-gradient-to-r from-amber-400 to-amber-700'
+                    }`} />
+                  )}
+                  
+                  <div className="relative flex items-center justify-between">
+                    {/* LEFT SIDE */}
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      {/* Rank number */}
+                      <div className={`text-sm font-bold ${
+                        entry.rank === 1 ? 'text-yellow-400' :
+                        entry.rank === 2 ? 'text-gray-300' :
+                        entry.rank === 3 ? 'text-amber-500' :
+                        'text-white/40'
+                      }`}>
+                        #{entry.rank}
+                      </div>
+                      
+                      {/* Avatar */}
+                      <Avatar className={`w-12 h-12 border-2 ${
+                        entry.rank === 1 ? 'border-yellow-400 ring-4 ring-yellow-500/20' :
+                        entry.rank === 2 ? 'border-gray-300 ring-4 ring-gray-300/20' :
+                        entry.rank === 3 ? 'border-amber-500 ring-4 ring-amber-500/20' :
+                        'border-white/20'
+                      }`}>
+                        <AvatarImage src={entry.avatar_url} />
+                        <AvatarFallback className="bg-white/10 text-white/90 text-base font-semibold">
+                          {entry.full_name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      {/* Player Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-white/90 font-semibold text-base truncate">{entry.full_name}</span>
+                          {isCurrentUser && (
+                            <span className="rounded-full bg-green-500/20 text-green-300 text-[10px] font-medium px-2 py-0.5">
+                              You
+                            </span>
+                          )}
+                        </div>
+                        {(entry.current_team || entry.primary_position) && (
+                          <p className="text-white/50 text-xs">
+                            {entry.current_team && entry.primary_position 
+                              ? `${entry.current_team} · ${entry.primary_position}`
+                              : entry.current_team || entry.primary_position}
+                          </p>
                         )}
                       </div>
-                      {(entry.current_team || entry.primary_position) && (
-                        <p className="text-white/40 text-xs">
-                          {entry.current_team && entry.primary_position 
-                            ? `${entry.current_team} · ${entry.primary_position}`
-                            : entry.current_team || entry.primary_position}
-                        </p>
+                    </div>
+
+                    {/* RIGHT SIDE - Score */}
+                    <div className="text-right ml-4">
+                      <div 
+                        className={`text-lg font-bold ${
+                          entry.rank <= 3 ? 'text-green-400' : 'text-white/90'
+                        }`}
+                        style={entry.rank <= 3 ? {
+                          filter: 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.4))'
+                        } : {}}
+                      >
+                        {metricValue}{metricLabel && ` ${metricLabel}`}
+                      </div>
+                      {entry.trend !== undefined && entry.trend !== 0 && (
+                        <div className={`text-[10px] flex items-center justify-end gap-1 mt-1 ${
+                          entry.trend > 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {entry.trend > 0 ? (
+                            <>
+                              <TrendingUp className="w-3 h-3" />
+                              <span>+{entry.trend}</span>
+                            </>
+                          ) : (
+                            <>
+                              <TrendingDown className="w-3 h-3" />
+                              <span>{entry.trend}</span>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
-                  </div>
-
-                  {/* RIGHT SIDE */}
-                  <div className="text-right">
-                    <div className={`text-lg font-bold ${
-                      entry.rank <= 3 ? 'text-green-400' : 'text-white'
-                    }`}>
-                      {metricValue}{metricLabel && ` ${metricLabel}`}
-                    </div>
-                    {entry.trend !== undefined && entry.trend !== 0 && (
-                      <div className={`text-[11px] flex items-center justify-end gap-0.5 ${
-                        entry.trend > 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {entry.trend > 0 ? (
-                          <>
-                            <TrendingUp className="w-3 h-3" />
-                            +{entry.trend}
-                          </>
-                        ) : (
-                          <>
-                            <TrendingDown className="w-3 h-3" />
-                            {entry.trend}
-                          </>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               );
@@ -418,32 +486,32 @@ export default function Leaderboard() {
 
         {/* MOTIVATION FOOTER */}
         {entries.length > 0 && (
-          <div className="mt-6 bg-white/10 border border-white/20 rounded-2xl p-4 text-center shadow-lg">
-            <p className="text-white text-sm">{getMotivationText()}</p>
+          <div className="mt-8 bg-white/10 border border-white/20 rounded-2xl p-5 text-center shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+            <p className="text-white/90 text-sm font-medium">{getMotivationText()}</p>
           </div>
         )}
       </div>
 
       {/* BOTTOM NAVIGATION */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#0f172a]/95 backdrop-blur-lg border-t border-white/10 z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md border-t border-white/10 z-50">
         <div className="max-w-2xl mx-auto flex items-center justify-around py-3 px-4">
-          <button onClick={() => navigate('/')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white transition-colors">
+          <button onClick={() => navigate('/')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white/90 transition-all duration-200">
             <Home className="w-5 h-5" />
             <span className="text-xs">Home</span>
           </button>
-          <button onClick={() => navigate('/swings')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white transition-colors">
+          <button onClick={() => navigate('/swings')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white/90 transition-all duration-200">
             <Target className="w-5 h-5" />
             <span className="text-xs">Swings</span>
           </button>
-          <button onClick={() => navigate('/drills')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white transition-colors">
+          <button onClick={() => navigate('/drills')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white/90 transition-all duration-200">
             <Award className="w-5 h-5" />
             <span className="text-xs">Drills</span>
           </button>
-          <button className="flex flex-col items-center gap-1 text-green-400 transition-colors">
+          <button className="flex flex-col items-center gap-1 text-green-400 transition-all duration-200">
             <Trophy className="w-5 h-5" />
             <span className="text-xs font-semibold">Leaderboard</span>
           </button>
-          <button onClick={() => navigate('/profile')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white transition-colors">
+          <button onClick={() => navigate('/profile')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white/90 transition-all duration-200">
             <User className="w-5 h-5" />
             <span className="text-xs">Profile</span>
           </button>
@@ -453,10 +521,39 @@ export default function Leaderboard() {
       {/* FLOATING UPLOAD BUTTON */}
       <Button
         onClick={() => navigate('/swing-analysis')}
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all hover:scale-110 z-50"
+        className="fixed bottom-20 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all hover:scale-110 hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] z-50 group"
+        style={{
+          animation: 'pulse-soft 2s ease-in-out infinite'
+        }}
       >
         <Plus className="w-6 h-6 text-white" />
+        <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          Upload Swing
+        </span>
       </Button>
+
+      <style>{`
+        @keyframes shimmer-slow {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        @keyframes slide-in {
+          from {
+            transform: scaleX(0);
+            opacity: 0;
+          }
+          to {
+            transform: scaleX(1);
+            opacity: 1;
+          }
+        }
+
+        .animate-slide-in {
+          animation: slide-in 0.25s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
