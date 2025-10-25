@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, TrendingUp, Award, Zap, Trophy, Play, Home, User as UserIcon } from 'lucide-react';
+import { Camera, TrendingUp, Award, Zap, Trophy, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -576,36 +576,25 @@ const Index = () => {
       {/* BOTTOM NAVIGATION */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md border-t border-white/10 z-50">
         <div className="max-w-2xl mx-auto flex items-center justify-around py-3 px-4">
-          <Link to="/" className="flex flex-col items-center gap-1 text-green-400 transition-all duration-200">
-            <Home className="w-5 h-5" />
-            <span className="text-xs font-semibold">Home</span>
-          </Link>
           <Link to={user ? "/progress" : "/auth"} className="flex flex-col items-center gap-1 text-white/50 hover:text-white/70 transition-all duration-200">
             <TrendingUp className="w-5 h-5" />
             <span className="text-xs">Progress</span>
           </Link>
+          
+          {/* Centered Record Button */}
+          <Link to={user ? "/analysis" : "/auth"} className="flex flex-col items-center gap-1 -mt-2">
+            <div className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 shadow-[0_0_20px_rgba(16,185,129,0.6)] hover:shadow-[0_0_30px_rgba(16,185,129,0.8)] transition-all duration-300 flex items-center justify-center">
+              <Camera className="h-7 w-7 text-black" />
+            </div>
+            <span className="text-xs text-white/80 font-medium">Record</span>
+          </Link>
+          
           <Link to={user ? "/leaderboard" : "/auth"} className="flex flex-col items-center gap-1 text-white/50 hover:text-white/70 transition-all duration-200">
             <Trophy className="w-5 h-5" />
             <span className="text-xs">Leaderboard</span>
           </Link>
-          <Link to="/profile" className="flex flex-col items-center gap-1 text-white/50 hover:text-white/70 transition-all duration-200">
-            <UserIcon className="w-5 h-5" />
-            <span className="text-xs">Profile</span>
-          </Link>
         </div>
       </div>
-
-      {/* FLOATING UPLOAD BUTTON */}
-      <Link to={user ? "/analysis" : "/auth"}>
-        <Button
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 text-black shadow-[0_0_20px_rgba(16,185,129,0.6)] transition-all hover:scale-110 z-50"
-          style={{
-            animation: 'pulse-soft 2s ease-in-out infinite'
-          }}
-        >
-          <Camera className="w-7 h-7" />
-        </Button>
-      </Link>
 
       <style>{`
         @keyframes glow-breathe {
