@@ -250,7 +250,8 @@ export default function Profile() {
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none" />
       
       {/* BRANDED HEADER BAR */}
-      <header className="relative w-full bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10 mb-6">
+      <header className="relative w-full h-16 bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10 mb-6">
+        {/* Left Action - Back Button */}
         <Button
           variant="ghost"
           size="sm"
@@ -260,15 +261,12 @@ export default function Profile() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
 
-        <div className="h-14 flex items-center justify-center px-4">
+        {/* Centered Logo */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center">
           <img
             src={headerLogo}
             alt="SwingSense"
-            className="h-7 w-auto animate-[logoentrance_0.5s_ease-out]"
-            style={{
-              filter: 'drop-shadow(0 0 16px rgba(16, 185, 129, 0.4))',
-              animation: 'logoentrance 0.5s ease-out, glowpulse 7s ease-in-out infinite'
-            }}
+            className="h-8 w-auto animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
           />
         </div>
       </header>
@@ -469,12 +467,10 @@ export default function Profile() {
       <style>{`
         @keyframes glowpulse {
           0%, 100% {
-            opacity: 0.3;
-            filter: blur(40px);
+            filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
           }
           50% {
-            opacity: 0.5;
-            filter: blur(60px);
+            filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.6));
           }
         }
         

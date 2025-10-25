@@ -442,7 +442,8 @@ export default function SwingDetail() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
       {/* BRANDED HEADER BAR */}
-      <header className="relative w-full bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10">
+      <header className="relative w-full h-16 bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10">
+        {/* Left Action - Back Button */}
         <Button 
           variant="ghost" 
           size="icon" 
@@ -452,18 +453,16 @@ export default function SwingDetail() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
 
-        <div className="h-14 flex items-center justify-center px-4">
+        {/* Centered Logo */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center">
           <img
             src={headerLogo}
             alt="SwingSense"
-            className="h-7 w-auto animate-[logoentrance_0.5s_ease-out]"
-            style={{
-              filter: 'drop-shadow(0 0 16px rgba(16, 185, 129, 0.4))',
-              animation: 'logoentrance 0.5s ease-out, glowpulse 7s ease-in-out infinite'
-            }}
+            className="h-8 w-auto animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
           />
         </div>
 
+        {/* Right Action - Share Button */}
         <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
           <DialogTrigger asChild>
             <Button 
@@ -777,10 +776,10 @@ export default function SwingDetail() {
       <style>{`
         @keyframes glowpulse {
           0%, 100% {
-            filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.4));
+            filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
           }
           50% {
-            filter: drop-shadow(0 0 24px rgba(16, 185, 129, 0.6));
+            filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.6));
           }
         }
 
