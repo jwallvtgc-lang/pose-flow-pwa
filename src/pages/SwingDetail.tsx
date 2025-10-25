@@ -551,7 +551,23 @@ export default function SwingDetail() {
       <div className="px-4 py-6 pb-32 max-w-2xl mx-auto space-y-4">
         {/* VIDEO PLAYER SECTION */}
         {swing.video_url && (
-          <div className="rounded-2xl overflow-hidden border border-white/10 shadow-xl">
+          <div className="rounded-2xl overflow-hidden border border-white/10 shadow-xl relative">
+            {/* Swingscore Badge */}
+            {swing.score_phase1 !== null && (
+              <div className="absolute top-3 left-3 z-20 flex flex-col gap-1">
+                <div className="bg-green-500/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-lg">
+                  <div className="text-black font-bold text-base leading-none">
+                    {swing.score_phase1}/100
+                  </div>
+                </div>
+                <div className="bg-black/40 backdrop-blur-sm border border-green-500/40 rounded-lg px-2 py-1 shadow-md">
+                  <div className="text-green-300 font-medium text-[10px] uppercase tracking-wide leading-none">
+                    Swingscore
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {videoUrl ? (
               <div className="relative">
                 <div className="relative bg-black">
