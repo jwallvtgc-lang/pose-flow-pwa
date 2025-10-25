@@ -369,26 +369,20 @@ const Index = () => {
           <div className="w-10" /> {/* Spacer for centering */}
           
           {/* SwingSense Logo Lockup */}
-          <div className="flex items-center gap-3 animate-[logoentrance_0.6s_ease-out]">
-            <div className="relative flex items-center justify-center w-8 h-8">
-              {/* Breathing glow background */}
-              <div 
-                className="absolute inset-0 rounded-full bg-green-500/30 blur-[30px]"
-                style={{
-                  animation: 'glowpulse 7s ease-in-out infinite'
-                }}
-              />
-              {/* Logo mark */}
-              <img
-                src={logoMark}
-                alt="SwingSense logo"
-                className="h-8 w-auto relative z-10"
-              />
-            </div>
-            {/* Wordmark */}
-            <span className="text-white font-semibold text-lg tracking-wide">
-              SwingSense
-            </span>
+          <div className="relative flex items-center justify-center animate-[logoentrance_0.6s_ease-out]">
+            {/* Breathing glow background behind the S */}
+            <div 
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-green-500/30 blur-[30px]"
+              style={{
+                animation: 'glowpulse 7s ease-in-out infinite'
+              }}
+            />
+            {/* Full logo lockup (S mark + wordmark together) */}
+            <img
+              src={logoMark}
+              alt="SwingSense"
+              className="h-10 w-auto relative z-10"
+            />
           </div>
           
           <Link 
