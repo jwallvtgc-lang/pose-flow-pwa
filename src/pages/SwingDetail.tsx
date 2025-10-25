@@ -442,43 +442,45 @@ export default function SwingDetail() {
     <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
       {/* HEADER */}
       <div className="px-4 py-4 max-w-2xl mx-auto">
-        {/* SwingSense Logo */}
-        <div className="flex items-center gap-2 mb-4 group cursor-pointer transition-all duration-300 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]">
-          {/* Stylized S with gradient trail and glow dot */}
-          <div className="relative">
-            {/* Gradient trail behind S */}
-            <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-8 h-6 bg-gradient-to-r from-emerald-500/30 via-cyan-500/20 to-transparent rounded-full blur-md"></div>
+        {/* SwingSense Logo - Centered */}
+        <div className="flex justify-center mb-4">
+          <div className="flex items-center gap-2 group cursor-pointer transition-all duration-300 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]">
+            {/* Stylized S with gradient trail and glow dot */}
+            <div className="relative">
+              {/* Gradient trail behind S */}
+              <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-8 h-6 bg-gradient-to-r from-emerald-500/30 via-cyan-500/20 to-transparent rounded-full blur-md"></div>
+              
+              {/* Stylized S as a swing arc */}
+              <svg width="32" height="32" viewBox="0 0 32 32" className="relative z-10">
+                <path
+                  d="M 8 8 Q 14 6, 18 10 Q 22 14, 20 20 Q 18 26, 12 24 Q 6 22, 8 16"
+                  stroke="url(#swingGradient)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  fill="none"
+                  className="transition-all duration-300"
+                />
+                {/* Glowing dot at top-right for AI tracking */}
+                <circle cx="20" cy="10" r="2.5" className="fill-cyan-400 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)]">
+                  <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
+                </circle>
+                <defs>
+                  <linearGradient id="swingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#10B981" />
+                    <stop offset="100%" stopColor="#06B6D4" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
             
-            {/* Stylized S as a swing arc */}
-            <svg width="32" height="32" viewBox="0 0 32 32" className="relative z-10">
-              <path
-                d="M 8 8 Q 14 6, 18 10 Q 22 14, 20 20 Q 18 26, 12 24 Q 6 22, 8 16"
-                stroke="url(#swingGradient)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                fill="none"
-                className="transition-all duration-300"
-              />
-              {/* Glowing dot at top-right for AI tracking */}
-              <circle cx="20" cy="10" r="2.5" className="fill-cyan-400 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)]">
-                <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
-              </circle>
-              <defs>
-                <linearGradient id="swingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#10B981" />
-                  <stop offset="100%" stopColor="#06B6D4" />
-                </linearGradient>
-              </defs>
-            </svg>
+            {/* SwingSense text */}
+            <span className="text-white font-bold text-lg tracking-wide group-hover:text-green-300 transition-colors duration-300 hidden sm:inline">
+              SwingSense
+            </span>
+            <span className="text-white font-bold text-base tracking-wide group-hover:text-green-300 transition-colors duration-300 sm:hidden">
+              SS
+            </span>
           </div>
-          
-          {/* SwingSense text */}
-          <span className="text-white font-bold text-lg tracking-wide group-hover:text-green-300 transition-colors duration-300 hidden sm:inline">
-            SwingSense
-          </span>
-          <span className="text-white font-bold text-base tracking-wide group-hover:text-green-300 transition-colors duration-300 sm:hidden">
-            SS
-          </span>
         </div>
 
         <div className="flex items-center justify-between">
