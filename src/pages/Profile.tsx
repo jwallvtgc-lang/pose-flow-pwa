@@ -266,7 +266,7 @@ export default function Profile() {
           <img
             src={headerLogo}
             alt="SwingSense"
-            className="h-10 w-auto max-w-[70%] md:max-w-[320px] animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
+            className="h-14 w-auto max-w-[80%] md:max-w-[400px] animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
           />
         </div>
       </header>
