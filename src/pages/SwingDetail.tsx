@@ -721,7 +721,7 @@ export default function SwingDetail() {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-lg border-t border-white/10 safe-area-bottom">
         <div className="px-4 py-4 max-w-2xl mx-auto flex flex-col gap-2">
           <Button
-            onClick={() => navigate('/swing-analysis')}
+            onClick={() => navigate('/analysis')}
             className="w-full rounded-xl bg-white hover:bg-white/90 text-black font-bold py-4 h-auto text-base"
           >
             Record new swing after drill
