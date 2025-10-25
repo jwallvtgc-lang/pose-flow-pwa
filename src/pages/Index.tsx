@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, TrendingUp, Award, Zap, Trophy, Play } from 'lucide-react';
+import { Camera, TrendingUp, Award, Zap, Trophy, Play, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -364,9 +364,16 @@ const Index = () => {
       }} />
       
       <div className="max-w-2xl mx-auto px-4 py-6 relative z-10">
-        {/* HEADER WITH LOGO */}
-        <div className="flex justify-center mb-8">
+        {/* HEADER WITH LOGO AND PROFILE BUTTON */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="w-10" /> {/* Spacer for centering */}
           <SwingSenseLogo />
+          <Link 
+            to="/profile" 
+            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200"
+          >
+            <User className="w-5 h-5" />
+          </Link>
         </div>
 
         {/* 1. HERO HEADER / PERSONAL PANEL */}
