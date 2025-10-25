@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import headerLogo from '@/assets/swingsense-header.png';
 
 interface ProfileData {
   full_name: string;
@@ -248,18 +249,33 @@ export default function Profile() {
       {/* Vignette overlay */}
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none" />
       
-      <div className="max-w-2xl mx-auto px-4 py-8 relative z-10">
-        {/* Header with Back Button */}
-        <div className="flex items-center mb-8">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/')}
-            className="mr-4 rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20 shadow-lg transition-all hover:scale-105"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div className="text-center flex-1">
+      {/* BRANDED HEADER BAR */}
+      <header className="relative w-full bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10 mb-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/')}
+          className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+
+        <div className="h-14 flex items-center justify-center px-4">
+          <img
+            src={headerLogo}
+            alt="SwingSense"
+            className="h-7 w-auto animate-[logoentrance_0.5s_ease-out]"
+            style={{
+              filter: 'drop-shadow(0 0 16px rgba(16, 185, 129, 0.4))',
+              animation: 'logoentrance 0.5s ease-out, glowpulse 7s ease-in-out infinite'
+            }}
+          />
+        </div>
+      </header>
+      
+      <div className="max-w-2xl mx-auto px-4 py-4 relative z-10">
+        {/* Profile Content */}
+        <div className="text-center mb-8">
             {/* Avatar Section with Ambient Glow */}
             <div className="relative mx-auto mb-4 w-24 h-24">
               {/* Animated green glow behind avatar */}
@@ -305,7 +321,6 @@ export default function Profile() {
               <p className="text-white/50 text-xs">{profile.email}</p>
             )}
           </div>
-        </div>
 
         {/* Profile Form */}
         <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_10px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all duration-300 p-6 mb-6 animate-fade-in">
@@ -460,6 +475,17 @@ export default function Profile() {
           50% {
             opacity: 0.5;
             filter: blur(60px);
+          }
+        }
+        
+        @keyframes logoentrance {
+          0% {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
           }
         }
 

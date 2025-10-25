@@ -14,7 +14,7 @@ import { getVideoSignedUrl } from '@/lib/storage';
 import { toast } from 'sonner';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
 import { cn } from '@/lib/utils';
-import { SwingSenseLogo } from '@/components/SwingSenseLogo';
+import headerLogo from '@/assets/swingsense-header.png';
 
 interface SwingData {
   id: string;
@@ -441,42 +441,39 @@ export default function SwingDetail() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
-      {/* HEADER */}
-      <div className="px-4 py-4 max-w-2xl mx-auto">
-        {/* SwingSense Logo - Centered */}
-        <div className="flex justify-center mb-4">
-          <SwingSenseLogo />
+      {/* BRANDED HEADER BAR */}
+      <header className="relative w-full bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate('/')}
+          className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+
+        <div className="h-14 flex items-center justify-center px-4">
+          <img
+            src={headerLogo}
+            alt="SwingSense"
+            className="h-7 w-auto animate-[logoentrance_0.5s_ease-out]"
+            style={{
+              filter: 'drop-shadow(0 0 16px rgba(16, 185, 129, 0.4))',
+              animation: 'logoentrance 0.5s ease-out, glowpulse 7s ease-in-out infinite'
+            }}
+          />
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+          <DialogTrigger asChild>
             <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/')}
-              className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
+              variant="outline" 
+              size="sm"
+              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-lg border-white/20 text-white/60 hover:text-white hover:bg-white/10"
             >
-              <ArrowLeft className="w-5 h-5" />
+              Share
             </Button>
-            <div>
-              <div className="text-white/60 text-xs uppercase tracking-wide mb-1">Swing from</div>
-              <div className="text-white text-sm font-medium">
-                {swingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
-                {swingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </div>
-            </div>
-          </div>
-          
-          <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="rounded-lg border-white/20 text-white/60 hover:text-white hover:bg-white/10"
-              >
-                Share w/ Coach
-              </Button>
-            </DialogTrigger>
+          </DialogTrigger>
             <DialogContent className="sm:max-w-md rounded-2xl">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
@@ -551,10 +548,17 @@ export default function SwingDetail() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+        </header>
 
       <div className="px-4 py-6 pb-32 max-w-2xl mx-auto space-y-4">
+        {/* Date/Time info */}
+        <div className="text-center mb-4">
+          <div className="text-white/60 text-xs uppercase tracking-wide mb-1">Swing from</div>
+          <div className="text-white text-sm font-medium">
+            {swingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
+            {swingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </div>
         {/* VIDEO PLAYER SECTION */}
         {swing.video_url && (
           <div className="rounded-2xl overflow-hidden border border-white/10 shadow-xl relative">
@@ -769,6 +773,28 @@ export default function SwingDetail() {
           </Button>
         </div>
       </div>
+
+      <style>{`
+        @keyframes glowpulse {
+          0%, 100% {
+            filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.4));
+          }
+          50% {
+            filter: drop-shadow(0 0 24px rgba(16, 185, 129, 0.6));
+          }
+        }
+
+        @keyframes logoentrance {
+          0% {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }

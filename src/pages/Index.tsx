@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import logoMark from '@/assets/swingsense-logo-mark.png';
+import headerLogo from '@/assets/swingsense-header.png';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -363,35 +363,29 @@ const Index = () => {
         animation: 'shimmer-slow 30s linear infinite'
       }} />
       
-      <div className="max-w-2xl mx-auto px-4 py-6 relative z-10">
-        {/* HEADER WITH LOGO AND PROFILE BUTTON */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="w-10" /> {/* Spacer for centering */}
-          
-          {/* SwingSense Logo Lockup */}
-          <div className="relative flex items-center justify-center animate-[logoentrance_0.6s_ease-out]">
-            {/* Breathing glow background behind the S */}
-            <div 
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-green-500/30 blur-[30px]"
-              style={{
-                animation: 'glowpulse 7s ease-in-out infinite'
-              }}
-            />
-            {/* Full logo lockup (S mark + wordmark together) */}
-            <img
-              src={logoMark}
-              alt="SwingSense"
-              className="h-10 w-auto relative z-10"
-            />
-          </div>
-          
-          <Link 
-            to="/profile" 
-            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200"
-          >
-            <User className="w-5 h-5" />
-          </Link>
+      {/* BRANDED HEADER BAR */}
+      <header className="relative w-full bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10 mb-6">
+        <div className="h-14 flex items-center justify-center px-4">
+          <img
+            src={headerLogo}
+            alt="SwingSense"
+            className="h-7 w-auto animate-[logoentrance_0.5s_ease-out]"
+            style={{
+              filter: 'drop-shadow(0 0 16px rgba(16, 185, 129, 0.4))',
+              animation: 'logoentrance 0.5s ease-out, glowpulse 7s ease-in-out infinite'
+            }}
+          />
         </div>
+        
+        <Link 
+          to="/profile" 
+          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200"
+        >
+          <User className="w-5 h-5" />
+        </Link>
+      </header>
+
+      <div className="max-w-2xl mx-auto px-4 relative z-10">
 
         {/* 1. HERO HEADER / PERSONAL PANEL */}
         <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6 animate-fade-in">
@@ -678,12 +672,10 @@ const Index = () => {
       <style>{`
         @keyframes glowpulse {
           0%, 100% {
-            opacity: 0.3;
-            filter: blur(30px);
+            filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.4));
           }
           50% {
-            opacity: 0.6;
-            filter: blur(40px);
+            filter: drop-shadow(0 0 24px rgba(16, 185, 129, 0.6));
           }
         }
 
