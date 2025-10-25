@@ -680,6 +680,7 @@ export default function SwingDetail() {
             const coachMetrics = [
               { key: 'hip_shoulder_sep_deg', label: 'HIP / SHOULDER SEP', unit: '°' },
               { key: 'attack_angle_deg', label: 'ATTACK ANGLE', unit: '°' },
+              { key: 'head_drift_cm', label: 'HEAD DRIFT', unit: 'cm' },
               { key: 'bat_lag_deg', label: 'BAT LAG', unit: '°' },
               { key: 'torso_tilt_deg', label: 'TORSO TILT', unit: '°' },
               { key: 'contact_timing_frames', label: 'CONTACT TIMING', unit: '' }, // No unit shown
