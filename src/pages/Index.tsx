@@ -370,7 +370,7 @@ const Index = () => {
           <img
             src={headerLogo}
             alt="SwingSense"
-            className="h-12 w-auto animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
+            className="h-10 w-auto max-w-[70%] md:max-w-[320px] animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
           />
         </div>
         
