@@ -458,7 +458,7 @@ export default function SwingDetail() {
           <img
             src={headerLogo}
             alt="SwingSense"
-            className="h-8 w-auto animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
+            className="h-12 w-auto animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
           />
         </div>
 
