@@ -632,12 +632,14 @@ export default function SwingDetail() {
         {/* STAT TILES GRID (2 columns) */}
         <div className="grid grid-cols-2 gap-3">
           {(() => {
-            // Map of metric keys to coach-friendly names and their display order
+            // Map of database metric keys to coach-friendly display names
             const coachMetrics = [
-              { key: 'attack_angle', label: 'ATTACK ANGLE', unit: '°' },
-              { key: 'head_drift', label: 'HEAD DRIFT', unit: 'cm' },
-              { key: 'hip_shoulder_separation', label: 'HIP / SHOULDER SEP', unit: '°' },
-              { key: 'exit_velocity', label: 'EXIT VELO', unit: 'mph' }
+              { key: 'hip_shoulder_sep_deg', label: 'HIP / SHOULDER SEP', unit: '°' },
+              { key: 'attack_angle_deg', label: 'ATTACK ANGLE', unit: '°' },
+              { key: 'bat_lag_deg', label: 'BAT LAG', unit: '°' },
+              { key: 'torso_tilt_deg', label: 'TORSO TILT', unit: '°' },
+              { key: 'contact_timing_frames', label: 'CONTACT TIMING', unit: 'f' },
+              { key: 'finish_balance_idx', label: 'FINISH BALANCE', unit: '' }
             ];
 
             const tilesToRender = coachMetrics
@@ -664,6 +666,24 @@ export default function SwingDetail() {
                 );
               })
               .filter(Boolean);
+
+            // Add bat speed tile if available from swing data
+            if (swing.bat_speed_peak) {
+              tilesToRender.push(
+                <div 
+                  key="bat_speed"
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 backdrop-blur-sm flex flex-col gap-1"
+                >
+                  <div className="text-[11px] text-white/40 uppercase tracking-wide">BAT SPEED</div>
+                  <div className="text-white text-lg font-semibold">
+                    {swing.bat_speed_peak.toFixed(1)} mph
+                  </div>
+                  <div className="text-xs font-medium text-green-400">
+                    Peak speed
+                  </div>
+                </div>
+              );
+            }
 
             if (tilesToRender.length === 0) {
               return (
