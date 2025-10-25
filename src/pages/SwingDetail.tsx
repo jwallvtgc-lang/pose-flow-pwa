@@ -14,6 +14,7 @@ import { getVideoSignedUrl } from '@/lib/storage';
 import { toast } from 'sonner';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
 import { cn } from '@/lib/utils';
+import { SwingSenseLogo } from '@/components/SwingSenseLogo';
 
 interface SwingData {
   id: string;
@@ -444,49 +445,7 @@ export default function SwingDetail() {
       <div className="px-4 py-4 max-w-2xl mx-auto">
         {/* SwingSense Logo - Centered */}
         <div className="flex justify-center mb-4">
-          <div className="flex items-center gap-2 group cursor-pointer">
-            {/* Stylized S with gradient trail and glow dot */}
-            <div className="relative">
-              {/* Animated glow pulse behind S */}
-              <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500/30 via-cyan-500/20 to-transparent rounded-full animate-glow-pulse"></div>
-              
-              {/* Gradient trail behind S */}
-              <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-8 h-6 bg-gradient-to-r from-emerald-500/30 via-cyan-500/20 to-transparent rounded-full blur-md"></div>
-              
-              {/* Stylized S as a swing arc with draw animation */}
-              <svg width="40" height="40" viewBox="0 0 40 40" className="relative z-10 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)]">
-                {/* Filled S path to match reference with varying thickness */}
-                <path
-                  d="M 28 8 C 30 8, 32 10, 32 12 C 32 14, 30 16, 26 18 C 22 20, 18 22, 16 25 C 14 28, 14 31, 12 33 C 10 35, 8 36, 6 35 C 4 34, 4 32, 6 30 C 8 28, 12 26, 16 24 C 20 22, 24 19, 26 16 C 28 13, 28 11, 26 9 C 25 8.5, 26.5 8, 28 8 Z"
-                  fill="url(#swingGradient)"
-                  className="opacity-0"
-                  style={{ 
-                    animation: 'fade-scale-in 0.8s ease-out forwards',
-                    filter: 'drop-shadow(0 0 6px rgba(16,185,129,0.6))'
-                  }}
-                />
-                {/* Glowing dot at top-right for AI tracking */}
-                <circle cx="30" cy="10" r="2.5" className="fill-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.8)] opacity-0" style={{ animation: 'fade-scale-in 0.4s ease-out 0.6s forwards' }}>
-                  <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" begin="0.6s" />
-                </circle>
-                <defs>
-                  <linearGradient id="swingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#10B981" />
-                    <stop offset="50%" stopColor="#14B8A6" />
-                    <stop offset="100%" stopColor="#0D9488" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            
-            {/* SwingSense text with fade-in */}
-            <span className="text-white font-bold text-lg tracking-wide opacity-0 animate-fade-scale-in group-hover:text-green-300 transition-colors duration-300 hidden sm:inline">
-              SwingSense
-            </span>
-            <span className="text-white font-bold text-base tracking-wide opacity-0 animate-fade-scale-in group-hover:text-green-300 transition-colors duration-300 sm:hidden">
-              SS
-            </span>
-          </div>
+          <SwingSenseLogo />
         </div>
 
         <div className="flex items-center justify-between">
