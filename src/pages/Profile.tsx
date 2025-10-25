@@ -262,13 +262,13 @@ export default function Profile() {
           <div className="text-center flex-1">
             {/* Avatar Section with Ambient Glow */}
             <div className="relative mx-auto mb-4 w-24 h-24">
-              {/* Ambient glow pulse */}
+              {/* Animated green glow behind avatar */}
               <div 
-                className="absolute inset-0 -m-4 opacity-30"
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[125%] h-[125%] rounded-full"
                 style={{
-                  background: 'radial-gradient(circle, rgba(16, 185, 129, 0.5) 0%, transparent 70%)',
-                  filter: 'blur(24px)',
-                  animation: 'glow-breathe 7s ease-in-out infinite'
+                  background: 'radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, rgba(16, 185, 129, 0.15) 40%, transparent 70%)',
+                  filter: 'blur(40px)',
+                  animation: 'glowpulse 7s ease-in-out infinite'
                 }}
               />
               
@@ -452,14 +452,14 @@ export default function Profile() {
       </div>
 
       <style>{`
-        @keyframes glow-breathe {
+        @keyframes glowpulse {
           0%, 100% {
-            filter: blur(24px);
             opacity: 0.3;
+            filter: blur(40px);
           }
           50% {
-            filter: blur(28px);
-            opacity: 0.4;
+            opacity: 0.5;
+            filter: blur(60px);
           }
         }
 
