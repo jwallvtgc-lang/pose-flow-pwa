@@ -631,34 +631,50 @@ export default function SwingDetail() {
 
         {/* STAT TILES GRID (2 columns) */}
         <div className="grid grid-cols-2 gap-3">
-          {metrics.length > 0 ? (
-            metrics.slice(0, 6).map((metric) => {
-              if (!metric.metric || metric.value === null) return null;
-              const displayName = metricDisplayNames()[metric.metric] || metric.metric.replace(/_/g, ' ');
-              const value = metric.value;
-              const unit = metric.unit || '';
-              const status = getMetricStatus(metric.metric, value);
-              
+          {(() => {
+            // Map of metric keys to coach-friendly names and their display order
+            const coachMetrics = [
+              { key: 'attack_angle', label: 'ATTACK ANGLE', unit: '°' },
+              { key: 'head_drift', label: 'HEAD DRIFT', unit: 'cm' },
+              { key: 'hip_shoulder_separation', label: 'HIP / SHOULDER SEP', unit: '°' },
+              { key: 'exit_velocity', label: 'EXIT VELO', unit: 'mph' }
+            ];
+
+            const tilesToRender = coachMetrics
+              .map(({ key, label, unit }) => {
+                const metric = metrics.find(m => m.metric === key);
+                if (!metric || metric.value === null) return null;
+                
+                const value = metric.value;
+                const status = getMetricStatus(key, value);
+                
+                return (
+                  <div 
+                    key={key}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 backdrop-blur-sm flex flex-col gap-1"
+                  >
+                    <div className="text-[11px] text-white/40 uppercase tracking-wide">{label}</div>
+                    <div className="text-white text-lg font-semibold">
+                      {value.toFixed(1)}{unit}
+                    </div>
+                    <div className={cn("text-xs font-medium", status.textColor)}>
+                      {status.status}
+                    </div>
+                  </div>
+                );
+              })
+              .filter(Boolean);
+
+            if (tilesToRender.length === 0) {
               return (
-                <div 
-                  key={metric.metric}
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm"
-                >
-                  <div className="text-xs text-white/60 mb-1">{displayName}</div>
-                  <div className="text-white text-2xl font-bold mb-2">
-                    {value.toFixed(1)}{unit}
-                  </div>
-                  <div className={cn("text-xs font-medium", status.textColor)}>
-                    {status.status}
-                  </div>
+                <div className="col-span-2 text-center py-8 text-white/60">
+                  No metrics available
                 </div>
               );
-            })
-          ) : (
-            <div className="col-span-2 text-center py-8 text-white/60">
-              No metrics available
-            </div>
-          )}
+            }
+
+            return tilesToRender;
+          })()}
         </div>
 
         {/* FOOTER CTA SPACE */}
