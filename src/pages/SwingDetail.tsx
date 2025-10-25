@@ -454,28 +454,26 @@ export default function SwingDetail() {
               <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-8 h-6 bg-gradient-to-r from-emerald-500/30 via-cyan-500/20 to-transparent rounded-full blur-md"></div>
               
               {/* Stylized S as a swing arc with draw animation */}
-              <svg width="32" height="32" viewBox="0 0 32 32" className="relative z-10 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)]">
+              <svg width="40" height="40" viewBox="0 0 40 40" className="relative z-10 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)]">
+                {/* Filled S path to match reference with varying thickness */}
                 <path
-                  d="M 8 8 Q 14 6, 18 10 Q 22 14, 20 20 Q 18 26, 12 24 Q 6 22, 8 16"
-                  stroke="url(#swingGradient)"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  fill="none"
-                  strokeDasharray="1000"
-                  strokeDashoffset="1000"
-                  className="animate-swing-draw"
+                  d="M 28 8 C 30 8, 32 10, 32 12 C 32 14, 30 16, 26 18 C 22 20, 18 22, 16 25 C 14 28, 14 31, 12 33 C 10 35, 8 36, 6 35 C 4 34, 4 32, 6 30 C 8 28, 12 26, 16 24 C 20 22, 24 19, 26 16 C 28 13, 28 11, 26 9 C 25 8.5, 26.5 8, 28 8 Z"
+                  fill="url(#swingGradient)"
+                  className="opacity-0"
                   style={{ 
+                    animation: 'fade-scale-in 0.8s ease-out forwards',
                     filter: 'drop-shadow(0 0 6px rgba(16,185,129,0.6))'
                   }}
                 />
                 {/* Glowing dot at top-right for AI tracking */}
-                <circle cx="20" cy="10" r="2.5" className="fill-cyan-400 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)] opacity-0" style={{ animation: 'fade-scale-in 0.4s ease-out 0.6s forwards' }}>
+                <circle cx="30" cy="10" r="2.5" className="fill-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.8)] opacity-0" style={{ animation: 'fade-scale-in 0.4s ease-out 0.6s forwards' }}>
                   <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" begin="0.6s" />
                 </circle>
                 <defs>
-                  <linearGradient id="swingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <linearGradient id="swingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" stopColor="#10B981" />
-                    <stop offset="100%" stopColor="#06B6D4" />
+                    <stop offset="50%" stopColor="#14B8A6" />
+                    <stop offset="100%" stopColor="#0D9488" />
                   </linearGradient>
                 </defs>
               </svg>
