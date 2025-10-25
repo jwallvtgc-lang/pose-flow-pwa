@@ -416,9 +416,27 @@ export default function SwingDetail() {
 
   const swingDate = swing.created_at ? new Date(swing.created_at) : new Date();
   
-  // Get the top coaching note from AI
+  // Get the top coaching note from AI and find the corresponding metric value
   const topCoachingNote = aiCoaching?.cues?.[0] || "Keep working on your fundamentals";
-  const topCoachingStatus = aiCoaching ? getMetricStatus(aiCoaching.focusAreas[0] || '', 50) : { status: 'On track', textColor: 'text-green-400' };
+  
+  // Map focus area names to metric keys
+  const focusAreaToMetricKey: Record<string, string> = {
+    'Hip-Shoulder Separation': 'hip_shoulder_sep_deg',
+    'Head Drift': 'head_drift_cm',
+    'Attack Angle': 'attack_angle_deg',
+    'Bat Lag': 'bat_lag_deg',
+    'Torso Tilt': 'torso_tilt_deg',
+    'Contact Timing': 'contact_timing_frames',
+    'Finish Balance': 'finish_balance_idx'
+  };
+  
+  const topFocusArea = aiCoaching?.focusAreas?.[0];
+  const metricKey = topFocusArea ? focusAreaToMetricKey[topFocusArea] : null;
+  const topMetric = metricKey ? metrics.find(m => m.metric === metricKey) : null;
+  
+  const topCoachingStatus = topMetric && topMetric.value !== null 
+    ? getMetricStatus(metricKey!, topMetric.value)
+    : { status: 'On track', textColor: 'text-green-400' };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
