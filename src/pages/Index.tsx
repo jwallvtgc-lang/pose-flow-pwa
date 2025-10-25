@@ -559,6 +559,61 @@ const Index = () => {
           </div>
         )}
 
+        {/* 5. TEAM HIGHLIGHTS (Visual Mock) */}
+        {hasSwings && user && (
+          <div className="mb-6 animate-fade-in">
+            <div className="mb-3">
+              <h3 className="text-white font-semibold text-base tracking-tight">
+                🏆 Team Highlights
+              </h3>
+              <p className="text-white/50 text-xs mt-1">Where your team stands this week</p>
+              <div className="bg-gradient-to-r from-green-500/60 to-transparent h-[1px] w-2/3 rounded-full mt-2" />
+            </div>
+            
+            <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(16,185,129,0.1)] p-4 flex flex-col gap-3">
+              <p className="text-white/70 text-xs uppercase tracking-wide text-center">
+                Top 3 Players — This Week
+              </p>
+              
+              {/* Rank 1 */}
+              <div className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-3 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-200">
+                <div className="flex items-center gap-3">
+                  <span className="text-yellow-400 text-sm w-5 text-center font-bold">1</span>
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center border border-white/20">
+                    <span className="text-white font-bold text-xs">ER</span>
+                  </div>
+                  <span className="text-white font-medium text-sm">Evan R</span>
+                </div>
+                <div className="text-green-400 font-semibold text-sm">84</div>
+              </div>
+              
+              {/* Rank 2 */}
+              <div className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-3 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-200">
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-300 text-sm w-5 text-center font-bold">2</span>
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center border border-white/20">
+                    <span className="text-white font-bold text-xs">MJ</span>
+                  </div>
+                  <span className="text-white font-medium text-sm">Mike J</span>
+                </div>
+                <div className="text-green-400 font-semibold text-sm">82</div>
+              </div>
+              
+              {/* Rank 3 */}
+              <div className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-3 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-200">
+                <div className="flex items-center gap-3">
+                  <span className="text-orange-400 text-sm w-5 text-center font-bold">3</span>
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center border border-white/20">
+                    <span className="text-white font-bold text-xs">SL</span>
+                  </div>
+                  <span className="text-white font-medium text-sm">Sarah L</span>
+                </div>
+                <div className="text-green-400 font-semibold text-sm">79</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Empty state for no swings */}
         {!hasSwings && user && (
           <div className="rounded-2xl bg-white/5 border border-white/10 shadow-lg p-8 text-center mb-6 animate-fade-in">
