@@ -133,13 +133,12 @@ export default function Teams() {
                 >
                   Join a Team
                 </Button>
-                <Button
+                <button
                   onClick={() => setShowCreateModal(true)}
-                  variant="outline"
-                  className="w-full border-white/20 text-white hover:bg-white/10"
+                  className="w-full rounded-xl bg-white/10 border border-white/20 text-white/80 hover:bg-white/15 font-medium text-sm py-2.5 transition-all"
                 >
                   Create a Team
-                </Button>
+                </button>
               </div>
             </Card>
           </div>
@@ -194,13 +193,12 @@ export default function Teams() {
               ))}
             </div>
 
-            <Button
+            <button
               onClick={() => setShowCreateModal(true)}
-              variant="outline"
-              className="w-full border-white/20 text-white hover:bg-white/10"
+              className="w-full rounded-xl bg-white/10 border border-white/20 text-white/80 hover:bg-white/15 font-medium text-sm py-2.5 transition-all"
             >
               Create New Team
-            </Button>
+            </button>
           </div>
         )}
       </div>
