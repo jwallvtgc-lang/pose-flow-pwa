@@ -679,6 +679,10 @@ export default function Progress() {
               const avgValue = chartData.averages[metric];
               const isImproving = invert ? trend === 'down' : trend === 'up';
               
+              // Get target range from metricSpecs
+              const spec = metricSpecs[metric as keyof typeof metricSpecs];
+              const targetRange = spec ? `${spec.target[0]}-${spec.target[1]}${unit}` : null;
+              
               return (
                 <Card 
                   key={metric}
@@ -698,6 +702,14 @@ export default function Progress() {
                     {avgValue ? avgValue.toFixed(1) : '—'}
                     <span className="text-sm ml-1 text-white/60">{unit}</span>
                   </div>
+                  
+                  {/* Target Range */}
+                  {targetRange && (
+                    <div className="text-xs text-white/40 mt-1">
+                      Target: {targetRange}
+                    </div>
+                  )}
+                  
                   <div className="text-xs text-white/40 mt-1">
                     vs {timeFilter === 'week' ? 'last week' : timeFilter === 'month' ? 'last month' : 'previous swings'}
                   </div>
