@@ -45,6 +45,8 @@ export default function Progress() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [aiInsight, setAiInsight] = useState<string>('');
+  const [insightLoading, setInsightLoading] = useState(false);
 
   // Handle scroll for sticky header
   useEffect(() => {
@@ -58,6 +60,13 @@ export default function Progress() {
   useEffect(() => {
     loadProgressData();
   }, [timeFilter]);
+
+  // Generate AI insight when data changes
+  useEffect(() => {
+    if (swings.length >= 3 && metrics.length > 0) {
+      generateInsight();
+    }
+  }, [swings, metrics]);
 
   const loadProgressData = async () => {
     try {
@@ -127,6 +136,84 @@ export default function Progress() {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const generateInsight = async () => {
+    try {
+      setInsightLoading(true);
+      
+      // Prepare recent scores
+      const recentScores = swings
+        .slice(0, 10)
+        .filter(s => s.score_phase1 !== null)
+        .map(s => s.score_phase1 as number)
+        .reverse();
+
+      // Metric name and unit mapping
+      const metricLabels: Record<string, { label: string; unit: string }> = {
+        hip_shoulder_sep_deg: { label: 'Hip-Shoulder Separation', unit: '°' },
+        attack_angle_deg: { label: 'Attack Angle', unit: '°' },
+        head_drift_cm: { label: 'Head Drift', unit: 'cm' },
+        contact_timing_frames: { label: 'Contact Timing', unit: 'frames' },
+        bat_lag_deg: { label: 'Bat Lag', unit: '°' },
+        torso_tilt_deg: { label: 'Torso Tilt', unit: '°' },
+        stride_var_pct: { label: 'Stride Variance', unit: '%' },
+        finish_balance_idx: { label: 'Finish Balance', unit: 'index' }
+      };
+
+      // Prepare metric trends
+      const metricTrends = Object.keys(metricSpecs).map(metricName => {
+        const series = chartData.allMetricsSeries[metricName] || [];
+        const recent = series.slice(-3).map(p => p.value);
+        const older = series.slice(-6, -3).map(p => p.value);
+        
+        if (recent.length === 0 || older.length === 0) return null;
+        
+        const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+        const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
+        const spec = metricSpecs[metricName as keyof typeof metricSpecs];
+        
+        let trend: 'improving' | 'declining' | 'stable' = 'stable';
+        const isImproving = spec && 'invert' in spec && spec.invert 
+          ? recentAvg < olderAvg
+          : recentAvg > olderAvg;
+        
+        const change = Math.abs(recentAvg - olderAvg);
+        if (change > 0.1) {
+          trend = isImproving ? 'improving' : 'declining';
+        }
+        
+        const metricInfo = metricLabels[metricName] || { label: metricName, unit: '' };
+        
+        return {
+          name: metricInfo.label,
+          recentAvg,
+          olderAvg,
+          trend,
+          unit: metricInfo.unit
+        };
+      }).filter((t): t is NonNullable<typeof t> => t !== null);
+
+      const { data, error } = await supabase.functions.invoke('generate-progress-insight', {
+        body: {
+          recentScores,
+          metricTrends,
+          totalSwings: swings.length,
+          timeframe: timeFilter
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.insight) {
+        setAiInsight(data.insight);
+      }
+    } catch (err) {
+      console.error('Failed to generate insight:', err);
+      setAiInsight("Keep grinding! Consistent practice is building your skills.");
+    } finally {
+      setInsightLoading(false);
     }
   };
 
@@ -634,7 +721,7 @@ export default function Progress() {
             </Card>
           )}
 
-          {/* AI Insights Placeholder */}
+          {/* AI Coach Insight */}
           <Card className="bg-white/5 border border-emerald-500/20 rounded-2xl p-5 shadow-[0_0_20px_rgba(16,185,129,0.15)] text-white">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 border border-emerald-500/30">
@@ -644,9 +731,16 @@ export default function Progress() {
                 <h3 className="font-black text-base mb-2 flex items-center gap-2">
                   AI Coach Insight
                 </h3>
-                <p className="text-white font-medium text-sm leading-relaxed">
-                  💬 You're rotating earlier and maintaining better balance. Keep it up!
-                </p>
+                {insightLoading ? (
+                  <div className="flex items-center gap-2 text-white/60">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-emerald-400 border-t-transparent" />
+                    <span className="text-sm">Analyzing your progress...</span>
+                  </div>
+                ) : (
+                  <p className="text-white font-medium text-sm leading-relaxed">
+                    {aiInsight || "Record a few more swings to get personalized insights!"}
+                  </p>
+                )}
               </div>
             </div>
           </Card>

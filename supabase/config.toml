@@ -55,6 +55,9 @@ verify_jwt = false
 [functions.generate-swing-coaching]
 verify_jwt = false
 
+[functions.generate-progress-insight]
+verify_jwt = false
+
 [functions.send-swing-analysis]
 verify_jwt = false
 
