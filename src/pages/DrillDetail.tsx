@@ -126,15 +126,15 @@ export default function DrillDetail() {
           </Card>
 
           {/* Focus Cues Section */}
-          <Card className="bg-gradient-to-br from-cyan-500/10 to-transparent border-cyan-500/20 rounded-2xl p-5 text-white shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+          <Card className="bg-white/5 border-emerald-500/30 rounded-2xl p-5 text-white shadow-[0_0_20px_rgba(16,185,129,0.1)]">
             <h3 className="text-lg font-black mb-3 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-cyan-400" />
+              <Zap className="w-5 h-5 text-emerald-400" />
               Focus Cues
             </h3>
             <ul className="space-y-2">
               {drill.focusCues.map((cue, index) => (
                 <li key={index} className="flex items-start gap-2 text-white/80 text-sm">
-                  <span className="text-cyan-400 mt-0.5 text-lg">→</span>
+                  <span className="text-emerald-400 mt-0.5 text-lg">→</span>
                   <span className="font-medium">{cue}</span>
                 </li>
               ))}
@@ -161,8 +161,8 @@ export default function DrillDetail() {
           </Card>
 
           {/* Bottom CTA */}
-          <Card className="bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border-emerald-500/30 rounded-2xl p-5 text-center text-white">
-            <p className="text-sm text-white/90 mb-4 font-medium">
+          <Card className="bg-white/5 border-white/10 rounded-2xl p-5 text-center text-white">
+            <p className="text-sm text-white/80 mb-4 font-medium">
               🔥 Get after it! Consistency beats intensity.
             </p>
             <div className="flex gap-3">

@@ -178,8 +178,8 @@ export default function Drills() {
 
           {/* Bottom CTA */}
           {filteredDrills.length > 0 && (
-            <Card className="bg-gradient-to-r from-green-500/10 to-cyan-500/10 border-green-500/20 rounded-2xl p-5 text-center text-white">
-              <p className="text-sm text-white/90 mb-4 font-medium">
+            <Card className="bg-white/5 border-white/10 rounded-2xl p-5 text-center text-white">
+              <p className="text-sm text-white/80 mb-4 font-medium">
                 💪 Pick a drill and level up your game!
               </p>
               <Button 

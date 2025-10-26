@@ -19,7 +19,7 @@ export default {
         'sans': ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       colors: {
-        'hunters-green': '#355E3B',
+        'hunters-green': 'hsl(140 25% 24%)',
         'sp-blue': 'hsl(var(--sp-blue))',
         'sp-royal-blue': 'hsl(var(--sp-royal-blue))',
         'sp-orange': 'hsl(var(--sp-orange))',
