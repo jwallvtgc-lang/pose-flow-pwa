@@ -1,10 +1,13 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Target, Zap, CheckCircle2, Package } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { drillsData } from '@/lib/drillsData';
+import { StartDrillModal } from '@/components/StartDrillModal';
+import { DrillRating } from '@/components/DrillRating';
 
 const metricLabels: Record<string, string> = {
   head_drift_cm: 'Head Control',
@@ -25,6 +28,7 @@ const metricLabels: Record<string, string> = {
 export default function DrillDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const drill = drillsData.find(d => d.id === id);
 
@@ -167,22 +171,39 @@ export default function DrillDetail() {
             </p>
             <div className="flex gap-3">
               <Button 
+                onClick={() => setIsModalOpen(true)} 
+                className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+              >
+                Start Drill
+              </Button>
+              <Button 
                 onClick={() => navigate('/drills')} 
                 variant="outline"
                 className="flex-1 border-white/20 text-white hover:bg-white/10"
               >
                 All Drills
               </Button>
-              <Button 
-                onClick={() => navigate('/analysis')} 
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white"
-              >
-                Record Swing
-              </Button>
             </div>
           </Card>
+
+          {/* Rating Section */}
+          <DrillRating 
+            drillId={drill.id}
+            drillName={drill.name}
+          />
         </div>
       </div>
+
+      {/* Start Drill Modal */}
+      <StartDrillModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        drillId={drill.id}
+        drillName={drill.name}
+        steps={drill.steps}
+        repsTarget={drill.reps}
+        focusCues={drill.focusCues}
+      />
     </div>
   );
 }
