@@ -292,6 +292,49 @@ export default function Progress() {
     return days;
   }, [swings]);
 
+  // Calculate metric comparisons for "Then vs Now"
+  const metricComparison = useMemo(() => {
+    if (swings.length < 2) return null;
+    
+    const recentSwings = swings.slice(0, 3);
+    const oldSwings = swings.slice(-3);
+    
+    const getAvgMetric = (swingList: Swing[], metricName: string) => {
+      const values = swingList
+        .map(s => {
+          const metric = metrics.find(m => m.swing_id === s.id && m.metric === metricName);
+          return metric?.value || null;
+        })
+        .filter((v): v is number => v !== null);
+      
+      return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
+    };
+
+    return {
+      head_drift: {
+        recent: getAvgMetric(recentSwings, 'head_drift_cm'),
+        old: getAvgMetric(oldSwings, 'head_drift_cm'),
+        label: 'Head Drift',
+        unit: 'cm',
+        invert: true
+      },
+      attack_angle: {
+        recent: getAvgMetric(recentSwings, 'attack_angle_deg'),
+        old: getAvgMetric(oldSwings, 'attack_angle_deg'),
+        label: 'Attack Angle',
+        unit: '°',
+        invert: false
+      }
+    };
+  }, [swings, metrics]);
+
+  // Helper function for score colors
+  const getScoreColor = (score: number) => {
+    if (score >= 60) return 'text-emerald-400';
+    if (score >= 40) return 'text-orange-400';
+    return 'text-red-400';
+  };
+
   const handleShare = () => {
     toast.success("Share feature coming soon!");
   };
@@ -375,48 +418,6 @@ export default function Progress() {
       </div>
     );
   }
-
-  const getScoreColor = (score: number) => {
-    if (score >= 60) return 'text-emerald-400';
-    if (score >= 40) return 'text-orange-400';
-    return 'text-red-400';
-  };
-
-  // Calculate metric comparisons for "Then vs Now"
-  const metricComparison = useMemo(() => {
-    if (swings.length < 2) return null;
-    
-    const recentSwings = swings.slice(0, 3);
-    const oldSwings = swings.slice(-3);
-    
-    const getAvgMetric = (swingList: Swing[], metricName: string) => {
-      const values = swingList
-        .map(s => {
-          const metric = metrics.find(m => m.swing_id === s.id && m.metric === metricName);
-          return metric?.value || null;
-        })
-        .filter((v): v is number => v !== null);
-      
-      return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
-    };
-
-    return {
-      head_drift: {
-        recent: getAvgMetric(recentSwings, 'head_drift_cm'),
-        old: getAvgMetric(oldSwings, 'head_drift_cm'),
-        label: 'Head Drift',
-        unit: 'cm',
-        invert: true
-      },
-      attack_angle: {
-        recent: getAvgMetric(recentSwings, 'attack_angle_deg'),
-        old: getAvgMetric(oldSwings, 'attack_angle_deg'),
-        label: 'Attack Angle',
-        unit: '°',
-        invert: false
-      }
-    };
-  }, [swings, metrics]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black pb-28">
