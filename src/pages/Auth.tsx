@@ -99,7 +99,7 @@ const Auth = () => {
         <img
           src={headerLogo}
           alt="SwingSense"
-          className="h-12 w-auto drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] animate-[glowpulse_7s_ease-in-out_infinite] mb-3"
+          className="h-14 md:h-16 w-auto drop-shadow-[0_0_24px_rgba(16,185,129,0.6)] animate-[glowpulse_7s_ease-in-out_infinite] mb-3"
         />
         <p className="text-white/60 text-sm font-medium">Smarter swings start here.</p>
       </div>

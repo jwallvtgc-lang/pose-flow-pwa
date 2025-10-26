@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Header } from '@/components/Header';
 
 export default function Feedback() {
   const { user } = useAuth();
@@ -87,25 +88,30 @@ export default function Feedback() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6 max-w-lg">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="h-10 w-10 p-0 rounded-2xl">
-            <ArrowLeft className="w-4 h-4" />
+    <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+      <Header 
+        leftAction={
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/')}
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-anton font-black text-gray-900">Send Feedback</h1>
-        </div>
-
+        }
+      />
+      
+      <div className="container mx-auto px-4 py-6 max-w-lg">
         <div className="space-y-6">
           {/* Header Card */}
-          <Card className="p-6 bg-gradient-to-br from-blue-600 to-purple-700 rounded-3xl text-white relative overflow-hidden">
+          <Card className="p-6 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl text-white relative overflow-hidden border-0 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <div className="text-blue-100 text-sm font-medium mb-1">
+                <div className="text-white/90 text-sm font-medium mb-1">
                   Help Us Improve
                 </div>
-                <div className="text-blue-200 text-xs">
+                <div className="text-white/70 text-xs">
                   {new Date().toLocaleDateString('en-US', { 
                     weekday: 'long',
                     month: 'short', 
@@ -122,25 +128,25 @@ export default function Feedback() {
             </div>
             
             <h2 className="text-2xl font-bold mb-2">Share Your Thoughts</h2>
-            <p className="text-blue-100 text-base leading-relaxed">
+            <p className="text-white/90 text-base leading-relaxed">
               Your feedback helps us build better features and improve your SwingSense experience.
             </p>
           </Card>
 
           {/* Feedback Form */}
-          <Card className="p-6 bg-white rounded-3xl border-0 shadow-lg">
+          <Card className="p-6 rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_25px_rgba(16,185,129,0.15)]">
             {isSubmitted ? (
               <div className="text-center py-8">
-                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
+                <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-emerald-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Thank You!</h3>
-                <p className="text-gray-600 mb-6">
+                <h3 className="text-xl font-bold text-white mb-2">Thank You!</h3>
+                <p className="text-white/60 mb-6">
                   Your feedback has been sent successfully. We appreciate you taking the time to help us improve SwingSense.
                 </p>
                 <Button 
                   onClick={() => setIsSubmitted(false)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl"
+                  className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)]"
                 >
                   Send More Feedback
                 </Button>
@@ -149,7 +155,7 @@ export default function Feedback() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="name" className="text-sm font-medium text-white">
                       Your Name (Optional)
                     </Label>
                     <Input
@@ -158,12 +164,12 @@ export default function Feedback() {
                       placeholder="Enter your name"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="mt-1 rounded-2xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="mt-1 rounded-xl bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-emerald-500 focus:ring-emerald-500/20"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="email" className="text-sm font-medium text-white">
                       Email Address *
                     </Label>
                     <Input
@@ -172,20 +178,20 @@ export default function Feedback() {
                       placeholder="your.email@example.com"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="mt-1 rounded-2xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="mt-1 rounded-xl bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-emerald-500 focus:ring-emerald-500/20"
                       required
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="feedbackType" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="feedbackType" className="text-sm font-medium text-white">
                       Feedback Type
                     </Label>
                     <select
                       id="feedbackType"
                       value={formData.feedbackType}
                       onChange={(e) => handleInputChange('feedbackType', e.target.value)}
-                      className="mt-1 w-full rounded-2xl border border-gray-200 px-4 py-3 focus:border-blue-500 focus:ring-blue-500 text-gray-900"
+                      className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white focus:border-emerald-500 focus:ring-emerald-500/20"
                     >
                       <option value="general">General Feedback</option>
                       <option value="bug">Bug Report</option>
@@ -196,7 +202,7 @@ export default function Feedback() {
                   </div>
 
                   <div>
-                    <Label htmlFor="message" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="message" className="text-sm font-medium text-white">
                       Your Message *
                     </Label>
                     <Textarea
@@ -204,10 +210,10 @@ export default function Feedback() {
                       placeholder="Tell us what you think, what could be improved, or what features you'd like to see..."
                       value={formData.message}
                       onChange={(e) => handleInputChange('message', e.target.value)}
-                      className="mt-1 rounded-2xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 min-h-[120px] resize-none"
+                      className="mt-1 rounded-xl bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-emerald-500 focus:ring-emerald-500/20 min-h-[120px] resize-none"
                       required
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-white/50 mt-1">
                       {formData.message.length}/1000 characters
                     </p>
                   </div>
@@ -216,7 +222,7 @@ export default function Feedback() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || !formData.message.trim() || !formData.email.trim()}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 rounded-2xl shadow-lg transition-all duration-200 disabled:opacity-50"
+                  className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold py-4 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all duration-200 disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">

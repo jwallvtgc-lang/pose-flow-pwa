@@ -21,7 +21,7 @@ export function Header({ leftAction, rightAction }: HeaderProps) {
         <img
           src={headerLogo}
           alt="SwingSense"
-          className="h-8 md:h-9 w-auto drop-shadow-[0_0_16px_rgba(16,185,129,0.4)] animate-[glowpulse_7s_ease-in-out_infinite]"
+          className="h-10 md:h-12 w-auto drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] animate-[glowpulse_7s_ease-in-out_infinite]"
         />
       </div>
 

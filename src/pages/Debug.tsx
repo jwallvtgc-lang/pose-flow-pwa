@@ -3,8 +3,13 @@ import { tf } from '@/lib/tf';
 import { supabase } from '@/lib/supabase';
 import { posthog } from '@/lib/analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Header } from '@/components/Header';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Debug = () => {
+  const navigate = useNavigate();
   const [tfBackend, setTfBackend] = useState<string>('loading...');
   const [supabaseStatus, setSupabaseStatus] = useState<string>('checking...');
   const [posthogStatus, setPosthogStatus] = useState<string>('checking...');
@@ -39,38 +44,51 @@ const Debug = () => {
   }, []);
 
   return (
-    <div className="max-w-[420px] mx-auto px-4 min-h-screen flex flex-col bg-background">
-      <div className="py-6">
-        <h1 className="text-2xl font-bold text-foreground mb-6">Debug Panel</h1>
+    <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+      <Header 
+        leftAction={
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/')}
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        }
+      />
+      
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <h1 className="text-2xl font-bold text-white mb-6">Debug Panel</h1>
         
         <div className="space-y-4">
-          <Card>
+          <Card className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
             <CardHeader>
-              <CardTitle className="text-lg">TensorFlow.js</CardTitle>
-              <CardDescription>Backend status</CardDescription>
+              <CardTitle className="text-lg text-white">TensorFlow.js</CardTitle>
+              <CardDescription className="text-white/60">Backend status</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="font-mono text-sm">{tfBackend}</p>
+              <p className="font-mono text-sm text-white/80">{tfBackend}</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
             <CardHeader>
-              <CardTitle className="text-lg">Supabase</CardTitle>
-              <CardDescription>Authentication client</CardDescription>
+              <CardTitle className="text-lg text-white">Supabase</CardTitle>
+              <CardDescription className="text-white/60">Authentication client</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm">{supabaseStatus}</p>
+              <p className="text-sm text-white/80">{supabaseStatus}</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
             <CardHeader>
-              <CardTitle className="text-lg">PostHog</CardTitle>
-              <CardDescription>Analytics capture</CardDescription>
+              <CardTitle className="text-lg text-white">PostHog</CardTitle>
+              <CardDescription className="text-white/60">Analytics capture</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm">{posthogStatus}</p>
+              <p className="text-sm text-white/80">{posthogStatus}</p>
             </CardContent>
           </Card>
         </div>
