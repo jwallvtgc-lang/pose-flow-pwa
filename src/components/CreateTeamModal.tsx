@@ -17,6 +17,16 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess, userId }: CreateTe
 
   if (!isOpen) return null;
 
+  // Generate a 6-character invite code
+  const generateInviteCode = () => {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+  };
+
   const handleCreateTeam = async () => {
     if (!teamName.trim()) {
       toast.error('Please enter a team name');
@@ -26,14 +36,18 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess, userId }: CreateTe
     setIsLoading(true);
 
     try {
-      // Create team
+      // Generate invite code
+      const inviteCode = generateInviteCode();
+
+      // Create team with coach_id and invite_code
       const { data: team, error: teamError } = await supabase
         .from('teams')
-        .insert({
+        .insert([{
           name: teamName.trim(),
-          coach_id: userId
-        })
-        .select()
+          coach_id: userId,
+          invite_code: inviteCode
+        }])
+        .select('id')
         .single();
 
       if (teamError) throw teamError;
@@ -41,11 +55,11 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess, userId }: CreateTe
       // Add creator as coach member
       const { error: memberError } = await supabase
         .from('team_members')
-        .insert({
+        .insert([{
           team_id: team.id,
           user_id: userId,
           role: 'coach'
-        });
+        }]);
 
       if (memberError) throw memberError;
 

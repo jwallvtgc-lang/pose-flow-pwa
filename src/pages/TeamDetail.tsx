@@ -57,9 +57,16 @@ export default function TeamDetail() {
         .from('teams')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (teamError) throw teamError;
+      
+      if (!teamData) {
+        toast.error('Team not found or you do not have access');
+        setIsLoading(false);
+        return;
+      }
+      
       setTeam(teamData);
 
       // Load members with profiles
