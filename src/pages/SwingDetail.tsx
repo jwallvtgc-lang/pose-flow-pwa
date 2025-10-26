@@ -677,9 +677,15 @@ export default function SwingDetail() {
               <Button 
                 size="sm" 
                 className="w-full rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30"
-                onClick={() => toast.info('Drill details coming soon!')}
+                onClick={() => {
+                  if (drill.id) {
+                    navigate(`/drills/${drill.id}`);
+                  } else {
+                    toast.info('Drill details not available');
+                  }
+                }}
               >
-                View drill steps
+                Start Drill
               </Button>
             </div>
           )}
