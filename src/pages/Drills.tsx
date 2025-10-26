@@ -1,8 +1,8 @@
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ChevronRight, Target, Zap } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { drillsData } from '@/lib/drillsData';
 
@@ -22,8 +22,44 @@ const metricLabels: Record<string, string> = {
   shoulder_angle_deg: 'Shoulder Angle'
 };
 
+const filterOptions = [
+  { label: 'All', value: 'all' },
+  { label: 'Bat Speed', value: 'bat_speed_mph' },
+  { label: 'Head Drift', value: 'head_drift_cm' },
+  { label: 'Hip Rotation', value: 'hip_rotation_deg' },
+  { label: 'Attack Angle', value: 'attack_angle_deg' },
+  { label: 'Separation', value: 'hip_shoulder_sep_deg' },
+  { label: 'Posture', value: 'shoulder_angle_deg' },
+  { label: 'Launch Angle', value: 'launch_angle_deg' },
+  { label: 'Contact Point', value: 'extension_cm' }
+];
+
 export default function Drills() {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
+
+  // Filter and search drills
+  const filteredDrills = useMemo(() => {
+    let filtered = drillsData;
+
+    // Apply metric filter
+    if (activeFilter !== 'all') {
+      filtered = filtered.filter(drill => drill.goalMetric === activeFilter);
+    }
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(drill =>
+        drill.name.toLowerCase().includes(query) ||
+        drill.purpose.toLowerCase().includes(query) ||
+        metricLabels[drill.goalMetric]?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [searchQuery, activeFilter]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black pb-28">
@@ -49,87 +85,123 @@ export default function Drills() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         <div className="space-y-6">
-          {/* Hero Section */}
-          <Card className="bg-gradient-to-br from-emerald-500/20 via-cyan-500/10 to-transparent border-emerald-500/30 rounded-2xl p-6 shadow-[0_0_30px_rgba(16,185,129,0.2)] text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl" />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className="w-6 h-6 text-emerald-400" />
-                <h1 className="text-2xl font-black">Training Drills</h1>
-              </div>
-              <p className="text-white/80 text-sm">
-                Level up your swing with these coach-approved drills. Each one targets a specific metric to help you improve faster.
-              </p>
-            </div>
-          </Card>
+          {/* Title Section */}
+          <div className="text-center">
+            <h1 className="text-3xl font-black text-white mb-2">⚾ Drills</h1>
+            <p className="text-white/60 text-sm mb-2">
+              Train smarter with focused movement patterns.
+            </p>
+            <div className="bg-gradient-to-r from-green-500/50 to-transparent h-[2px] w-1/3 mx-auto rounded-full" />
+          </div>
 
-          {/* Stats Bar */}
-          <div className="grid grid-cols-2 gap-3">
-            <Card className="bg-white/5 border-white/10 rounded-xl p-4 text-center">
-              <div className="text-3xl font-black text-emerald-400">{drillsData.length}</div>
-              <div className="text-xs text-white/60 mt-1">Total Drills</div>
-            </Card>
-            <Card className="bg-white/5 border-white/10 rounded-xl p-4 text-center">
-              <div className="text-3xl font-black text-cyan-400">
-                {new Set(drillsData.map(d => d.goalMetric)).size}
-              </div>
-              <div className="text-xs text-white/60 mt-1">Metrics Covered</div>
-            </Card>
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <input
+              type="text"
+              placeholder="Search drills…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 px-4 py-3 pl-12 focus:border-green-400 focus:ring-1 focus:ring-green-400 outline-none transition-all"
+            />
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {filterOptions.map((filter) => (
+              <button
+                key={filter.value}
+                onClick={() => setActiveFilter(filter.value)}
+                className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+                  activeFilter === filter.value
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                    : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Results Count */}
+          <div className="text-white/50 text-sm">
+            {filteredDrills.length} {filteredDrills.length === 1 ? 'drill' : 'drills'} found
           </div>
 
           {/* Drills List */}
-          <div className="space-y-3">
-            {drillsData.map((drill) => (
+          <div className="space-y-4">
+            {filteredDrills.map((drill, index) => (
               <Card
                 key={drill.id}
-                className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-[0_0_20px_rgba(16,185,129,0.1)] hover:shadow-[0_0_30px_rgba(16,185,129,0.2)] hover:bg-white/10 transition-all cursor-pointer group"
+                className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all cursor-pointer active:scale-[0.97] group animate-fade-in"
+                style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => navigate(`/drills/${drill.id}`)}
               >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center flex-shrink-0 border border-emerald-500/30 group-hover:scale-110 transition-transform">
-                    <Target className="w-6 h-6 text-emerald-400" />
+                <div className="p-4">
+                  {/* Drill Name */}
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-white leading-tight">
+                      🏋️ {drill.name}
+                    </h3>
+                    <ChevronRight className="w-5 h-5 text-green-400 group-hover:translate-x-1 transition-transform flex-shrink-0 mt-1" />
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="text-white font-black text-base leading-tight">
-                        {drill.name}
-                      </h3>
-                      <ChevronRight className="w-5 h-5 text-white/40 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
-                    </div>
-                    
-                    <p className="text-white/70 text-sm mb-3 line-clamp-2">
-                      {drill.purpose}
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary" className="text-xs bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                        {metricLabels[drill.goalMetric] || drill.goalMetric}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs text-white/60 border-white/20">
-                        {drill.reps}
-                      </Badge>
-                    </div>
+
+                  {/* Purpose */}
+                  <p className="text-white/60 text-sm mb-3 line-clamp-2">
+                    {drill.purpose}
+                  </p>
+
+                  {/* Focus Tag */}
+                  <div className="text-green-400 text-xs font-semibold mb-2">
+                    Focus: {metricLabels[drill.goalMetric] || drill.goalMetric}
+                  </div>
+
+                  {/* Separator */}
+                  <div className="border-b border-white/10 my-2" />
+
+                  {/* Equipment */}
+                  <div className="text-white/50 text-xs">
+                    Equipment: {drill.equipment.join(', ')}
                   </div>
                 </div>
               </Card>
             ))}
           </div>
 
+          {/* Empty State */}
+          {filteredDrills.length === 0 && (
+            <Card className="bg-white/5 border-white/10 rounded-2xl p-8 text-center">
+              <p className="text-white/60 mb-2">No drills found</p>
+              <p className="text-white/40 text-sm">Try adjusting your search or filter</p>
+            </Card>
+          )}
+
           {/* Bottom CTA */}
-          <Card className="bg-white/5 border-white/10 rounded-2xl p-5 text-center text-white">
-            <p className="text-sm text-white/80 mb-3">
-              💪 Pick a drill that matches your focus metric and get to work!
-            </p>
-            <Button 
-              onClick={() => navigate('/analysis')} 
-              className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white"
-            >
-              Record a Swing
-            </Button>
-          </Card>
+          {filteredDrills.length > 0 && (
+            <Card className="bg-gradient-to-r from-green-500/10 to-cyan-500/10 border-green-500/20 rounded-2xl p-5 text-center text-white">
+              <p className="text-sm text-white/90 mb-4 font-medium">
+                💪 Pick a drill and level up your game!
+              </p>
+              <Button 
+                onClick={() => navigate('/analysis')} 
+                className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+              >
+                Record a Swing
+              </Button>
+            </Card>
+          )}
         </div>
       </div>
+
+      <style>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }
