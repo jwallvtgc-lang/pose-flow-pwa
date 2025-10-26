@@ -14,7 +14,7 @@ import { getVideoSignedUrl } from '@/lib/storage';
 import { toast } from 'sonner';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
 import { cn } from '@/lib/utils';
-import headerLogo from '@/assets/swingsense-header.png';
+import { Header } from '@/components/Header';
 
 interface SwingData {
   id: string;
@@ -442,37 +442,28 @@ export default function SwingDetail() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
       {/* BRANDED HEADER BAR */}
-      <header className="relative w-full h-16 bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10">
-        {/* Left Action - Back Button */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => navigate('/')}
-          className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-
-        {/* Centered Logo */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center">
-          <img
-            src={headerLogo}
-            alt="SwingSense"
-            className="h-14 w-auto max-w-[80%] md:max-w-[400px] animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
-          />
-        </div>
-
-        {/* Right Action - Share Button */}
-        <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-lg border-white/20 text-white/60 hover:text-white hover:bg-white/10"
-            >
-              Share
-            </Button>
-          </DialogTrigger>
+      <Header 
+        leftAction={
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/')}
+            className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        }
+        rightAction={
+          <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="rounded-lg border-white/20 text-white/60 hover:text-white hover:bg-white/10"
+              >
+                Share
+              </Button>
+            </DialogTrigger>
             <DialogContent className="sm:max-w-md rounded-2xl">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
@@ -547,7 +538,8 @@ export default function SwingDetail() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </header>
+        }
+      />
 
       <div className="px-4 py-6 pb-32 max-w-2xl mx-auto space-y-4">
         {/* Date/Time info */}

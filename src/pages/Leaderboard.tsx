@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SwingSenseLogo } from '@/components/SwingSenseLogo';
+import { Header } from '@/components/Header';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -232,25 +232,22 @@ export default function Leaderboard() {
         animation: 'shimmer-slow 30s linear infinite'
       }} />
       
-      <div className="px-4 py-6 max-w-2xl mx-auto relative z-10">
-        {/* BACK BUTTON */}
-        <div className="mb-6">
+      {/* HEADER */}
+      <Header 
+        leftAction={
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => navigate('/')}
-            className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20 shadow-lg transition-all hover:scale-105"
+            className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-        </div>
+        }
+      />
 
-        {/* SWINGSENSE LOGO */}
-        <div className="flex justify-center mb-6">
-          <SwingSenseLogo />
-        </div>
-
-        {/* HEADER */}
+      <div className="px-4 py-6 max-w-2xl mx-auto relative z-10">
+        {/* TITLE */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="relative">

@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import headerLogo from '@/assets/swingsense-header.png';
+import { Header } from '@/components/Header';
 
 interface ProfileData {
   full_name: string;
@@ -250,26 +250,18 @@ export default function Profile() {
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none" />
       
       {/* BRANDED HEADER BAR */}
-      <header className="relative w-full h-16 bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10 mb-6">
-        {/* Left Action - Back Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/')}
-          className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-
-        {/* Centered Logo */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center">
-          <img
-            src={headerLogo}
-            alt="SwingSense"
-            className="h-14 w-auto max-w-[80%] md:max-w-[400px] animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
-          />
-        </div>
-      </header>
+      <Header 
+        leftAction={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/')}
+            className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+        }
+      />
       
       <div className="max-w-2xl mx-auto px-4 py-4 relative z-10">
         {/* Profile Content */}

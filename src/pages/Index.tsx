@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import headerLogo from '@/assets/swingsense-header.png';
+import { Header } from '@/components/Header';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -364,24 +364,16 @@ const Index = () => {
       }} />
       
       {/* BRANDED HEADER BAR */}
-      <header className="relative w-full h-16 bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10">
-        {/* Centered Logo */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center">
-          <img
-            src={headerLogo}
-            alt="SwingSense"
-            className="h-14 w-auto max-w-[80%] md:max-w-[400px] animate-[logoentrance_0.5s_ease-out,glowpulse_7s_ease-in-out_infinite]"
-          />
-        </div>
-        
-        {/* Right Action - Profile Button */}
-        <Link 
-          to="/profile" 
-          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200"
-        >
-          <User className="w-5 h-5" />
-        </Link>
-      </header>
+      <Header 
+        rightAction={
+          <Link 
+            to="/profile" 
+            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200"
+          >
+            <User className="w-5 h-5" />
+          </Link>
+        }
+      />
 
       <div className="max-w-2xl mx-auto px-4 relative z-10">
 

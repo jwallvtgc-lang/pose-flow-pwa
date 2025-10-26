@@ -12,6 +12,7 @@ import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
 import { toast } from 'sonner';
 import { format, subDays, startOfWeek, endOfWeek, isWithinInterval, isSameDay } from 'date-fns';
+import { Header } from '@/components/Header';
 
 type TimeFilter = 'week' | 'month' | 'all';
 
@@ -428,25 +429,28 @@ export default function Progress() {
         }`}
       >
         <div className="container mx-auto px-4 py-4 max-w-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/')}
-              className="h-8 w-8 p-0 text-white hover:bg-white/20"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-black">Progress</h1>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleShare}
-              className="h-8 w-8 p-0 text-white hover:bg-white/20"
-            >
-              <Share2 className="h-5 w-5" />
-            </Button>
-          </div>
+          <Header 
+            leftAction={
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/')}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            }
+            rightAction={
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleShare}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <Share2 className="h-5 w-5" />
+              </Button>
+            }
+          />
 
           {/* Time Filter Tabs */}
           <div className="flex justify-center gap-2 pb-4">
