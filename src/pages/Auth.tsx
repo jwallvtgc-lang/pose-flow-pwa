@@ -4,9 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import headerLogo from '@/assets/swingsense-header.png';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -82,100 +82,159 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <Link 
-            to="/" 
-            className="inline-flex items-center gap-2 text-sp-royal-blue hover:text-sp-blue transition-colors font-anton uppercase text-sm"
+    <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black flex flex-col items-center justify-center p-4">
+      {/* Back button */}
+      <div className="absolute top-6 left-6">
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors font-medium text-sm"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </Link>
+      </div>
+
+      {/* Logo and Subtitle */}
+      <div className="flex flex-col items-center mb-8">
+        <img
+          src={headerLogo}
+          alt="SwingSense"
+          className="h-12 w-auto drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] animate-[glowpulse_7s_ease-in-out_infinite] mb-3"
+        />
+        <p className="text-white/60 text-sm font-medium">Smarter swings start here.</p>
+      </div>
+
+      {/* Auth Form Card */}
+      <div className="w-[90%] max-w-sm rounded-2xl bg-white/5 border border-white/10 p-6 shadow-[0_0_25px_rgba(16,185,129,0.15)] backdrop-blur-md">
+        {/* Tab Switcher */}
+        <div className="flex gap-2 mb-6 bg-white/5 p-1 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setIsSignUp(false)}
+            className={`flex-1 py-2.5 rounded-lg font-black text-sm transition-all ${
+              !isSignUp
+                ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                : 'text-white/60 hover:text-white hover:bg-white/5'
+            }`}
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back to SwingSense
-          </Link>
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsSignUp(true)}
+            className={`flex-1 py-2.5 rounded-lg font-black text-sm transition-all ${
+              isSignUp
+                ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                : 'text-white/60 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            Sign Up
+          </button>
         </div>
 
-        <Card className="border-4 border-black rounded-2xl shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-anton font-black uppercase tracking-wide">
-              {isSignUp ? 'Sign Up' : 'Sign In'}
-            </CardTitle>
-            <CardDescription className="text-lg font-bold">
-              {isSignUp 
-                ? 'Create your SwingSense account to start analyzing your swing' 
-                : 'Welcome back! Sign in to access your swing analysis'
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="font-bold text-lg">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required={isSignUp}
-                    className="border-2 border-gray-300 rounded-xl h-12 text-lg"
-                  />
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="email" className="font-bold text-lg">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="border-2 border-gray-300 rounded-xl h-12 text-lg"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password" className="font-bold text-lg">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="border-2 border-gray-300 rounded-xl h-12 text-lg"
-                />
-              </div>
-              
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-sp-royal-blue hover:bg-sp-blue text-white font-anton font-black uppercase text-xl h-14 rounded-xl border-2 border-black shadow-lg"
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  isSignUp ? 'Sign Up' : 'Sign In'
-                )}
-              </Button>
-            </form>
+        {/* Subtitle */}
+        <p className="text-white/60 text-sm text-center mb-6">
+          {isSignUp 
+            ? 'Create your account to start analyzing your swing' 
+            : 'Welcome back! Sign in to access your analysis'
+          }
+        </p>
 
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="font-bold text-lg text-sp-royal-blue hover:text-sp-blue transition-colors"
-              >
-                {isSignUp 
-                  ? 'Already have an account? Sign in' 
-                  : "Don't have an account? Sign up"
-                }
-              </button>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-white font-medium text-sm">
+                Full Name
+              </Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="Your name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required={isSignUp}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/40 h-12 rounded-xl focus:border-emerald-500 focus:ring-emerald-500/20"
+              />
             </div>
-          </CardContent>
-        </Card>
+          )}
+          
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-white font-medium text-sm">
+              Email
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/40 h-12 rounded-xl focus:border-emerald-500 focus:ring-emerald-500/20"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-white font-medium text-sm">
+              Password
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/40 h-12 rounded-xl focus:border-emerald-500 focus:ring-emerald-500/20"
+            />
+          </div>
+          
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-black text-base h-12 rounded-xl border-0 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all"
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              isSignUp ? 'Create Account' : 'Sign In'
+            )}
+          </Button>
+        </form>
+
+        {/* Footer text */}
+        <div className="mt-6 text-center">
+          <p className="text-white/60 text-sm">
+            {isSignUp 
+              ? 'Already have an account? ' 
+              : "Don't have an account? "
+            }
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+            >
+              {isSignUp ? 'Sign in' : 'Sign up'}
+            </button>
+          </p>
+        </div>
       </div>
+
+      {/* Bottom helper text */}
+      <p className="text-white/40 text-xs text-center mt-6 max-w-xs">
+        By signing up, you agree to our Terms of Service and Privacy Policy.
+      </p>
+
+      <style>{`
+        @keyframes glowpulse {
+          0%, 100% {
+            filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+          }
+          50% {
+            filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.6));
+          }
+        }
+      `}</style>
     </div>
   );
 };
