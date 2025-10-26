@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -113,20 +112,19 @@ export function JoinTeamModal({ isOpen, onClose, onSuccess, userId }: JoinTeamMo
           </div>
 
           <div className="flex gap-3 pt-2">
-            <Button
+            <button
               onClick={onClose}
-              variant="outline"
-              className="flex-1 border-white/20 text-white hover:bg-white/10"
+              className="flex-1 rounded-xl bg-white/10 border border-white/20 text-white/80 hover:bg-white/15 font-medium text-sm py-2.5 transition-all"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleJoinTeam}
               disabled={isLoading}
-              className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+              className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold text-sm py-2.5 shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isLoading ? 'Joining...' : 'Join Team'}
-            </Button>
+            </button>
           </div>
         </div>
       </div>
