@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, ArrowRight, ArrowLeft, Target, AlertTriangle, Share2, ChevronRight } from 'lucide-react';
+import { Progress as ProgressBar } from '@/components/ui/progress';
+import { TrendingUp, ArrowRight, ArrowLeft, Target, AlertTriangle, Share2, ChevronRight, Zap, Activity, Brain, ArrowUp, ArrowDown, Flame } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -297,8 +298,8 @@ export default function Progress() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 text-white safe-area-top">
+      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+        <div className="bg-gradient-to-b from-[#0F172A] to-black text-white safe-area-top">
           <div className="container mx-auto px-4 py-4 max-w-2xl">
             <div className="flex items-center justify-between mb-4">
               <Skeleton className="h-8 w-8 rounded-lg bg-white/20" />
@@ -316,10 +317,10 @@ export default function Progress() {
         <div className="container mx-auto px-4 py-6 max-w-2xl space-y-4">
           <div className="grid grid-cols-3 gap-3">
             {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+              <Skeleton key={i} className="h-24 w-full rounded-2xl bg-white/5" />
             ))}
           </div>
-          <Skeleton className="h-96 w-full rounded-2xl" />
+          <Skeleton className="h-96 w-full rounded-2xl bg-white/5" />
         </div>
       </div>
     );
@@ -327,11 +328,11 @@ export default function Progress() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-6 text-center max-w-md">
+      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black flex items-center justify-center">
+        <Card className="p-6 text-center max-w-md bg-white/5 border-white/10 text-white">
           <h3 className="text-lg font-black mb-2">Error Loading Progress</h3>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={loadProgressData}>Try Again</Button>
+          <p className="text-white/60 mb-4">{error}</p>
+          <Button onClick={loadProgressData} className="bg-emerald-500 hover:bg-emerald-600">Try Again</Button>
         </Card>
       </div>
     );
@@ -339,8 +340,8 @@ export default function Progress() {
 
   if (!swings.length) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 text-white safe-area-top">
+      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+        <div className="bg-gradient-to-b from-[#0F172A] to-black text-white safe-area-top">
           <div className="container mx-auto px-4 py-4 max-w-2xl">
             <div className="flex items-center justify-between">
               <Button 
@@ -358,15 +359,15 @@ export default function Progress() {
         </div>
 
         <div className="container mx-auto px-4 py-12 max-w-2xl">
-          <Card className="p-8 text-center rounded-3xl">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-12 h-12 text-blue-600" />
+          <Card className="p-8 text-center rounded-3xl bg-white/5 border-white/10 text-white shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-full flex items-center justify-center border border-emerald-500/30">
+              <TrendingUp className="w-12 h-12 text-emerald-400" />
             </div>
             <h3 className="text-2xl font-black mb-3">Record more swings to see your progress here</h3>
-            <p className="text-muted-foreground mb-6 text-lg">
+            <p className="text-white/60 mb-6 text-lg">
               Start tracking your improvement and see detailed metrics over time.
             </p>
-            <Button onClick={() => navigate('/analysis')} size="lg">
+            <Button onClick={() => navigate('/analysis')} size="lg" className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white">
               Record Your First Swing
             </Button>
           </Card>
@@ -375,18 +376,54 @@ export default function Progress() {
     );
   }
 
-  const getScoreGradient = (score: number) => {
-    if (score >= 60) return 'bg-gradient-to-br from-green-400 to-green-600';
-    if (score >= 40) return 'bg-gradient-to-br from-orange-400 to-orange-600';
-    return 'bg-gradient-to-br from-red-400 to-red-600';
+  const getScoreColor = (score: number) => {
+    if (score >= 60) return 'text-emerald-400';
+    if (score >= 40) return 'text-orange-400';
+    return 'text-red-400';
   };
 
+  // Calculate metric comparisons for "Then vs Now"
+  const metricComparison = useMemo(() => {
+    if (swings.length < 2) return null;
+    
+    const recentSwings = swings.slice(0, 3);
+    const oldSwings = swings.slice(-3);
+    
+    const getAvgMetric = (swingList: Swing[], metricName: string) => {
+      const values = swingList
+        .map(s => {
+          const metric = metrics.find(m => m.swing_id === s.id && m.metric === metricName);
+          return metric?.value || null;
+        })
+        .filter((v): v is number => v !== null);
+      
+      return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
+    };
+
+    return {
+      head_drift: {
+        recent: getAvgMetric(recentSwings, 'head_drift_cm'),
+        old: getAvgMetric(oldSwings, 'head_drift_cm'),
+        label: 'Head Drift',
+        unit: 'cm',
+        invert: true
+      },
+      attack_angle: {
+        recent: getAvgMetric(recentSwings, 'attack_angle_deg'),
+        old: getAvgMetric(oldSwings, 'attack_angle_deg'),
+        label: 'Attack Angle',
+        unit: '°',
+        invert: false
+      }
+    };
+  }, [swings, metrics]);
+
   return (
-    <div className="min-h-screen bg-background pb-safe">
+    <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black pb-28">
       {/* Sticky Header */}
       <div 
-        className={`sticky top-0 z-50 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 text-white safe-area-top transition-all duration-300 ${
-          isScrolled ? 'shadow-lg' : ''
+        className={`sticky top-0 z-50 bg-gradient-to-b from-[#0F172A]/95 to-black/95 backdrop-blur-xl text-white safe-area-top transition-all duration-300 border-b border-white/10 ${
+          isScrolled ? 'shadow-[0_4px_20px_rgba(16,185,129,0.1)]' : ''
         }`}
       >
         <div className="container mx-auto px-4 py-4 max-w-2xl">
@@ -416,9 +453,9 @@ export default function Progress() {
               variant="ghost"
               size="sm"
               onClick={() => setTimeFilter('week')}
-              className={`text-sm px-4 ${
+              className={`text-sm px-4 rounded-full ${
                 timeFilter === 'week' 
-                  ? 'bg-white/20 text-white' 
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                   : 'text-white/70 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -428,9 +465,9 @@ export default function Progress() {
               variant="ghost"
               size="sm"
               onClick={() => setTimeFilter('month')}
-              className={`text-sm px-4 ${
+              className={`text-sm px-4 rounded-full ${
                 timeFilter === 'month' 
-                  ? 'bg-white/20 text-white' 
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                   : 'text-white/70 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -440,9 +477,9 @@ export default function Progress() {
               variant="ghost"
               size="sm"
               onClick={() => setTimeFilter('all')}
-              className={`text-sm px-4 ${
+              className={`text-sm px-4 rounded-full ${
                 timeFilter === 'all' 
-                  ? 'bg-white/20 text-white' 
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                   : 'text-white/70 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -455,70 +492,219 @@ export default function Progress() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         <div className="space-y-6">
-          {/* Score Trend Header */}
-          <div>
-            <h2 className="text-2xl font-black mb-4">Score Trend</h2>
-            
-            {/* SUMMARY STATS ROW */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              <Card className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <div className="text-xs text-gray-500 mb-1">Latest</div>
-                <div className="text-3xl font-black text-gray-900">{stats.latest}</div>
-              </Card>
-              <Card className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <div className="text-xs text-gray-500 mb-1">Average</div>
-                <div className="text-3xl font-black text-gray-900">{stats.average}</div>
-              </Card>
-              <Card className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <div className="text-xs text-gray-500 mb-1">Best</div>
-                <div className="text-3xl font-black text-green-600">{stats.best}</div>
-              </Card>
+          {/* Hero Summary Card */}
+          <Card className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-[0_0_30px_rgba(16,185,129,0.15)] text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl">📈</span>
+                <h2 className="text-xl font-black">Your Swing Progress</h2>
+              </div>
+              
+              <div className="flex items-baseline gap-3 mb-2">
+                <span className={`text-5xl font-black ${getScoreColor(stats.latest)}`}>
+                  +{Math.abs(stats.latest - stats.average)}
+                </span>
+                <span className="text-white/60 text-lg">points this {timeFilter === 'week' ? 'week' : timeFilter === 'month' ? 'month' : 'period'}</span>
+              </div>
+              
+              {/* Mini progress bar */}
+              <div className="mb-4">
+                <ProgressBar value={(stats.latest / 100) * 100} className="h-2 bg-white/10" />
+              </div>
+              
+              <div className="text-sm text-white/60">
+                Best session: {swings[0]?.created_at ? format(new Date(swings[0].created_at), 'MMM d') : '—'} — Latest Score: {stats.latest}
+              </div>
             </div>
+          </Card>
+
+          {/* Metric Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { metric: 'attack_angle_deg', label: 'Attack Angle', unit: '°', icon: TrendingUp },
+              { metric: 'head_drift_cm', label: 'Head Drift', unit: 'cm', icon: Target, invert: true },
+              { metric: 'hip_shoulder_sep_deg', label: 'Hip-Shoulder Sep', unit: '°', icon: Activity },
+              { metric: 'torso_tilt_deg', label: 'Torso Tilt', unit: '°', icon: Zap }
+            ].map(({ metric, label, unit, icon: Icon, invert }) => {
+              const series = chartData.allMetricsSeries[metric] || [];
+              const recent = series.slice(-3).map(p => p.value);
+              const older = series.slice(-6, -3).map(p => p.value);
+              
+              let trend: 'up' | 'down' | 'flat' = 'flat';
+              let change = 0;
+              
+              if (recent.length && older.length) {
+                const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+                const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
+                change = recentAvg - olderAvg;
+                trend = change > 0 ? 'up' : change < 0 ? 'down' : 'flat';
+              }
+              
+              const avgValue = chartData.averages[metric];
+              const isImproving = invert ? trend === 'down' : trend === 'up';
+              
+              return (
+                <Card 
+                  key={metric}
+                  className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-[0_0_20px_rgba(16,185,129,0.1)] hover:shadow-[0_0_30px_rgba(16,185,129,0.2)] transition-all cursor-pointer"
+                  onClick={() => setSelectedMetric(metric)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Icon className="w-4 h-4 text-white/60" />
+                    {trend !== 'flat' && (
+                      <span className={`text-xs ${isImproving ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {trend === 'up' ? '↗' : '↘'} {Math.abs(change).toFixed(1)}{unit}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-white/60 text-xs mb-1">{label}</div>
+                  <div className={`text-2xl font-black ${(invert ? trend === 'down' : trend === 'up') ? 'text-emerald-400' : 'text-white'}`}>
+                    {avgValue ? avgValue.toFixed(1) : '—'}
+                    <span className="text-sm ml-1 text-white/60">{unit}</span>
+                  </div>
+                  <div className="text-xs text-white/40 mt-1">vs last {timeFilter === 'week' ? 'week' : 'period'}</div>
+                  
+                  {/* Mini sparkline */}
+                  {series.length > 0 && (
+                    <div className="mt-2 h-6 flex items-end gap-0.5">
+                      {series.slice(-8).map((point, i) => (
+                        <div 
+                          key={i} 
+                          className={`flex-1 rounded-t ${(invert ? trend === 'down' : trend === 'up') ? 'bg-emerald-500/40' : 'bg-white/20'}`}
+                          style={{ height: `${(point.value / Math.max(...series.map(s => s.value))) * 100}%` }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
           </div>
 
-          {/* RECENT SWINGS TIMELINE */}
-          <Card className="bg-white rounded-xl shadow-sm border p-5">
+          {/* Then vs Now Comparison */}
+          {metricComparison && metricComparison.head_drift.recent !== null && (
+            <Card className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-[0_0_20px_rgba(16,185,129,0.1)] text-white">
+              <h3 className="font-black text-lg mb-4 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-emerald-400" />
+                Then vs Now
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {/* Then Card */}
+                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                  <div className="text-xs text-white/40 mb-3">Previous 3 Swings</div>
+                  {Object.entries(metricComparison).map(([key, data]) => (
+                    data.old !== null && (
+                      <div key={key} className="mb-2">
+                        <div className="text-xs text-white/60">{data.label}</div>
+                        <div className="text-lg font-black text-white/80">
+                          {data.old.toFixed(1)}{data.unit}
+                        </div>
+                      </div>
+                    )
+                  ))}
+                </div>
+                
+                {/* Now Card */}
+                <div className="bg-emerald-500/10 rounded-xl p-4 border border-emerald-500/30">
+                  <div className="text-xs text-emerald-400 mb-3">Recent 3 Swings</div>
+                  {Object.entries(metricComparison).map(([key, data]) => {
+                    if (data.recent === null || data.old === null) return null;
+                    const improved = data.invert ? data.recent < data.old : data.recent > data.old;
+                    return (
+                      <div key={key} className="mb-2">
+                        <div className="text-xs text-white/60">{data.label}</div>
+                        <div className={`text-lg font-black flex items-center gap-1 ${improved ? 'text-emerald-400' : 'text-white'}`}>
+                          {data.recent.toFixed(1)}{data.unit}
+                          {improved ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="mt-4 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+            </Card>
+          )}
+
+          {/* AI Insights Placeholder */}
+          <Card className="bg-white/5 border border-emerald-500/20 rounded-2xl p-5 shadow-[0_0_20px_rgba(16,185,129,0.15)] text-white">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 border border-emerald-500/30">
+                <Brain className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-black text-base mb-2 flex items-center gap-2">
+                  AI Coach Insight
+                </h3>
+                <p className="text-white font-medium text-sm leading-relaxed">
+                  💬 You're rotating earlier and maintaining better balance. Keep it up!
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Progress Timeline */}
+          <Card className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-[0_0_20px_rgba(16,185,129,0.1)] text-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-black text-lg">Recent Swings</h3>
-              <span className="text-sm text-gray-500">Last {Math.min(swings.length, 8)} swings</span>
+              <h3 className="font-black text-lg">Recent Sessions</h3>
+              <span className="text-xs text-white/60">Last {Math.min(swings.length, 8)} swings</span>
             </div>
 
-            <div className="space-y-3">
+            <div className="relative space-y-4">
+              {/* Timeline line */}
+              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-500 via-cyan-500 to-transparent" />
+              
               {swings.slice(0, 8).map((swing, index) => {
                 const score = swing.score_phase1 || 0;
                 const date = swing.created_at ? format(new Date(swing.created_at), 'MMM d') : 'Unknown';
+                const prevScore = index < swings.length - 1 ? (swings[index + 1].score_phase1 || 0) : score;
+                const scoreDelta = score - prevScore;
+                
+                // Get key metric changes
+                const headDrift = metrics.find(m => m.swing_id === swing.id && m.metric === 'head_drift_cm');
+                const attackAngle = metrics.find(m => m.swing_id === swing.id && m.metric === 'attack_angle_deg');
                 
                 return (
                   <div 
                     key={swing.id}
-                    className="flex items-center gap-4 cursor-pointer active:scale-98 transition-transform"
+                    className="relative pl-10 cursor-pointer hover:bg-white/5 rounded-lg p-3 -ml-3 transition-all"
                     onClick={() => navigate(`/swing/${swing.id}`)}
                   >
-                    {/* Score Circle */}
-                    <div className={`relative w-14 h-14 rounded-full ${getScoreGradient(score)} flex items-center justify-center flex-shrink-0 shadow-sm`}>
-                      <span className="text-white font-black text-lg">{score}</span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 mb-1">{date}</div>
-                      {/* Progress Bar */}
-                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full ${score >= 60 ? 'bg-red-500' : score >= 40 ? 'bg-orange-500' : 'bg-red-500'}`}
-                          style={{ width: `${score}%` }}
-                        />
+                    {/* Timeline marker */}
+                    <div className={`absolute left-2.5 top-5 w-3 h-3 rounded-full ${index === 0 ? 'bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-cyan-500/50'} border-2 border-black`} />
+                    
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="text-xs text-white/60 mb-1">{date}</div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-sm text-white/80">Swingscore</span>
+                          <span className={`text-xl font-black ${getScoreColor(score)}`}>{score}</span>
+                          {scoreDelta !== 0 && index < swings.length - 1 && (
+                            <Badge className={`text-xs ${scoreDelta > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
+                              {scoreDelta > 0 ? '▲' : '▼'} {Math.abs(scoreDelta)}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Key metrics */}
+                        <div className="flex gap-3 text-xs">
+                          {attackAngle && attackAngle.value !== null && (
+                            <div className="text-white/60">
+                              Attack: <span className="text-white font-medium">{attackAngle.value.toFixed(1)}°</span>
+                            </div>
+                          )}
+                          {headDrift && headDrift.value !== null && (
+                            <div className="text-white/60">
+                              Head: <span className="text-white font-medium">{headDrift.value.toFixed(1)}cm</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Latest Badge and Chevron */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {index === 0 && (
-                        <Badge className="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 hover:bg-blue-100">
-                          Latest
-                        </Badge>
-                      )}
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                      
+                      <ChevronRight className="w-4 h-4 text-white/40 mt-2" />
                     </div>
                   </div>
                 );
@@ -526,9 +712,9 @@ export default function Progress() {
             </div>
 
             {swings.length > 8 && (
-              <div className="mt-4 text-center">
+              <div className="mt-4 pt-4 border-t border-white/10 text-center">
                 <button 
-                  className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                  className="text-emerald-400 hover:text-emerald-300 font-medium text-sm transition-colors"
                   onClick={() => navigate('/recent-swings')}
                 >
                   View All Swings →
@@ -539,36 +725,36 @@ export default function Progress() {
 
           {/* WEEKLY BREAKDOWN */}
           <div>
-            <h3 className="font-black text-2xl mb-4">Weekly Breakdown</h3>
+            <h3 className="font-black text-xl mb-4 text-white">Weekly Breakdown</h3>
             <div className="space-y-3">
               {weeklyData.map((week, index) => {
                 const prevWeek = weeklyData[index + 1];
                 const trend = prevWeek && week.avgScore > prevWeek.avgScore ? 'up' : 'down';
                 
                 return (
-                  <Card key={week.name} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                  <Card key={week.name} className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-[0_0_15px_rgba(16,185,129,0.08)] text-white hover:bg-white/10 transition-all">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <div className="text-base font-black text-gray-900">{week.name}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{week.swingCount} swings</div>
+                        <div className="text-base font-black">{week.name}</div>
+                        <div className="text-xs text-white/60 mt-0.5">{week.swingCount} swings</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-4xl font-black text-gray-900">{week.avgScore}</div>
+                        <div className={`text-4xl font-black ${getScoreColor(week.avgScore)}`}>{week.avgScore}</div>
                         {week.swingCount > 0 && prevWeek && prevWeek.swingCount > 0 && (
-                          <div className={`flex items-center justify-end gap-1 text-xs ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                          <div className={`flex items-center justify-end gap-1 text-xs ${trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
                             {trend === 'up' ? '↗' : '↘'} avg score
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Horizontal Blue Bars */}
+                    {/* Horizontal gradient bars */}
                     <div className="flex gap-1.5 mt-3">
                       {[...Array(Math.min(week.swingCount, 12))].map((_, i) => (
-                        <div key={i} className="h-1.5 flex-1 bg-blue-500 rounded-full" />
+                        <div key={i} className="h-1.5 flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full" />
                       ))}
                       {week.swingCount > 12 && (
-                        <span className="text-xs text-gray-500 ml-1">+{week.swingCount - 12}</span>
+                        <span className="text-xs text-white/60 ml-1">+{week.swingCount - 12}</span>
                       )}
                     </div>
                   </Card>
@@ -578,17 +764,17 @@ export default function Progress() {
           </div>
 
           {/* ACTIVITY HEATMAP */}
-          <Card className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <h3 className="font-black text-2xl mb-2">Activity</h3>
+          <Card className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-[0_0_20px_rgba(16,185,129,0.1)] text-white">
+            <h3 className="font-black text-xl mb-2">Activity Heatmap</h3>
             <div className="flex items-center justify-between mb-4">
-              <div className="text-sm text-gray-500">Last 30 Days</div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
+              <div className="text-sm text-white/60">Last 30 Days</div>
+              <div className="flex items-center gap-3 text-xs text-white/60">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded bg-gray-200" />
-                  <span>No swings</span>
+                  <div className="w-3 h-3 rounded bg-white/10" />
+                  <span>None</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded bg-green-600" />
+                  <div className="w-3 h-3 rounded bg-emerald-500" />
                   <span>Active</span>
                 </div>
               </div>
@@ -597,16 +783,16 @@ export default function Progress() {
             <div className="grid grid-cols-7 gap-2.5">
               {heatmapData.map((day, i) => {
                 const getColor = (count: number) => {
-                  if (count === 0) return 'bg-gray-200';
-                  if (count === 1) return 'bg-green-300';
-                  if (count === 2) return 'bg-green-500';
-                  return 'bg-green-600';
+                  if (count === 0) return 'bg-white/10';
+                  if (count === 1) return 'bg-emerald-500/30';
+                  if (count === 2) return 'bg-emerald-500/60';
+                  return 'bg-emerald-500';
                 };
 
                 return (
                   <div 
                     key={i} 
-                    className={`aspect-square rounded-xl ${getColor(day.count)}`}
+                    className={`aspect-square rounded-lg ${getColor(day.count)} hover:scale-110 transition-transform cursor-pointer`}
                     title={`${format(day.date, 'MMM d')}: ${day.count} swings`}
                   />
                 );
@@ -615,30 +801,30 @@ export default function Progress() {
           </Card>
 
           {/* PROGRESS OVERVIEW */}
-          <Card className="relative overflow-hidden rounded-3xl shadow-lg border-0">
-            <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 p-6 text-white">
+          <Card className="relative overflow-hidden rounded-3xl shadow-[0_0_40px_rgba(16,185,129,0.2)] border border-emerald-500/30">
+            <div className="bg-gradient-to-br from-emerald-500/20 via-cyan-500/10 to-transparent p-6 text-white backdrop-blur-sm">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <div className="text-sm opacity-90 mb-1">Progress Overview</div>
-                  <h3 className="text-3xl font-black">Last 50 Swings</h3>
+                  <div className="text-sm text-white/60 mb-1">Progress Overview</div>
+                  <h3 className="text-3xl font-black">Score Trend</h3>
                 </div>
                 <div className="text-right">
-                  <div className="text-5xl font-black">{stats.latest}</div>
-                  <div className="text-sm opacity-90">Current</div>
+                  <div className={`text-5xl font-black ${getScoreColor(stats.latest)}`}>{stats.latest}</div>
+                  <div className="text-sm text-white/60">Current</div>
                 </div>
               </div>
 
-              {/* Simple Line Chart */}
+              {/* Line Chart */}
               <div className="relative h-32 mb-6">
                 <svg className="w-full h-full" viewBox="0 0 500 120" preserveAspectRatio="none">
                   <defs>
-                    <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="rgba(255,255,255,0.3)" />
-                      <stop offset="100%" stopColor="rgba(255,255,255,0.8)" />
+                    <linearGradient id="lineGradientEmerald" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="rgba(16,185,129,0.5)" />
+                      <stop offset="100%" stopColor="rgba(6,182,212,0.8)" />
                     </linearGradient>
-                    <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="rgba(255,255,255,0.2)" />
-                      <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                    <linearGradient id="areaGradientEmerald" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="rgba(16,185,129,0.3)" />
+                      <stop offset="100%" stopColor="rgba(16,185,129,0)" />
                     </linearGradient>
                   </defs>
                   
@@ -659,12 +845,12 @@ export default function Progress() {
                       <>
                         <polyline
                           points={areaPoints}
-                          fill="url(#areaGradient)"
+                          fill="url(#areaGradientEmerald)"
                         />
                         <polyline
                           points={points}
                           fill="none"
-                          stroke="url(#lineGradient)"
+                          stroke="url(#lineGradientEmerald)"
                           strokeWidth="3"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -677,51 +863,61 @@ export default function Progress() {
 
               {/* Stats Row */}
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                  <div className="text-xs opacity-75 mb-1">Avg</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <div className="text-xs text-white/60 mb-1">Avg</div>
                   <div className="text-2xl font-black">{chartData.averages['score']?.toFixed(1) || '—'}</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                  <div className="text-xs opacity-75 mb-1">Best</div>
-                  <div className="text-2xl font-black">{stats.best}</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <div className="text-xs text-white/60 mb-1">Best</div>
+                  <div className="text-2xl font-black text-emerald-400">{stats.best}</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                  <div className="text-xs opacity-75 mb-1">Total</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <div className="text-xs text-white/60 mb-1">Total</div>
                   <div className="text-2xl font-black">{swings.length}</div>
                 </div>
               </div>
             </div>
           </Card>
 
-          {/* IMPROVING & FOCUS AREAS - Moved after Progress Overview */}
+          {/* IMPROVING & FOCUS AREAS */}
           <div className="grid grid-cols-2 gap-4">
-            <Card className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 rounded-2xl shadow-sm">
+            <Card className="p-5 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/30 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.1)] text-white">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.5)]">
                   <TrendingUp className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-green-700 font-black text-sm">Improving</span>
+                <span className="text-emerald-400 font-black text-sm">Improving</span>
               </div>
-              <div className="text-5xl font-black text-green-800 mb-1">{improvingMetrics.improving}</div>
-              <div className="text-green-600 text-sm font-medium">metrics trending up</div>
+              <div className="text-5xl font-black text-emerald-400 mb-1">{improvingMetrics.improving}</div>
+              <div className="text-white/60 text-sm font-medium">metrics trending up</div>
             </Card>
             
-            <Card className="p-5 bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 rounded-2xl shadow-sm">
+            <Card className="p-5 bg-gradient-to-br from-orange-500/10 to-red-500/5 border-orange-500/30 rounded-2xl shadow-[0_0_20px_rgba(249,115,22,0.1)] text-white">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-[0_0_10px_rgba(249,115,22,0.5)]">
                   <AlertTriangle className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-orange-700 font-black text-sm">Focus Areas</span>
+                <span className="text-orange-400 font-black text-sm">Focus Areas</span>
               </div>
-              <div className="text-5xl font-black text-orange-800 mb-1">{improvingMetrics.needsWork}</div>
-              <div className="text-orange-600 text-sm font-medium">metrics need work</div>
+              <div className="text-5xl font-black text-orange-400 mb-1">{improvingMetrics.needsWork}</div>
+              <div className="text-white/60 text-sm font-medium">metrics need work</div>
             </Card>
           </div>
+
+          {/* Footer CTA */}
+          <Card className="bg-white/10 border border-white/20 rounded-2xl p-4 text-center text-white shadow-[0_0_25px_rgba(16,185,129,0.15)]">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Flame className="w-5 h-5 text-orange-400" />
+              <p className="text-sm font-medium">
+                🔥 You're improving fast — record 3 more swings to unlock your next badge.
+              </p>
+            </div>
+          </Card>
 
           {/* Action Button */}
           <Button 
             onClick={() => navigate('/analysis')} 
-            className="w-full shadow-lg" 
+            className="w-full shadow-[0_0_30px_rgba(16,185,129,0.3)] bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white border-0" 
             size="lg"
           >
             <ArrowRight className="w-5 h-5 mr-2" />
@@ -802,18 +998,18 @@ function MetricDetailModal({ metricName, isOpen, onClose, chartData }: MetricDet
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-gradient-to-b from-[#0F172A] to-black border-white/10 text-white">
         <DialogHeader>
-          <DialogTitle className="font-black text-xl">{info.title}</DialogTitle>
+          <DialogTitle className="font-black text-xl text-white">{info.title}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">{info.description}</p>
+          <p className="text-sm text-white/60">{info.description}</p>
           
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="text-sm text-gray-500 mb-1">Average</div>
-            <div className="text-3xl font-black">{average?.toFixed(1) || '—'}</div>
-            <div className="text-xs text-gray-500 mt-2">
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+            <div className="text-sm text-white/60 mb-1">Average</div>
+            <div className="text-3xl font-black text-emerald-400">{average?.toFixed(1) || '—'}</div>
+            <div className="text-xs text-white/60 mt-2">
               <Target className="w-3 h-3 inline mr-1" />
               Target: {info.targetRange}
             </div>
@@ -821,22 +1017,26 @@ function MetricDetailModal({ metricName, isOpen, onClose, chartData }: MetricDet
 
           <div>
             <div className="text-sm font-medium mb-2">Last 10 Swings</div>
-            <div className="flex gap-1">
-              {series.slice(-10).map((point, i) => (
-                <div 
-                  key={i}
-                  className="flex-1 bg-blue-500 rounded-t-lg"
-                  style={{ 
-                    height: `${Math.max((point.value / 100) * 100, 10)}px`,
-                    opacity: 0.5 + (i * 0.05)
-                  }}
-                  title={point.value.toFixed(1)}
-                />
-              ))}
+            <div className="flex gap-1 h-24 items-end">
+              {series.slice(-10).map((point, i) => {
+                const maxVal = Math.max(...series.slice(-10).map(p => p.value));
+                const height = (point.value / maxVal) * 100;
+                return (
+                  <div 
+                    key={i}
+                    className="flex-1 bg-gradient-to-t from-emerald-500 to-cyan-500 rounded-t-lg transition-all hover:opacity-100"
+                    style={{ 
+                      height: `${Math.max(height, 10)}%`,
+                      opacity: 0.5 + (i * 0.05)
+                    }}
+                    title={point.value.toFixed(1)}
+                  />
+                );
+              })}
             </div>
           </div>
 
-          <Button onClick={onClose} className="w-full">Close</Button>
+          <Button onClick={onClose} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">Close</Button>
         </div>
       </DialogContent>
     </Dialog>
