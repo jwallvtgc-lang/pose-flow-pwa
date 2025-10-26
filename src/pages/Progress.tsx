@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress as ProgressBar } from '@/components/ui/progress';
-import { TrendingUp, ArrowRight, ArrowLeft, Target, AlertTriangle, Share2, ChevronRight, Zap, Activity, Brain, ArrowUp, ArrowDown, Flame } from 'lucide-react';
+import { TrendingUp, ArrowRight, ArrowLeft, Target, Share2, ChevronRight, Zap, Activity, Brain, ArrowUp, ArrowDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -326,7 +326,8 @@ export default function Progress() {
     };
   }, [swings, metrics]);
 
-  const improvingMetrics = useMemo(() => {
+  // Calculate improving metrics (unused but kept for potential future use)
+  // const improvingMetrics = useMemo(() => {
     const allMetrics = Object.keys(metricSpecs);
     let improving = 0;
     let needsWork = 0;
@@ -355,8 +356,8 @@ export default function Progress() {
       }
     });
     
-    return { improving, needsWork };
-  }, [chartData]);
+  //   return { improving, needsWork };
+  // }, [chartData]);
 
   // Activity heatmap data (last 30 days)
   const heatmapData = useMemo(() => {
@@ -996,119 +997,6 @@ export default function Progress() {
             </div>
           </Card>
 
-          {/* PROGRESS OVERVIEW */}
-          <Card className="relative overflow-hidden rounded-3xl shadow-[0_0_40px_rgba(16,185,129,0.2)] border border-emerald-500/30">
-            <div className="bg-gradient-to-br from-emerald-500/20 via-cyan-500/10 to-transparent p-6 text-white backdrop-blur-sm">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="text-sm text-white/60 mb-1">Progress Overview</div>
-                  <h3 className="text-3xl font-black">Score Trend</h3>
-                </div>
-                <div className="text-right">
-                  <div className={`text-5xl font-black ${getScoreColor(stats.latest)}`}>{stats.latest}</div>
-                  <div className="text-sm text-white/60">Current</div>
-                </div>
-              </div>
-
-              {/* Line Chart */}
-              <div className="relative h-32 mb-6">
-                <svg className="w-full h-full" viewBox="0 0 500 120" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="lineGradientEmerald" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="rgba(16,185,129,0.5)" />
-                      <stop offset="100%" stopColor="rgba(6,182,212,0.8)" />
-                    </linearGradient>
-                    <linearGradient id="areaGradientEmerald" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="rgba(16,185,129,0.3)" />
-                      <stop offset="100%" stopColor="rgba(16,185,129,0)" />
-                    </linearGradient>
-                  </defs>
-                  
-                  {(() => {
-                    const data = chartData.scoreSeries.slice(-50);
-                    if (data.length < 2) return null;
-                    
-                    const maxScore = Math.max(...data.map(d => d.value), 100);
-                    const points = data.map((point, i) => {
-                      const x = (i / (data.length - 1)) * 500;
-                      const y = 120 - ((point.value / maxScore) * 100);
-                      return `${x},${y}`;
-                    }).join(' ');
-                    
-                    const areaPoints = `0,120 ${points} 500,120`;
-                    
-                    return (
-                      <>
-                        <polyline
-                          points={areaPoints}
-                          fill="url(#areaGradientEmerald)"
-                        />
-                        <polyline
-                          points={points}
-                          fill="none"
-                          stroke="url(#lineGradientEmerald)"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </>
-                    );
-                  })()}
-                </svg>
-              </div>
-
-              {/* Stats Row */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                  <div className="text-xs text-white/60 mb-1">Avg</div>
-                  <div className="text-2xl font-black">{chartData.averages['score']?.toFixed(1) || '—'}</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                  <div className="text-xs text-white/60 mb-1">Best</div>
-                  <div className="text-2xl font-black text-emerald-400">{stats.best}</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                  <div className="text-xs text-white/60 mb-1">Total</div>
-                  <div className="text-2xl font-black">{swings.length}</div>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* IMPROVING & FOCUS AREAS */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="p-5 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/30 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.1)] text-white">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.5)]">
-                  <TrendingUp className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-emerald-400 font-black text-sm">Improving</span>
-              </div>
-              <div className="text-5xl font-black text-emerald-400 mb-1">{improvingMetrics.improving}</div>
-              <div className="text-white/60 text-sm font-medium">metrics trending up</div>
-            </Card>
-            
-            <Card className="p-5 bg-gradient-to-br from-orange-500/10 to-red-500/5 border-orange-500/30 rounded-2xl shadow-[0_0_20px_rgba(249,115,22,0.1)] text-white">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-[0_0_10px_rgba(249,115,22,0.5)]">
-                  <AlertTriangle className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-orange-400 font-black text-sm">Focus Areas</span>
-              </div>
-              <div className="text-5xl font-black text-orange-400 mb-1">{improvingMetrics.needsWork}</div>
-              <div className="text-white/60 text-sm font-medium">metrics need work</div>
-            </Card>
-          </div>
-
-          {/* Footer CTA */}
-          <Card className="bg-white/10 border border-white/20 rounded-2xl p-4 text-center text-white shadow-[0_0_25px_rgba(16,185,129,0.15)]">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Flame className="w-5 h-5 text-orange-400" />
-              <p className="text-sm font-medium">
-                🔥 You're improving fast — record 3 more swings to unlock your next badge.
-              </p>
-            </div>
-          </Card>
 
           {/* Action Button */}
           <Button 
