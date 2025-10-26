@@ -698,7 +698,9 @@ export default function Progress() {
                     {avgValue ? avgValue.toFixed(1) : '—'}
                     <span className="text-sm ml-1 text-white/60">{unit}</span>
                   </div>
-                  <div className="text-xs text-white/40 mt-1">vs last {timeFilter === 'week' ? 'week' : 'period'}</div>
+                  <div className="text-xs text-white/40 mt-1">
+                    vs {timeFilter === 'week' ? 'last week' : timeFilter === 'month' ? 'last month' : 'previous swings'}
+                  </div>
                   
                   {/* Mini sparkline */}
                   {series.length > 0 && (
