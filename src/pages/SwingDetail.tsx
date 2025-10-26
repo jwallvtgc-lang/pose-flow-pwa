@@ -707,6 +707,10 @@ export default function SwingDetail() {
                 const value = metric.value;
                 const status = getMetricStatus(key, value);
                 
+                // Get target range from metricSpecs
+                const spec = metricSpecs[key as keyof typeof metricSpecs];
+                const targetRange = spec ? `${spec.target[0]}-${spec.target[1]}${unit}` : null;
+                
                 return (
                   <div 
                     key={key}
@@ -716,6 +720,11 @@ export default function SwingDetail() {
                     <div className="text-white text-lg font-semibold">
                       {value.toFixed(1)}{unit}
                     </div>
+                    {targetRange && (
+                      <div className="text-[10px] text-white/30">
+                        Target: {targetRange}
+                      </div>
+                    )}
                     <div className={cn("text-xs font-medium", status.textColor)}>
                       {status.status}
                     </div>
