@@ -71,16 +71,16 @@ export default function DrillDetail() {
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         <div className="space-y-6">
           {/* Drill Header */}
-          <Card className="bg-gradient-to-br from-emerald-500/20 via-cyan-500/10 to-transparent border-emerald-500/30 rounded-2xl p-6 shadow-[0_0_30px_rgba(16,185,129,0.2)] text-white relative overflow-hidden">
+          <div className="bg-gradient-to-br from-emerald-500/20 via-cyan-500/10 to-[#0F172A] border border-emerald-500/30 rounded-2xl p-6 shadow-[0_0_30px_rgba(16,185,129,0.2)] text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl" />
             <div className="relative">
-              <Badge className="mb-3 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+              <div className="mb-3 inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                 {metricLabels[drill.goalMetric] || drill.goalMetric}
-              </Badge>
+              </div>
               <h1 className="text-3xl font-black mb-3">{drill.name}</h1>
               <p className="text-white/80 text-base font-medium">{drill.purpose}</p>
             </div>
-          </Card>
+          </div>
 
           {/* Reps Card */}
           <Card className="bg-white/5 border-white/10 rounded-2xl p-5 text-white">
@@ -165,26 +165,25 @@ export default function DrillDetail() {
           </Card>
 
           {/* Bottom CTA */}
-          <Card className="bg-white/5 border-white/10 rounded-2xl p-5 text-center text-white">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center text-white">
             <p className="text-sm text-white/80 mb-4 font-medium">
               🔥 Get after it! Consistency beats intensity.
             </p>
             <div className="flex gap-3">
-              <Button 
+              <button 
                 onClick={() => setIsModalOpen(true)} 
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold shadow-[0_0_20px_rgba(16,185,129,0.3)] rounded-md h-10 px-4 py-2 inline-flex items-center justify-center transition-colors"
               >
                 Start Drill
-              </Button>
-              <Button 
+              </button>
+              <button 
                 onClick={() => navigate('/drills')} 
-                variant="outline"
-                className="flex-1 border-white/20 text-white hover:bg-white/10"
+                className="flex-1 border border-white/20 bg-transparent text-white hover:bg-white/10 rounded-md h-10 px-4 py-2 inline-flex items-center justify-center transition-colors"
               >
                 All Drills
-              </Button>
+              </button>
             </div>
-          </Card>
+          </div>
 
           {/* Rating Section */}
           <DrillRating 
