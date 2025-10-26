@@ -16,12 +16,12 @@ export function Header({ leftAction, rightAction }: HeaderProps) {
         </div>
       )}
 
-      {/* Centered Logo - NO wrapper constraints */}
+      {/* Centered Logo - Large and prominent */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
         <img
           src={headerLogo}
           alt="SwingSense"
-          className="h-8 md:h-9 w-auto drop-shadow-[0_0_16px_rgba(16,185,129,0.4)] animate-[glowpulse_7s_ease-in-out_infinite]"
+          className="h-12 md:h-14 w-auto drop-shadow-[0_0_16px_rgba(16,185,129,0.4)] animate-[glowpulse_7s_ease-in-out_infinite]"
         />
       </div>
 
