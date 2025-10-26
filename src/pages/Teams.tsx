@@ -39,7 +39,7 @@ export default function Teams() {
       setIsLoading(true);
 
       // Get user's teams with their role
-      const { data: memberData, error } = await supabase
+      const { data: memberData, error: membershipsError } = await supabase
         .from('team_members')
         .select(`
           team_id,
@@ -52,7 +52,12 @@ export default function Teams() {
         `)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (membershipsError) {
+        console.error('load teams error', { membershipsError });
+        toast.error(`Could not load teams from Supabase: ${membershipsError.message}`);
+        setIsLoading(false);
+        return;
+      }
 
       const formattedTeams = (memberData || [])
         .filter(m => m.teams)
@@ -63,10 +68,11 @@ export default function Teams() {
           role: m.role
         }));
 
+      console.log('Loaded teams:', formattedTeams);
       setTeams(formattedTeams);
-    } catch (error) {
-      console.error('Error loading teams:', error);
-      toast.error('Failed to load teams');
+    } catch (error: any) {
+      console.error('Unexpected error loading teams:', error);
+      toast.error(`Unexpected error: ${error?.message || error}`);
     } finally {
       setIsLoading(false);
     }
@@ -214,7 +220,6 @@ export default function Teams() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSuccess={handleSuccess}
-        userId={user.id}
       />
     </div>
   );
