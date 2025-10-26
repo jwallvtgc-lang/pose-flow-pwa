@@ -18,6 +18,8 @@ import Leaderboard from "./pages/Leaderboard";
 import Achievements from "./pages/Achievements";
 import Profile from "./pages/Profile";
 import Feedback from "./pages/Feedback";
+import Drills from "./pages/Drills";
+import DrillDetail from "./pages/DrillDetail";
 import { initPosthog } from "./lib/analytics";
 import { initTf } from "./lib/tf";
 
@@ -62,6 +64,8 @@ const App = () => {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/feedback" element={<Feedback />} />
+            <Route path="/drills" element={<Drills />} />
+            <Route path="/drills/:id" element={<DrillDetail />} />
             <Route path="/debug" element={<Debug />} />
             <Route path="/metrics-debug" element={<MetricsDebug />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

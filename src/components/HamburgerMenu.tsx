@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Menu, Home, Video, BarChart3, History, Trophy, User, MessageCircle } from 'lucide-react';
+import { X, Menu, Home, Video, BarChart3, History, Trophy, User, MessageCircle, Dumbbell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function HamburgerMenu() {
@@ -18,6 +18,7 @@ export function HamburgerMenu() {
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Video, label: 'Record Swing', path: '/score' },
+    { icon: Dumbbell, label: 'Training Drills', path: '/drills' },
     { icon: BarChart3, label: 'Analytics', path: '/progress' },
     { icon: History, label: 'Swing History', path: '/recent-swings' },
     { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
