@@ -363,6 +363,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_team_coach: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
       update_user_streak: {
         Args: { user_id_param: string }
         Returns: undefined
