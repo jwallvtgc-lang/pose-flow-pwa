@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { poseWorkerClient, type PoseAnalysisResult } from '@/lib/poseWorkerClient';
 import { Header } from '@/components/Header';
+import { SplashScreen } from '@/components/SplashScreen';
 
 type FlowStep = 'capture' | 'score' | 'feedback';
 
@@ -269,14 +270,7 @@ export default function SwingAnalysis() {
 
   // Show loading screen while authentication is being checked
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-white/60 font-semibold">Loading...</p>
-        </div>
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   return (

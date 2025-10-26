@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Header } from '@/components/Header';
+import { SplashScreen } from '@/components/SplashScreen';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -319,20 +320,7 @@ const Index = () => {
 
   // Show loading state while authentication is being checked
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black flex items-center justify-center p-4">
-        <div className="text-center space-y-6 animate-fade-in-up">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <div className="absolute inset-0 w-20 h-20 border-4 border-green-200/20 rounded-full mx-auto"></div>
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-3xl font-black text-white tracking-tight">SwingSense</h1>
-            <p className="text-lg font-medium text-white/60">Loading your experience...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   const getFirstName = () => {
