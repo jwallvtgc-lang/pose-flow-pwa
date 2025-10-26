@@ -8,26 +8,26 @@ interface HeaderProps {
 
 export function Header({ leftAction, rightAction }: HeaderProps) {
   return (
-    <header className="relative w-full h-16 bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10">
+    <header className="relative w-full h-16 bg-gradient-to-b from-[#0F172A] to-black border-b border-white/10 flex-shrink-0">
       {/* Left Action */}
       {leftAction && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2">
           {leftAction}
         </div>
       )}
 
-      {/* Centered Logo */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center">
+      {/* Centered Logo - NO wrapper constraints */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
         <img
           src={headerLogo}
           alt="SwingSense"
-          className="h-10 md:h-12 w-auto drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] animate-[glowpulse_7s_ease-in-out_infinite]"
+          className="h-8 md:h-9 w-auto drop-shadow-[0_0_16px_rgba(16,185,129,0.4)] animate-[glowpulse_7s_ease-in-out_infinite]"
         />
       </div>
 
       {/* Right Action */}
       {rightAction && (
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
           {rightAction}
         </div>
       )}

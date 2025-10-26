@@ -9,6 +9,7 @@ import { ArrowLeft, AlertTriangle, Loader2, RotateCcw, Save, TrendingUp, Chevron
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
+import { Header } from '@/components/Header';
 
 // Analytics
 import { trackCapture } from '@/lib/analytics';
@@ -380,13 +381,15 @@ export default function Score() {
 
   if (!state?.videoBlob) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-6 text-center">
-          <h2 className="text-xl font-bold mb-4">No Recording Found</h2>
-          <p className="text-muted-foreground mb-4">
+      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black flex items-center justify-center">
+        <Card className="p-6 text-center bg-white/5 border-white/10">
+          <h2 className="text-xl font-bold mb-4 text-white">No Recording Found</h2>
+          <p className="text-white/60 mb-4">
             Please record a swing first to see your analysis.
           </p>
-          <Button onClick={() => navigate('/analysis')}>Go Back to Record</Button>
+          <Button onClick={() => navigate('/analysis')} className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600">
+            Go Back to Record
+          </Button>
         </Card>
       </div>
     );
@@ -395,14 +398,16 @@ export default function Score() {
   // Show retake screen for low confidence/missing events
   if (shouldRetake) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
-          <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="sm" onClick={handleRetake}>
+      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+        <Header 
+          leftAction={
+            <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-2xl font-bold">Analysis Results</h1>
-          </div>
+          }
+        />
+        
+        <div className="container mx-auto px-4 py-6 max-w-2xl">
 
           <Card className="p-6 text-center">
             <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-orange-500" />
@@ -452,14 +457,16 @@ export default function Score() {
   // Show analysis progress
   if (isAnalyzing) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
-          <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="sm" disabled>
+      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+        <Header 
+          leftAction={
+            <Button variant="ghost" size="sm" disabled className="text-white/40">
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-2xl font-bold">Analyzing Your Swing</h1>
-          </div>
+          }
+        />
+        
+        <div className="container mx-auto px-4 py-6 max-w-2xl">
 
           <Card className="p-6">
             <div className="text-center space-y-4">
@@ -488,14 +495,16 @@ export default function Score() {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-6 max-w-2xl">
-          <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="sm" onClick={handleRetake}>
+      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+        <Header 
+          leftAction={
+            <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-2xl font-bold">Analysis Error</h1>
-          </div>
+          }
+        />
+        
+        <div className="container mx-auto px-4 py-6 max-w-2xl">
 
           <Card className="p-6 text-center">
             <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-destructive" />
@@ -518,19 +527,21 @@ export default function Score() {
 
   // Show consolidated results with tabs
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={handleRetake}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h1 className="text-2xl font-bold">Results</h1>
-          </div>
-          <Button variant="ghost" size="sm" onClick={handleRetake}>
+    <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+      <Header 
+        leftAction={
+          <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+        }
+        rightAction={
+          <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
             Retake
           </Button>
-        </div>
+        }
+      />
+
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
 
         <Tabs defaultValue="score" className="space-y-6" key={`tabs-${clientRequestId}`}>
           <TabsList className="grid w-full grid-cols-2">
