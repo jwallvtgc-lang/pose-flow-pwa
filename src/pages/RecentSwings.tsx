@@ -310,10 +310,23 @@ export default function RecentSwings() {
                       src={swing.video_url}
                       className="w-full h-full object-cover"
                       preload="metadata"
+                      playsInline
+                      muted
+                      crossOrigin="anonymous"
+                      onError={(e) => {
+                        console.log('Video thumbnail load error:', swing.video_url);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Play className="w-12 h-12 text-white/40" />
+                    </div>
+                  )}
+                  {/* Fallback play icon if video doesn't load */}
+                  {swing.video_url && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <Play className="w-12 h-12 text-white/60" />
                     </div>
                   )}
                   {/* Gradient overlay */}

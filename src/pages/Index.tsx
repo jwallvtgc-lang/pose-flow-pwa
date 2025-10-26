@@ -439,7 +439,12 @@ const Index = () => {
                           preload="metadata"
                           playsInline
                           muted
+                          crossOrigin="anonymous"
                         />
+                        {/* Play icon overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <Play className="w-8 h-8 text-white/60" />
+                        </div>
                       </>
                     ) : (
                       <Play className="w-8 h-8 text-white/40 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
