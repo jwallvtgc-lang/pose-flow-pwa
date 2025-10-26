@@ -197,3 +197,23 @@ All colors MUST be HSL.
     @apply animate-pulse bg-gray-200 rounded-2xl;
   }
 }
+
+@keyframes glowpulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.6));
+  }
+}
+
+@keyframes glow-breathe {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}

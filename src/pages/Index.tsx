@@ -352,45 +352,30 @@ const Index = () => {
   const weekScore = Math.round(stats.trendingScore);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black relative pb-32">
-      {/* Vignette overlay */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none" />
-
-      {/* Subtle shimmer background */}
-      <div className="fixed inset-0 opacity-20 pointer-events-none" style={{
-        background: 'linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.05) 50%, transparent 100%)',
-        backgroundSize: '200% 100%',
-        animation: 'shimmer-slow 30s linear infinite'
-      }} />
-      
+    <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black relative pb-28">
       {/* BRANDED HEADER BAR */}
       <Header 
         rightAction={
           <Link 
             to="/profile" 
-            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200"
+            className="text-white/70 hover:text-white transition-colors"
           >
             <User className="w-5 h-5" />
           </Link>
         }
       />
 
-      <div className="max-w-2xl mx-auto px-4 relative z-10">
+      <div className="max-w-2xl mx-auto px-4 py-6 relative z-10">
 
         {/* 1. HERO HEADER / PERSONAL PANEL */}
-        <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6 animate-fade-in">
+        <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6 hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all duration-200">
           <div className="flex items-start gap-4">
             {/* Avatar with ambient glow */}
             <div className="relative flex-shrink-0">
               <div 
-                className="absolute inset-0 -m-2 opacity-30"
-                style={{
-                  background: 'radial-gradient(circle, rgba(16, 185, 129, 0.5) 0%, transparent 70%)',
-                  filter: 'blur(16px)',
-                  animation: 'glow-breathe 7s ease-in-out infinite'
-                }}
+                className="absolute inset-0 rounded-full bg-emerald-500/20 blur-[40px] animate-[glowpulse_7s_ease-in-out_infinite]"
               />
-              <Avatar className="relative z-10 w-14 h-14 border-2 border-white/10 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+              <Avatar className="relative z-10 w-14 h-14 border border-white/10">
                 <AvatarImage src={userProfile?.avatar_url || undefined} />
                 <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-cyan-500 text-white text-lg font-bold">
                   {user ? getFirstName()[0] : 'P'}
@@ -400,16 +385,16 @@ const Index = () => {
 
             <div className="flex-1">
               <p className="text-white/60 text-sm mb-1">Welcome back,</p>
-              <h2 className="text-white font-semibold text-xl mb-3">
+              <h2 className="text-white font-semibold text-lg mb-3">
                 {user ? getFirstName() : 'Player'}
               </h2>
               
               {hasSwings && !stats.isLoading ? (
                 <>
                   <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-green-400 text-3xl font-bold">{weekScore}</span>
+                    <span className="text-2xl font-bold text-emerald-400">{weekScore}</span>
                     {stats.improvement !== 0 && (
-                      <span className={`text-sm font-semibold ${stats.improvement > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <span className={`text-sm font-semibold ml-2 ${stats.improvement > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         ({stats.improvement > 0 ? '+' : ''}{stats.improvement})
                       </span>
                     )}
@@ -417,11 +402,6 @@ const Index = () => {
                   <p className="text-white/50 text-sm">
                     {weekSwingCount} {weekSwingCount === 1 ? 'swing' : 'swings'} analyzed this week
                   </p>
-                  {stats.improvement > 0 && (
-                    <p className="text-green-400 text-xs mt-2">
-                      🔥 You're trending up — +{stats.improvement} Swingscore this week
-                    </p>
-                  )}
                 </>
               ) : (
                 <p className="text-white/70 text-sm">Record your first swing to see your weekly score</p>
@@ -432,14 +412,14 @@ const Index = () => {
 
         {/* 2. TODAY'S FOCUS CARD */}
         {topDrills.length > 0 && (
-          <div className="rounded-2xl bg-white/5 border border-white/10 shadow-lg p-5 mb-6 hover:shadow-[0_0_20px_rgba(16,185,129,0.25)] transition-all duration-200 animate-fade-in">
+          <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6 hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all duration-200">
             <h3 className="text-white font-semibold text-base mb-3">Today's Focus</h3>
             <div className="mb-4">
-              <h4 className="text-green-400 font-semibold text-lg mb-2">{topDrills[0].name}</h4>
+              <h4 className="text-emerald-400 font-semibold text-lg mb-2">{topDrills[0].name}</h4>
               <p className="text-white/70 text-sm">{topDrills[0].description}</p>
             </div>
             <Link to="/analysis">
-              <Button className="rounded-xl bg-green-500 text-black font-semibold text-sm px-4 py-2 hover:bg-green-400 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+              <Button className="rounded-xl bg-emerald-500 text-black font-semibold text-sm px-4 py-2 hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]">
                 Start Drill
               </Button>
             </Link>
@@ -448,7 +428,7 @@ const Index = () => {
 
         {/* 3. RECENT SWINGS CAROUSEL */}
         {recentSwings.length > 0 && (
-          <div className="mb-6 animate-fade-in">
+          <div className="mb-6">
             <div className="flex items-baseline justify-between mb-3">
               <div>
                 <h3 className="text-white font-semibold text-base">Your Recent Swings</h3>
@@ -460,9 +440,9 @@ const Index = () => {
                 <Link 
                   key={swing.id} 
                   to={`/swing/${swing.id}`}
-                  className="w-40 shrink-0 rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_12px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] p-3 flex flex-col gap-2 transition-all duration-200"
+                  className="w-40 shrink-0 rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] overflow-hidden hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all duration-200"
                 >
-                  <div className="aspect-video rounded-xl bg-black relative overflow-hidden border border-white/10 group">
+                  <div className="aspect-[4/3] bg-gradient-to-b from-white/10 to-transparent relative">
                     {swing.video_url ? (
                       <>
                         <video
@@ -472,27 +452,26 @@ const Index = () => {
                           playsInline
                           muted
                         />
-                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
-                          </div>
-                        </div>
                       </>
                     ) : (
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <Play className="w-8 h-8 text-white/60" />
-                      </div>
+                      <Play className="w-8 h-8 text-white/40 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                     )}
+                    {/* Dark gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   </div>
-                  <div>
-                    <p className="text-white font-semibold text-sm">{swing.score_phase1 || '--'}</p>
-                    <p className="text-white/50 text-[11px]">{formatDate(swing.created_at)} · Analyzed</p>
+                  <div className="p-3">
+                    <p className="text-emerald-400 font-semibold text-sm mb-1">
+                      {swing.score_phase1 || '--'}
+                    </p>
+                    <p className="text-white/50 text-[11px]">
+                      {swing.created_at ? formatDate(swing.created_at) : 'Recent'} · Analyzed
+                    </p>
                   </div>
                 </Link>
               ))}
             </div>
             <Link to="/recent-swings">
-              <button className="text-green-400 text-sm font-medium mt-3 hover:underline">
+              <button className="text-emerald-400 text-sm font-medium mt-3 hover:opacity-80 transition-opacity">
                 View All Swings →
               </button>
             </Link>
@@ -501,20 +480,20 @@ const Index = () => {
 
         {/* 4. PROGRESS GRID */}
         {hasSwings && (
-          <div className="mb-6 animate-fade-in">
+          <div className="mb-6">
             <div className="mb-3">
               <h3 className="text-white font-semibold text-base">Progress</h3>
               <p className="text-white/50 text-xs mt-1">What's changing in your swing</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               {/* Exit Velo */}
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 text-center flex flex-col gap-1 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all">
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-3 text-center shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all">
                 <p className="text-white font-bold text-xl">
                   {monthlyStats.topBatSpeedThisMonth > 0 ? `${monthlyStats.topBatSpeedThisMonth} mph` : '--'}
                 </p>
                 <p className="text-white/60 text-xs">Exit Velo</p>
                 {monthlyStats.topBatSpeedThisMonth > 0 && (
-                  <p className="text-green-400 text-[10px] flex items-center justify-center gap-0.5">
+                  <p className="text-emerald-400 text-[10px] flex items-center justify-center gap-0.5 mt-1">
                     <TrendingUp className="w-3 h-3" />
                     <span>Peak this month</span>
                   </p>
@@ -522,36 +501,36 @@ const Index = () => {
               </div>
 
               {/* Best Score */}
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 text-center flex flex-col gap-1 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all">
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-3 text-center shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all">
                 <p className="text-white font-bold text-xl">
                   {stats.bestScore > 0 ? stats.bestScore : '--'}
                 </p>
                 <p className="text-white/60 text-xs">Best Score</p>
                 {stats.bestScore > 0 && (
-                  <p className="text-green-400 text-[10px]">Personal best</p>
+                  <p className="text-emerald-400 text-[10px] mt-1">Personal best</p>
                 )}
               </div>
 
               {/* Streak */}
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 text-center flex flex-col gap-1 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all">
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-3 text-center shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all">
                 <p className="text-white font-bold text-xl flex items-center justify-center gap-1">
                   {userProfile?.current_streak || 0}
                   <Zap className="w-4 h-4 text-yellow-400" />
                 </p>
                 <p className="text-white/60 text-xs">Day Streak</p>
                 {(userProfile?.current_streak || 0) > 0 && (
-                  <p className="text-green-400 text-[10px]">Keep it up!</p>
+                  <p className="text-emerald-400 text-[10px] mt-1">Keep it up!</p>
                 )}
               </div>
 
               {/* Improvement */}
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 text-center flex flex-col gap-1 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all">
-                <p className={`font-bold text-xl ${stats.improvement > 0 ? 'text-green-400' : stats.improvement < 0 ? 'text-red-400' : 'text-white'}`}>
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-3 text-center shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all">
+                <p className={`font-bold text-xl ${stats.improvement > 0 ? 'text-emerald-400' : stats.improvement < 0 ? 'text-red-400' : 'text-white'}`}>
                   {stats.improvement !== 0 ? `${stats.improvement > 0 ? '+' : ''}${stats.improvement}%` : '--'}
                 </p>
                 <p className="text-white/60 text-xs">Improvement</p>
                 {stats.improvement > 0 && (
-                  <p className="text-green-400 text-[10px] flex items-center justify-center gap-0.5">
+                  <p className="text-emerald-400 text-[10px] flex items-center justify-center gap-0.5 mt-1">
                     <TrendingUp className="w-3 h-3" />
                     <span>vs last week</span>
                   </p>
@@ -678,58 +657,6 @@ const Index = () => {
       </div>
 
       <style>{`
-        @keyframes glowpulse {
-          0%, 100% {
-            filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
-          }
-          50% {
-            filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.6));
-          }
-        }
-
-        @keyframes logoentrance {
-          0% {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        @keyframes glow-breathe {
-          0%, 100% {
-            filter: blur(16px);
-            opacity: 0.3;
-          }
-          50% {
-            filter: blur(20px);
-            opacity: 0.4;
-          }
-        }
-
-        @keyframes shimmer-slow {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.4s ease-out;
-        }
-
         .scrollbar-hide {
           -ms-overflow-style: none;
           scrollbar-width: none;
