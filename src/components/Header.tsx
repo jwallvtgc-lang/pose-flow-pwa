@@ -16,11 +16,11 @@ export function Header({ leftAction, rightAction }: HeaderProps) {
         </div>
       )}
 
-      {/* Wide Brand Logo - Centered */}
+      {/* Wide Brand Logo - Centered and Prominent */}
       <img
         src={wideLogo}
         alt="SwingSense"
-        className="h-9 w-auto drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] animate-[glowpulse_6s_ease-in-out_infinite]"
+        className="h-12 w-auto drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] animate-[glowpulse_6s_ease-in-out_infinite]"
       />
 
       {/* Right Action */}
