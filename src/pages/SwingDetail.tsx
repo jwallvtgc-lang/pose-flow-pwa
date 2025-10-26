@@ -457,72 +457,83 @@ export default function SwingDetail() {
           <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
             <DialogTrigger asChild>
               <Button 
-                variant="outline" 
+                variant="ghost" 
                 size="sm"
-                className="rounded-lg border-white/20 text-white/60 hover:text-white hover:bg-white/10"
+                className="rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
               >
+                <Share2 className="w-4 h-4 mr-1.5" />
                 Share
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md rounded-2xl">
+            <DialogContent className="sm:max-w-md rounded-2xl bg-[#0F172A] border border-white/10 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Share2 className="w-5 h-5" />
+                <DialogTitle className="flex items-center gap-2 text-white text-xl">
+                  <Share2 className="w-5 h-5 text-emerald-400" />
                   Share Swing Analysis
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-white/60">
                   Send this analysis to a coach, parent, or friend.
                 </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="shareEmail">Email Address *</Label>
+                  <Label htmlFor="shareEmail" className="text-white font-medium">
+                    Email Address *
+                  </Label>
                   <Input
                     id="shareEmail"
                     type="email"
                     placeholder="coach@example.com"
                     value={shareEmail}
                     onChange={(e) => setShareEmail(e.target.value)}
-                    className="rounded-2xl mt-1"
+                    className="rounded-xl mt-2 bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-emerald-500 focus:ring-emerald-500/20"
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="shareName">Your Name (optional)</Label>
+                  <Label htmlFor="shareName" className="text-white font-medium">
+                    Your Name (optional)
+                  </Label>
                   <Input
                     id="shareName"
                     type="text"
                     placeholder="Your name"
                     value={shareName}
                     onChange={(e) => setShareName(e.target.value)}
-                    className="rounded-2xl mt-1"
+                    className="rounded-xl mt-2 bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-emerald-500 focus:ring-emerald-500/20"
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="shareMessage">Personal Message (optional)</Label>
+                  <Label htmlFor="shareMessage" className="text-white font-medium">
+                    Personal Message (optional)
+                  </Label>
                   <Textarea
                     id="shareMessage"
                     placeholder="Hey coach, check out my latest swing..."
                     value={shareMessage}
                     onChange={(e) => setShareMessage(e.target.value)}
                     rows={3}
-                    className="rounded-2xl mt-1"
+                    className="rounded-xl mt-2 bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-emerald-500 focus:ring-emerald-500/20 resize-none"
                   />
                 </div>
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="gap-2">
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   onClick={() => setIsShareDialogOpen(false)}
                   disabled={isSending}
-                  className="rounded-2xl"
+                  className="rounded-xl text-white/70 hover:text-white hover:bg-white/10"
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleShareSwing} disabled={isSending} className="rounded-2xl">
+                <Button 
+                  onClick={handleShareSwing} 
+                  disabled={isSending} 
+                  className="rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+                >
                   {isSending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
