@@ -380,9 +380,9 @@ export default function Progress() {
     return days;
   }, [swings]);
 
-  // Calculate metric comparisons for "Then vs Now"
+  // Calculate metric comparisons for "Then vs Now" - dynamically choose top changing metrics
   const metricComparison = useMemo(() => {
-    if (swings.length < 2) return null;
+    if (swings.length < 6) return null;
     
     const recentSwings = swings.slice(0, 3);
     const oldSwings = swings.slice(-3);
@@ -398,22 +398,65 @@ export default function Progress() {
       return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
     };
 
-    return {
-      head_drift: {
-        recent: getAvgMetric(recentSwings, 'head_drift_cm'),
-        old: getAvgMetric(oldSwings, 'head_drift_cm'),
-        label: 'Head Drift',
-        unit: 'cm',
-        invert: true
-      },
-      attack_angle: {
-        recent: getAvgMetric(recentSwings, 'attack_angle_deg'),
-        old: getAvgMetric(oldSwings, 'attack_angle_deg'),
-        label: 'Attack Angle',
-        unit: '°',
-        invert: false
-      }
+    // Metric name and unit mapping
+    const metricInfo: Record<string, { label: string; unit: string }> = {
+      hip_shoulder_sep_deg: { label: 'Hip-Shoulder Sep', unit: '°' },
+      attack_angle_deg: { label: 'Attack Angle', unit: '°' },
+      head_drift_cm: { label: 'Head Drift', unit: 'cm' },
+      contact_timing_frames: { label: 'Contact Timing', unit: 'frames' },
+      bat_lag_deg: { label: 'Bat Lag', unit: '°' },
+      torso_tilt_deg: { label: 'Torso Tilt', unit: '°' },
+      stride_var_pct: { label: 'Stride Variance', unit: '%' },
+      finish_balance_idx: { label: 'Finish Balance', unit: 'index' }
     };
+
+    // Calculate all metric changes
+    const allChanges = Object.keys(metricSpecs).map(metricName => {
+      const recent = getAvgMetric(recentSwings, metricName);
+      const old = getAvgMetric(oldSwings, metricName);
+      const spec = metricSpecs[metricName as keyof typeof metricSpecs];
+      const info = metricInfo[metricName];
+      
+      if (recent === null || old === null || !info) return null;
+      
+      const change = Math.abs(recent - old);
+      const isImproving = spec && 'invert' in spec && spec.invert 
+        ? recent < old
+        : recent > old;
+      
+      return {
+        key: metricName,
+        recent,
+        old,
+        change,
+        label: info.label,
+        unit: info.unit,
+        invert: spec && 'invert' in spec ? spec.invert : false,
+        isImproving
+      };
+    }).filter((m): m is NonNullable<typeof m> => m !== null && m.change > 0);
+
+    // Sort by biggest change and take top 3
+    const topChanges = allChanges
+      .sort((a, b) => b.change - a.change)
+      .slice(0, 3);
+
+    if (topChanges.length === 0) return null;
+
+    // Convert to object format for display
+    const result: Record<string, any> = {};
+    topChanges.forEach((metric, index) => {
+      result[`metric_${index}`] = {
+        recent: metric.recent,
+        old: metric.old,
+        label: metric.label,
+        unit: metric.unit,
+        invert: metric.invert,
+        isImproving: metric.isImproving
+      };
+    });
+
+    return result;
   }, [swings, metrics]);
 
   // Helper function for score colors
@@ -674,13 +717,14 @@ export default function Progress() {
             })}
           </div>
 
-          {/* Then vs Now Comparison */}
-          {metricComparison && metricComparison.head_drift.recent !== null && (
+          {/* Then vs Now Comparison - Dynamic Top Changes */}
+          {metricComparison && Object.keys(metricComparison).length > 0 && (
             <Card className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-[0_0_20px_rgba(16,185,129,0.1)] text-white">
-              <h3 className="font-black text-lg mb-4 flex items-center gap-2">
+              <h3 className="font-black text-lg mb-2 flex items-center gap-2">
                 <Activity className="w-5 h-5 text-emerald-400" />
                 Then vs Now
               </h3>
+              <p className="text-xs text-white/60 mb-4">Biggest changes in your last 3 swings</p>
               
               <div className="grid grid-cols-2 gap-4">
                 {/* Then Card */}
@@ -688,7 +732,7 @@ export default function Progress() {
                   <div className="text-xs text-white/40 mb-3">Previous 3 Swings</div>
                   {Object.entries(metricComparison).map(([key, data]) => (
                     data.old !== null && (
-                      <div key={key} className="mb-2">
+                      <div key={key} className="mb-2 last:mb-0">
                         <div className="text-xs text-white/60">{data.label}</div>
                         <div className="text-lg font-black text-white/80">
                           {data.old.toFixed(1)}{data.unit}
@@ -703,13 +747,12 @@ export default function Progress() {
                   <div className="text-xs text-emerald-400 mb-3">Recent 3 Swings</div>
                   {Object.entries(metricComparison).map(([key, data]) => {
                     if (data.recent === null || data.old === null) return null;
-                    const improved = data.invert ? data.recent < data.old : data.recent > data.old;
                     return (
-                      <div key={key} className="mb-2">
+                      <div key={key} className="mb-2 last:mb-0">
                         <div className="text-xs text-white/60">{data.label}</div>
-                        <div className={`text-lg font-black flex items-center gap-1 ${improved ? 'text-emerald-400' : 'text-white'}`}>
+                        <div className={`text-lg font-black flex items-center gap-1 ${data.isImproving ? 'text-emerald-400' : 'text-orange-400'}`}>
                           {data.recent.toFixed(1)}{data.unit}
-                          {improved ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                          {data.isImproving ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
                         </div>
                       </div>
                     );
