@@ -819,9 +819,52 @@ export default function Progress() {
                 const prevScore = index < swings.length - 1 ? (swings[index + 1].score_phase1 || 0) : score;
                 const scoreDelta = score - prevScore;
                 
-                // Get key metric changes
-                const headDrift = metrics.find(m => m.swing_id === swing.id && m.metric === 'head_drift_cm');
-                const attackAngle = metrics.find(m => m.swing_id === swing.id && m.metric === 'attack_angle_deg');
+                // Get all metrics for this swing and calculate their distance from target
+                const swingMetrics = metrics.filter(m => m.swing_id === swing.id);
+                
+                const metricInfo: Record<string, { label: string; unit: string }> = {
+                  hip_shoulder_sep_deg: { label: 'Hip-Shoulder', unit: '°' },
+                  attack_angle_deg: { label: 'Attack', unit: '°' },
+                  head_drift_cm: { label: 'Head', unit: 'cm' },
+                  contact_timing_frames: { label: 'Timing', unit: 'fr' },
+                  bat_lag_deg: { label: 'Bat Lag', unit: '°' },
+                  torso_tilt_deg: { label: 'Torso', unit: '°' },
+                  stride_var_pct: { label: 'Stride', unit: '%' },
+                  finish_balance_idx: { label: 'Balance', unit: '' }
+                };
+                
+                // Calculate distance from target for each metric
+                const metricsWithDistance = swingMetrics
+                  .map(m => {
+                    const spec = metricSpecs[m.metric as keyof typeof metricSpecs];
+                    if (!spec || m.value === null) return null;
+                    
+                    const [targetMin, targetMax] = spec.target;
+                    const value = m.value;
+                    
+                    // Calculate how far from target range (0 if within range)
+                    let distance = 0;
+                    if (value < targetMin) {
+                      distance = targetMin - value;
+                    } else if (value > targetMax) {
+                      distance = value - targetMax;
+                    }
+                    
+                    const info = metricInfo[m.metric || ''];
+                    if (!info) return null;
+                    
+                    return {
+                      metric: m.metric,
+                      value: m.value,
+                      label: info.label,
+                      unit: info.unit,
+                      distance: Math.abs(distance),
+                      isOutOfRange: distance > 0
+                    };
+                  })
+                  .filter((m): m is NonNullable<typeof m> => m !== null)
+                  .sort((a, b) => b.distance - a.distance)
+                  .slice(0, 2); // Take top 2 most significant metrics
                 
                 return (
                   <div 
@@ -845,18 +888,15 @@ export default function Progress() {
                           )}
                         </div>
                         
-                        {/* Key metrics */}
-                        <div className="flex gap-3 text-xs">
-                          {attackAngle && attackAngle.value !== null && (
-                            <div className="text-white/60">
-                              Attack: <span className="text-white font-medium">{attackAngle.value.toFixed(1)}°</span>
+                        {/* Dynamic key metrics - shows biggest deviations */}
+                        <div className="flex gap-3 text-xs flex-wrap">
+                          {metricsWithDistance.map(m => (
+                            <div key={m.metric} className={m.isOutOfRange ? 'text-orange-400' : 'text-white/60'}>
+                              {m.label}: <span className={`font-medium ${m.isOutOfRange ? 'text-orange-300' : 'text-white'}`}>
+                                {m.value.toFixed(1)}{m.unit}
+                              </span>
                             </div>
-                          )}
-                          {headDrift && headDrift.value !== null && (
-                            <div className="text-white/60">
-                              Head: <span className="text-white font-medium">{headDrift.value.toFixed(1)}cm</span>
-                            </div>
-                          )}
+                          ))}
                         </div>
                       </div>
                       
