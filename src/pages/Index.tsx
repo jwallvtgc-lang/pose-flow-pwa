@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, TrendingUp, Award, Zap, Trophy, Play, User, Dumbbell } from 'lucide-react';
+import { Camera, TrendingUp, Award, Zap, Trophy, Play, User, Dumbbell, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -645,6 +645,11 @@ const Index = () => {
               <Camera className="h-7 w-7 text-black" />
             </div>
             <span className="text-xs text-white/80 font-medium">Record</span>
+          </Link>
+          
+          <Link to={user ? "/teams" : "/auth"} className="flex flex-col items-center gap-1 text-white/50 hover:text-white/70 transition-all duration-200">
+            <Users className="w-5 h-5" />
+            <span className="text-xs">Teams</span>
           </Link>
           
           <Link to={user ? "/leaderboard" : "/auth"} className="flex flex-col items-center gap-1 text-white/50 hover:text-white/70 transition-all duration-200">
