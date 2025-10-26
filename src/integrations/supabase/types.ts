@@ -363,7 +363,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_team_ids: { Args: { user_id_param: string }; Returns: string[] }
       is_team_coach: {
+        Args: { team_id_param: string; user_id_param: string }
+        Returns: boolean
+      }
+      is_team_member: {
         Args: { team_id_param: string; user_id_param: string }
         Returns: boolean
       }
