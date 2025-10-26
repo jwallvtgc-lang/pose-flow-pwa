@@ -16,6 +16,7 @@ interface Swing {
   score_phase1: number | null;
   cues: string[] | null;
   drill_id: string | null;
+  video_url: string | null;
 }
 
 export default function RecentSwings() {
@@ -49,7 +50,7 @@ export default function RecentSwings() {
       // Fetch swings with date filter
       let query = supabase
         .from('swings')
-        .select('id, created_at, score_phase1, cues, drill_id')
+        .select('id, created_at, score_phase1, cues, drill_id, video_url')
         .order('created_at', { ascending: false });
 
       if (dateFilter) {
@@ -132,7 +133,7 @@ export default function RecentSwings() {
         />
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">🏌️ Recent Swings</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">⚾ Recent Swings</h1>
             <p className="text-white/50 text-sm">Loading your swing history...</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -166,7 +167,7 @@ export default function RecentSwings() {
         />
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">🏌️ Recent Swings</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">⚾ Recent Swings</h1>
             <p className="text-white/50 text-sm">Tap to review and compare your latest sessions.</p>
           </div>
           <Card className="p-8 text-center rounded-2xl bg-white/5 border border-white/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
@@ -201,7 +202,7 @@ export default function RecentSwings() {
         />
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">🏌️ Recent Swings</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">⚾ Recent Swings</h1>
             <p className="text-white/50 text-sm">Tap to review and compare your latest sessions.</p>
           </div>
           <Card className="p-12 text-center rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_25px_rgba(16,185,129,0.15)] backdrop-blur-md">
@@ -242,7 +243,7 @@ export default function RecentSwings() {
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Title & Subtitle */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-white mb-2">🏌️ Recent Swings</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">⚾ Recent Swings</h1>
           <p className="text-white/50 text-sm">Tap to review and compare your latest sessions.</p>
           <div className="h-1 w-24 mx-auto mt-3 rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-transparent"></div>
         </div>
@@ -302,9 +303,22 @@ export default function RecentSwings() {
                 className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] cursor-pointer hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 transition-all backdrop-blur-sm animate-fade-in"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                {/* Video Thumbnail Placeholder */}
-                <div className="relative aspect-[4/3] bg-gradient-to-b from-white/10 to-transparent rounded-t-2xl flex items-center justify-center border-b border-white/10">
-                  <Play className="w-12 h-12 text-white/40" />
+                {/* Video Thumbnail */}
+                <div className="relative aspect-[4/3] bg-gradient-to-b from-white/10 to-transparent rounded-t-2xl overflow-hidden border-b border-white/10">
+                  {swing.video_url ? (
+                    <video 
+                      src={swing.video_url}
+                      className="w-full h-full object-cover"
+                      preload="metadata"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Play className="w-12 h-12 text-white/40" />
+                    </div>
+                  )}
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  
                   {isBest && (
                     <Badge className="absolute top-2 right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-[0_0_15px_rgba(251,191,36,0.6)] text-xs">
                       🏆 Best
