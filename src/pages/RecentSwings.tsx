@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ArrowLeft, Clock, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Clock, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
+import { Header } from '@/components/Header';
 
 type TimeFilter = 'week' | 'month' | 'all';
 
@@ -116,31 +117,31 @@ export default function RecentSwings() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-b-[2rem] pt-safe pb-8 px-4 shimmer-bg animate-fade-in">
-          <div className="container mx-auto max-w-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/')}
-                className="text-white hover:bg-white/20 rounded-xl"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="h-8 bg-white/20 rounded-xl animate-pulse w-40"></div>
-            </div>
+      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+        <Header 
+          leftAction={
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/')}
+              className="text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          }
+        />
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-white mb-2">🏌️ Recent Swings</h1>
+            <p className="text-white/50 text-sm">Loading your swing history...</p>
           </div>
-        </div>
-        <div className="container mx-auto px-4 py-6 max-w-2xl -mt-4">
-          <div className="space-y-4">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} className="p-6 rounded-2xl shadow-sm">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-muted rounded mb-2"></div>
-                  <div className="h-20 bg-muted rounded"></div>
-                </div>
-              </Card>
+          <div className="grid grid-cols-2 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="rounded-2xl bg-white/5 border border-white/10 p-4 animate-pulse">
+                <div className="aspect-[4/3] bg-white/10 rounded-lg mb-3"></div>
+                <div className="h-4 bg-white/10 rounded mb-2"></div>
+                <div className="h-3 bg-white/10 rounded w-2/3"></div>
+              </div>
             ))}
           </div>
         </div>
@@ -150,27 +151,31 @@ export default function RecentSwings() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-b-[2rem] pt-safe pb-8 px-4 shimmer-bg">
-          <div className="container mx-auto max-w-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/')}
-                className="text-white hover:bg-white/20 rounded-xl"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="text-3xl font-anton font-black text-white">Recent Swings</h1>
-            </div>
+      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+        <Header 
+          leftAction={
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/')}
+              className="text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          }
+        />
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-white mb-2">🏌️ Recent Swings</h1>
+            <p className="text-white/50 text-sm">Tap to review and compare your latest sessions.</p>
           </div>
-        </div>
-        <div className="container mx-auto px-4 py-6 max-w-2xl -mt-4">
-          <Card className="p-8 text-center rounded-2xl shadow-sm bg-gradient-to-br from-red-50 to-orange-50">
-            <h3 className="text-xl font-anton font-black mb-2">Error Loading Swings</h3>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={loadRecentSwings} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
+          <Card className="p-8 text-center rounded-2xl bg-white/5 border border-white/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+            <h3 className="text-xl font-bold text-white mb-2">Error Loading Swings</h3>
+            <p className="text-white/70 mb-4">{error}</p>
+            <Button 
+              onClick={loadRecentSwings} 
+              className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+            >
               Try Again
             </Button>
           </Card>
@@ -181,36 +186,37 @@ export default function RecentSwings() {
 
   if (!swings.length) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-b-[2rem] pt-safe pb-8 px-4 shimmer-bg">
-          <div className="container mx-auto max-w-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/')}
-                className="text-white hover:bg-white/20 rounded-xl"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="text-3xl font-anton font-black text-white">Recent Swings</h1>
-            </div>
+      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+        <Header 
+          leftAction={
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/')}
+              className="text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          }
+        />
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-white mb-2">🏌️ Recent Swings</h1>
+            <p className="text-white/50 text-sm">Tap to review and compare your latest sessions.</p>
           </div>
-        </div>
-        <div className="container mx-auto px-4 py-6 max-w-2xl -mt-4">
-          <Card className="p-8 text-center rounded-2xl shadow-sm bg-gradient-to-br from-blue-50 to-purple-50">
-            <div className="bg-gradient-to-br from-blue-500 to-purple-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-soft">
+          <Card className="p-12 text-center rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_25px_rgba(16,185,129,0.15)] backdrop-blur-md">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(16,185,129,0.4)]">
               <Clock className="w-10 h-10 text-white" />
             </div>
-            <h3 className="text-xl font-anton font-black mb-2">No Swings Yet</h3>
-            <p className="text-muted-foreground mb-6">
+            <h3 className="text-xl font-bold text-white mb-2">No swings yet — upload your first one!</h3>
+            <p className="text-white/60 mb-8 max-w-sm mx-auto">
               Record your first swing to start seeing your swing history and get personalized feedback.
             </p>
             <Button 
               onClick={() => navigate('/analysis')}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white px-8 py-6 text-lg font-semibold shadow-[0_0_25px_rgba(16,185,129,0.4)] hover:shadow-[0_0_35px_rgba(16,185,129,0.6)] transition-all"
             >
-              Record Your First Swing
+              + Upload Swing
             </Button>
           </Card>
         </div>
@@ -219,163 +225,137 @@ export default function RecentSwings() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header with Gradient */}
-      <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-b-[2rem] pt-safe pb-8 px-4 shimmer-bg sticky top-0 z-10">
-        <div className="container mx-auto max-w-2xl">
-          <div className="flex items-center gap-3 mb-6">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/')}
-              className="text-white hover:bg-white/20 rounded-xl"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-3xl font-anton font-black text-white animate-fade-in-up">Recent Swings</h1>
-          </div>
-
-          {/* Time Filter Buttons */}
-          <div className="flex justify-center gap-2">
-            <button
-              onClick={() => setTimeFilter('week')}
-              className={`px-6 py-2 rounded-xl font-medium transition-all ${
-                timeFilter === 'week'
-                  ? 'bg-white/30 backdrop-blur-sm text-white scale-105'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              Week
-            </button>
-            <button
-              onClick={() => setTimeFilter('month')}
-              className={`px-6 py-2 rounded-xl font-medium transition-all ${
-                timeFilter === 'month'
-                  ? 'bg-white/30 backdrop-blur-sm text-white scale-105'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              Month
-            </button>
-            <button
-              onClick={() => setTimeFilter('all')}
-              className={`px-6 py-2 rounded-xl font-medium transition-all ${
-                timeFilter === 'all'
-                  ? 'bg-white/30 backdrop-blur-sm text-white scale-105'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              All
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-6 max-w-2xl -mt-4">
-
-        <div className="space-y-6">
-          {/* Compact Summary Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 border-0 rounded-2xl shadow-sm hover:shadow-md transition-all animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              <div className="flex flex-col items-center gap-1">
-                <BarChart3 className="w-5 h-5 text-white/90" />
-                <div className="text-2xl font-anton font-black text-white">{statistics.totalSwings}</div>
-                <div className="text-xs text-white/80">Total</div>
-              </div>
-            </Card>
-            
-            <Card className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 border-0 rounded-2xl shadow-sm hover:shadow-md transition-all animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-              <div className="flex flex-col items-center gap-1">
-                <TrendingUp className="w-5 h-5 text-white/90" />
-                <div className="text-2xl font-anton font-black text-white">{statistics.avgScore}</div>
-                <div className="text-xs text-white/80">Average</div>
-              </div>
-            </Card>
-            
-            <Card className="p-4 bg-gradient-to-br from-purple-500 to-pink-600 border-0 rounded-2xl shadow-sm hover:shadow-md transition-all animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-              <div className="flex flex-col items-center gap-1">
-                <Calendar className="w-5 h-5 text-white/90" />
-                <div className="text-2xl font-anton font-black text-white">{statistics.todaySwings}</div>
-                <div className="text-xs text-white/80">Today</div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Swings History */}
-          <div>
-            <h3 className="text-xl font-anton font-black mb-4">Swing History</h3>
-            <div className="space-y-3">
-              {swings.map((swing, index) => {
-                const date = swing.created_at ? new Date(swing.created_at) : new Date();
-                const topCue = swing.cues?.[0];
-                const isNew = isSwingNew(swing);
-                
-                return (
-                  <Card
-                    key={swing.id}
-                    onClick={() => handleSwingTap(swing.id)}
-                    className="p-4 cursor-pointer hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all rounded-2xl shadow-sm animate-fade-in-up"
-                    style={{ animationDelay: `${0.4 + index * 0.05}s` }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-semibold">
-                              {date.toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric', 
-                                year: 'numeric' 
-                              })}
-                            </span>
-                          </div>
-                          <span className="text-sm text-muted-foreground">
-                            {date.toLocaleTimeString([], { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                          </span>
-                          {isNew && (
-                            <Badge className="text-xs bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 hover:from-blue-600 hover:to-purple-700">
-                              New
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        {topCue && (
-                          <p className="text-sm text-muted-foreground italic line-clamp-2">
-                            "{topCue}"
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-3 ml-4">
-                        {swing.score_phase1 && (
-                          <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl px-4 py-2 shadow-sm">
-                            <span className="text-xl font-anton font-black text-white">
-                              {swing.score_phase1}
-                            </span>
-                          </div>
-                        )}
-                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Action Button */}
+    <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
+      <Header 
+        leftAction={
           <Button 
-            onClick={() => navigate('/analysis')} 
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl shadow-sm" 
-            size="lg"
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/')}
+            className="text-white hover:bg-white/10"
           >
-            Record Another Swing
+            <ArrowLeft className="h-5 w-5" />
           </Button>
+        }
+      />
+
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        {/* Title & Subtitle */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-white mb-2">🏌️ Recent Swings</h1>
+          <p className="text-white/50 text-sm">Tap to review and compare your latest sessions.</p>
+          <div className="h-1 w-24 mx-auto mt-3 rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-transparent"></div>
         </div>
+
+        {/* Filter Tabs */}
+        <div className="flex justify-center gap-3 mb-6">
+          <button
+            onClick={() => setTimeFilter('all')}
+            className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+              timeFilter === 'all'
+                ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setTimeFilter('week')}
+            className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+              timeFilter === 'week'
+                ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+            }`}
+          >
+            Best
+          </button>
+          <button
+            onClick={() => setTimeFilter('month')}
+            className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+              timeFilter === 'month'
+                ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+            }`}
+          >
+            Needs Work
+          </button>
+        </div>
+
+        {/* Performance Summary Card */}
+        <Card className="mb-6 rounded-xl bg-white/10 border border-white/20 p-3 text-center backdrop-blur-sm">
+          <p className="text-white/80 text-sm">
+            🔥 You've improved <span className="text-emerald-400 font-semibold">+{Math.max(0, statistics.avgScore - 50)}</span> Swingscore in your last <span className="text-emerald-400 font-semibold">{Math.min(10, swings.length)}</span> swings!
+          </p>
+        </Card>
+
+        {/* 2-Column Swing Grid */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {swings.map((swing, index) => {
+            const date = swing.created_at ? new Date(swing.created_at) : new Date();
+            const isNew = isSwingNew(swing);
+            const isBest = swing.score_phase1 === Math.max(...swings.filter(s => s.score_phase1).map(s => s.score_phase1!));
+            
+            return (
+              <Card
+                key={swing.id}
+                onClick={() => handleSwingTap(swing.id)}
+                className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] cursor-pointer hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 transition-all backdrop-blur-sm animate-fade-in"
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                {/* Video Thumbnail Placeholder */}
+                <div className="relative aspect-[4/3] bg-gradient-to-b from-white/10 to-transparent rounded-t-2xl flex items-center justify-center border-b border-white/10">
+                  <Play className="w-12 h-12 text-white/40" />
+                  {isBest && (
+                    <Badge className="absolute top-2 right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-[0_0_15px_rgba(251,191,36,0.6)] text-xs">
+                      🏆 Best
+                    </Badge>
+                  )}
+                  {isNew && !isBest && (
+                    <Badge className="absolute top-2 right-2 bg-emerald-500/80 text-white border-0 text-xs">
+                      New
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Card Content */}
+                <div className="p-3">
+                  {/* Score */}
+                  {swing.score_phase1 !== null && (
+                    <div className={`text-3xl font-bold mb-2 ${
+                      swing.score_phase1 >= 70 ? 'text-emerald-400' : swing.score_phase1 >= 50 ? 'text-white' : 'text-red-400'
+                    }`}>
+                      {swing.score_phase1}
+                    </div>
+                  )}
+                  
+                  {/* Date & Status */}
+                  <div className="text-white/60 text-xs mb-1 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                  <div className="text-white/40 text-xs">
+                    · Analyzed
+                  </div>
+                  
+                  {/* Drill Name */}
+                  {swing.cues?.[0] && (
+                    <div className="text-white text-xs mt-2 line-clamp-2 italic">
+                      "{swing.cues[0]}"
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Bottom Action Button */}
+        <Button 
+          onClick={() => navigate('/analysis')} 
+          className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white py-6 text-lg font-semibold rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.4)] hover:shadow-[0_0_35px_rgba(16,185,129,0.6)] transition-all"
+        >
+          + Upload Swing
+        </Button>
       </div>
     </div>
   );
