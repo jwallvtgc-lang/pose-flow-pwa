@@ -361,6 +361,47 @@ export type Database = {
           },
         ]
       }
+      team_messages: {
+        Row: {
+          body: string
+          created_at: string | null
+          id: string
+          pinned: boolean | null
+          sender_id: string | null
+          sender_name: string | null
+          sender_role: string | null
+          team_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          id?: string
+          pinned?: boolean | null
+          sender_id?: string | null
+          sender_name?: string | null
+          sender_role?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          id?: string
+          pinned?: boolean | null
+          sender_id?: string | null
+          sender_name?: string | null
+          sender_role?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_messages_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           coach_id: string

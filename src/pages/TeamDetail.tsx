@@ -34,7 +34,16 @@ interface TeamMember {
   avgScore?: number;
 }
 
-type TabType = 'roster' | 'leaderboard' | 'drills';
+type TabType = 'roster' | 'leaderboard' | 'drills' | 'chat';
+
+interface TeamMessage {
+  id: string;
+  sender_name: string | null;
+  sender_role: string | null;
+  body: string;
+  pinned: boolean | null;
+  created_at: string | null;
+}
 
 export default function TeamDetail() {
   const navigate = useNavigate();
@@ -50,12 +59,28 @@ export default function TeamDetail() {
   const [selectedDrill, setSelectedDrill] = useState<string>('');
   const [drillNotes, setDrillNotes] = useState('');
   const [assignToWholeTeam, setAssignToWholeTeam] = useState(false);
+  const [messages, setMessages] = useState<TeamMessage[]>([]);
+  const [messageInput, setMessageInput] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   useEffect(() => {
     if (user && id) {
       loadTeamData();
     }
   }, [user, id]);
+
+  useEffect(() => {
+    if (activeTab === 'chat' && id) {
+      loadMessages();
+      
+      // Poll for new messages every 10 seconds
+      const interval = setInterval(() => {
+        loadMessages();
+      }, 10000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, id]);
 
   const loadTeamData = async () => {
     if (!user || !id) return;
@@ -222,6 +247,108 @@ export default function TeamDetail() {
     }
   };
 
+  const loadMessages = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('team_messages')
+        .select('id, sender_name, sender_role, body, pinned, created_at')
+        .eq('team_id', id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setMessages(data || []);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!messageInput.trim() || !user || !id || !team) return;
+
+    setIsSendingMessage(true);
+    try {
+      // Determine sender role
+      const isCoach = team.coach_id === user.id;
+      const senderRole = isCoach ? 'coach' : 'player';
+
+      // Get sender name from userProfile or user email
+      const senderName = userProfile?.full_name || user.email?.split('@')[0] || 'Unknown';
+
+      const { error } = await supabase
+        .from('team_messages')
+        .insert({
+          team_id: id,
+          sender_id: user.id,
+          sender_name: senderName,
+          sender_role: senderRole,
+          body: messageInput.trim()
+        });
+
+      if (error) throw error;
+
+      setMessageInput('');
+      await loadMessages();
+      
+      // Scroll to bottom after message is sent
+      setTimeout(() => {
+        const chatContainer = document.getElementById('chat-messages');
+        if (chatContainer) {
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
+  const formatMessageTime = (dateString: string | null) => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffInDays === 0) {
+      // Today: show time
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    } else if (diffInDays < 7) {
+      // This week: show day and time
+      return date.toLocaleDateString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+    } else {
+      // Older: show date
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return '?';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name[0].toUpperCase();
+  };
+
+  // Load user profile for chat sender name
+  const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data }) => setUserProfile(data));
+    }
+  }, [user]);
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black flex items-center justify-center">
@@ -251,6 +378,7 @@ export default function TeamDetail() {
   }
 
   const isCoach = userRole === 'coach';
+  const pinnedMessage = messages.find(m => m.pinned);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black pb-28">
@@ -351,6 +479,16 @@ export default function TeamDetail() {
             }`}
           >
             Drills
+          </button>
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+              activeTab === 'chat'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
+            }`}
+          >
+            Chat
           </button>
         </div>
 
@@ -459,6 +597,87 @@ export default function TeamDetail() {
               Assigned drills coming soon!
             </p>
           </Card>
+        )}
+
+        {activeTab === 'chat' && (
+          <div className="flex flex-col h-[calc(100vh-16rem)]">
+            {/* Pinned Message */}
+            {pinnedMessage && (
+              <div className="rounded-2xl bg-white/5 border border-green-500/40 shadow-[0_0_20px_rgba(16,185,129,0.4)] text-white p-4 mb-4">
+                <p className="text-green-400 text-xs font-semibold mb-2">📌 Coach update</p>
+                <p className="text-white text-sm">{pinnedMessage.body}</p>
+              </div>
+            )}
+
+            {/* Messages List */}
+            <div 
+              id="chat-messages"
+              className="flex-1 overflow-y-auto space-y-4 mb-4"
+            >
+              {messages.length === 0 ? (
+                <div className="text-center text-white/40 py-12">
+                  <p className="text-sm">No messages yet</p>
+                  <p className="text-xs mt-2">Be the first to say something!</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <div key={message.id} className="flex items-start gap-3 text-white">
+                    {/* Avatar */}
+                    <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 text-xs font-medium border border-white/20 flex-shrink-0">
+                      {getInitials(message.sender_name)}
+                    </div>
+
+                    {/* Message Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-white font-semibold text-sm">
+                          {message.sender_name || 'Unknown'}
+                        </span>
+                        {message.sender_role === 'coach' && (
+                          <span className="rounded-md bg-green-500/20 text-green-400 text-[10px] font-semibold px-2 py-[2px]">
+                            Coach
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-white text-sm leading-relaxed break-words">
+                        {message.body}
+                      </p>
+                    </div>
+
+                    {/* Timestamp */}
+                    <span className="text-white/30 text-[10px] whitespace-nowrap flex-shrink-0">
+                      {formatMessageTime(message.created_at)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Message Input Bar */}
+            <div className="sticky bottom-0 left-0 right-0 px-0 py-3 bg-black/40 backdrop-blur-md border-t border-white/10 flex items-center gap-2 -mx-4 px-4">
+              <input
+                type="text"
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && messageInput.trim()) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                placeholder="Message the team…"
+                className="flex-1 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-400 focus:border-green-400"
+                disabled={isSendingMessage}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={!messageInput.trim() || isSendingMessage}
+                className="rounded-xl bg-green-500 text-black font-semibold text-sm px-4 py-2 shadow-[0_0_20px_rgba(16,185,129,0.5)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Send
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Action Buttons */}
