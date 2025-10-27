@@ -11,6 +11,7 @@ import { SplashScreen } from '@/components/SplashScreen';
 const Index = () => {
   const { user, loading } = useAuth();
   const [weekSwingCount, setWeekSwingCount] = useState(0);
+  const [showSplash, setShowSplash] = useState(true);
   
   const [stats, setStats] = useState({
     bestScore: 0,
@@ -30,6 +31,14 @@ const Index = () => {
   const [recentSwings, setRecentSwings] = useState<any[]>([]);
   const [topDrills, setTopDrills] = useState<Array<{name: string; count: number; description: string}>>([]);
   const [assignedDrill, setAssignedDrill] = useState<{ drill_name: string; notes: string | null } | null>(null);
+
+  // Minimum splash screen display time
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -459,8 +468,8 @@ const Index = () => {
     }
   };
 
-  // Show loading state while authentication is being checked
-  if (loading) {
+  // Show loading state while authentication is being checked or minimum display time
+  if (loading || showSplash) {
     return <SplashScreen />;
   }
 
