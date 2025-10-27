@@ -307,7 +307,6 @@ export default function TeamDetail() {
                     </p>
                     <p className="text-white/50 text-xs">
                       {member.role === 'coach' ? 'Coach' : 'Player'}
-                      {member.avgScore && member.avgScore > 0 && ` • Avg: ${member.avgScore}`}
                     </p>
                   </div>
 
