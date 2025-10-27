@@ -85,12 +85,9 @@ export default function TeamDetail() {
     if (!id) return;
     
     try {
-      const { data, error } = await supabase
+      const { data: assignmentsData, error } = await supabase
         .from('assigned_drills')
-        .select(`
-          *,
-          profiles:player_id(full_name)
-        `)
+        .select('*')
         .eq('team_id', id)
         .order('created_at', { ascending: false });
 
@@ -99,8 +96,34 @@ export default function TeamDetail() {
         throw error;
       }
       
-      console.log('✅ Loaded assignments:', data);
-      setAssignments(data || []);
+      console.log('✅ Loaded assignments:', assignmentsData);
+      
+      // Fetch player names for assignments with player_id
+      const playerIds = (assignmentsData || [])
+        .filter(a => a.player_id)
+        .map(a => a.player_id) as string[];
+      
+      let profilesMap = new Map();
+      
+      if (playerIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', playerIds);
+        
+        profilesData?.forEach(p => {
+          profilesMap.set(p.id, p);
+        });
+      }
+      
+      // Merge profile data with assignments
+      const enrichedAssignments = (assignmentsData || []).map(a => ({
+        ...a,
+        profiles: a.player_id ? profilesMap.get(a.player_id) : null
+      }));
+      
+      console.log('✅ Enriched assignments:', enrichedAssignments);
+      setAssignments(enrichedAssignments);
     } catch (error) {
       console.error('Error loading assignments:', error);
     }
