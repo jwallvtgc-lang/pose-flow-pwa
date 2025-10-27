@@ -152,14 +152,14 @@ export default function Leaderboard() {
       // Sort based on selected metric
       if (metricFilter === 'score') {
         leaderboardEntries = leaderboardEntries
-          .filter(e => e.total_swings >= 3)
+          .filter(e => e.total_swings > 0 && e.average_score > 0)
           .sort((a, b) => b.average_score - a.average_score);
       } else if (metricFilter === 'swings') {
         leaderboardEntries = leaderboardEntries
           .sort((a, b) => b.total_swings - a.total_swings);
       } else if (metricFilter === 'speed') {
         leaderboardEntries = leaderboardEntries
-          .filter(e => e.average_bat_speed > 0 && e.total_swings >= 3)
+          .filter(e => e.average_bat_speed > 0)
           .sort((a, b) => b.average_bat_speed - a.average_bat_speed);
       }
 
