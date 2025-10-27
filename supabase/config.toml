@@ -67,6 +67,9 @@ verify_jwt = false
 [functions.upload-video]
 verify_jwt = false
 
+[functions.generate-coach-insight]
+verify_jwt = true
+
 [edge_runtime]
 policy = "per_worker"
 inspector_port = 8083

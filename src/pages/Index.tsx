@@ -41,6 +41,8 @@ const Index = () => {
   const [recentSwings, setRecentSwings] = useState<any[]>([]);
   const [topDrills, setTopDrills] = useState<Array<{name: string; count: number; description: string}>>([]);
   const [assignedDrill, setAssignedDrill] = useState<{ drill_name: string; notes: string | null } | null>(null);
+  const [aiInsight, setAiInsight] = useState<{ praise: string; issue: string; action: string; updated: string } | null>(null);
+  const [aiInsightLoading, setAiInsightLoading] = useState(false);
 
   // Minimum splash screen display time - only on first load
   useEffect(() => {
@@ -64,6 +66,7 @@ const Index = () => {
       loadLeaderboardRank().catch(err => console.error('loadLeaderboardRank failed:', err));
       loadWeekSwingCount().catch(err => console.error('loadWeekSwingCount failed:', err));
       loadAssignedDrill().catch(err => console.error('loadAssignedDrill failed:', err));
+      loadAiInsight().catch(err => console.error('loadAiInsight failed:', err));
     } else if (!loading) {
       // Show placeholder data for non-authenticated users
       setStats({
@@ -481,6 +484,32 @@ const Index = () => {
     }
   };
 
+  const loadAiInsight = async () => {
+    if (!user?.id) return;
+    
+    setAiInsightLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-coach-insight', {
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('Error loading AI insight:', error);
+        return;
+      }
+
+      if (data && !data.error && !data.fallback) {
+        setAiInsight(data);
+      }
+    } catch (error) {
+      console.error('Failed to load AI insight:', error);
+    } finally {
+      setAiInsightLoading(false);
+    }
+  };
+
   // Show loading state while authentication is being checked or minimum display time
   if (loading || showSplash) {
     return <SplashScreen />;
@@ -556,44 +585,51 @@ const Index = () => {
         </div>
 
         {/* 2. AI COACH INSIGHT CARD */}
-        {hasSwings && user && (() => {
-          const firstName = getFirstName();
-          
-          return (
-            <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white mb-4">
-              <h3 className="flex items-center gap-2 text-white font-semibold text-base mb-2">
-                🤖 AI Coach Insight
-              </h3>
+        {hasSwings && user && (
+          <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white mb-4">
+            <h3 className="flex items-center gap-2 text-white font-semibold text-base mb-2">
+              🤖 AI Coach Insight
+            </h3>
 
-              <p className="text-sm text-white leading-relaxed mb-1">
-                <span className="text-green-400 font-medium">✅ {firstName}, head control is improving.</span>
-                {' '}You kept drift under 8 cm on 4 of your last 5 swings.
-              </p>
-
-              <p className="text-sm text-white leading-relaxed mb-1">
-                <span className="text-yellow-400 font-medium">⚠ Attack angle is still steep (37° avg).</span>
-                {' '}That&apos;s creating more pop-ups than driven balls.
-              </p>
-
-              <p className="text-sm text-white leading-relaxed">
-                <span className="text-green-400 font-medium">🎯 Today:</span>
-                {' '}Do 3×8 slow Step-Behind reps and stay stacked over your back hip.
-              </p>
-
-              <div className="flex items-center justify-between mt-3">
-                <p className="text-[11px] text-white/40">
-                  Updated from yesterday&apos;s swings.
-                </p>
-                <button
-                  onClick={() => console.log('View full breakdown clicked')}
-                  className="text-[11px] text-green-400/70 underline hover:text-green-400"
-                >
-                  View full breakdown →
-                </button>
+            {aiInsightLoading ? (
+              <div className="flex items-center gap-2 py-4">
+                <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-white/60">Analyzing your recent swings...</p>
               </div>
-            </div>
-          );
-        })()}
+            ) : aiInsight ? (
+              <>
+                <p className="text-sm text-white leading-relaxed mb-1">
+                  <span className="text-green-400 font-medium">✅ {getFirstName()}, {aiInsight.praise.split('.')[0]}.</span>
+                  {' '}{aiInsight.praise.split('.').slice(1).join('.')}
+                </p>
+
+                <p className="text-sm text-white leading-relaxed mb-1">
+                  <span className="text-yellow-400 font-medium">⚠ {aiInsight.issue.split('.')[0]}.</span>
+                  {' '}{aiInsight.issue.split('.').slice(1).join('.')}
+                </p>
+
+                <p className="text-sm text-white leading-relaxed">
+                  <span className="text-green-400 font-medium">🎯 Today:</span>
+                  {' '}{aiInsight.action}
+                </p>
+
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-[11px] text-white/40">
+                    Updated {aiInsight.updated}
+                  </p>
+                  <button
+                    onClick={() => console.log('View full breakdown clicked')}
+                    className="text-[11px] text-green-400/70 underline hover:text-green-400"
+                  >
+                    View full breakdown →
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-white/60 py-2">Record more swings to get personalized AI coaching insights.</p>
+            )}
+          </div>
+        )}
 
         {/* 3. TODAY'S FOCUS CARD */}
         {(() => {
