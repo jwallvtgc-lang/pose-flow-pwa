@@ -127,9 +127,39 @@ export default function SwingAnalysis() {
         console.log('⚠️ No video blob available for upload');
       }
 
+      // Get or create athlete for current user
+      let athleteId = null;
+      if (user?.id) {
+        const { data: existingAthlete } = await supabase
+          .from('athletes')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (existingAthlete) {
+          athleteId = existingAthlete.id;
+        } else {
+          // Create a new athlete for this user
+          const { data: newAthlete, error: athleteError } = await supabase
+            .from('athletes')
+            .insert({
+              user_id: user.id,
+              name: user.email?.split('@')[0] || 'Player'
+            })
+            .select('id')
+            .single();
+
+          if (athleteError) {
+            console.error('Failed to create athlete:', athleteError);
+          } else {
+            athleteId = newAthlete.id;
+          }
+        }
+      }
+
       // Ensure we have a session
       const sessionId = await ensureSession({
-        athlete_id: null,
+        athlete_id: athleteId,
         fps: 30,
         view: 'side'
       });
