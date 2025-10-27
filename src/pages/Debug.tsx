@@ -3,7 +3,7 @@ import { tf } from '@/lib/tf';
 import { supabase } from '@/lib/supabase';
 import { posthog } from '@/lib/analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -45,7 +45,7 @@ const Debug = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-      <Header 
+      <AppHeader 
         leftAction={
           <Button 
             variant="ghost" 

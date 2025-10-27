@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Users, ChevronRight } from 'lucide-react';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { JoinTeamModal } from '@/components/JoinTeamModal';
@@ -97,7 +97,7 @@ export default function Teams() {
       {/* Header */}
       <div className="sticky top-0 z-50 bg-gradient-to-b from-[#0F172A]/95 to-black/95 backdrop-blur-xl text-white safe-area-top border-b border-white/10">
         <div className="container mx-auto px-4 py-4 max-w-2xl">
-          <Header 
+          <AppHeader 
             leftAction={
               <Button 
                 variant="ghost" 

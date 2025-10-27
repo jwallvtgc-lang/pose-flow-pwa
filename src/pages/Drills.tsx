@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Search, ChevronRight } from 'lucide-react';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 import { drillsData } from '@/lib/drillsData';
 
 const metricLabels: Record<string, string> = {
@@ -66,7 +66,7 @@ export default function Drills() {
       {/* Header */}
       <div className="sticky top-0 z-50 bg-gradient-to-b from-[#0F172A]/95 to-black/95 backdrop-blur-xl text-white safe-area-top border-b border-white/10">
         <div className="container mx-auto px-4 py-4 max-w-2xl">
-          <Header 
+          <AppHeader 
             leftAction={
               <Button 
                 variant="ghost" 

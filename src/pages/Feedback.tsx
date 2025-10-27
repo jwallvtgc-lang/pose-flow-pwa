@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 
 export default function Feedback() {
   const { user } = useAuth();
@@ -89,7 +89,7 @@ export default function Feedback() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-      <Header 
+      <AppHeader 
         leftAction={
           <Button 
             variant="ghost" 

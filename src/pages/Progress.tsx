@@ -12,7 +12,7 @@ import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
 import { toast } from 'sonner';
 import { format, subDays, startOfWeek, endOfWeek, isWithinInterval, isSameDay } from 'date-fns';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 
 type TimeFilter = 'week' | 'month' | 'all';
 
@@ -560,7 +560,7 @@ export default function Progress() {
         }`}
       >
         <div className="container mx-auto px-4 py-4 max-w-2xl">
-          <Header 
+          <AppHeader 
             leftAction={
               <Button 
                 variant="ghost" 

@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 
 interface ProfileData {
   full_name: string;
@@ -250,7 +250,7 @@ export default function Profile() {
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none" />
       
       {/* BRANDED HEADER BAR */}
-      <Header 
+      <AppHeader 
         leftAction={
           <Button
             variant="ghost"

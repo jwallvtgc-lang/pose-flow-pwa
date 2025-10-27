@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -408,7 +408,7 @@ export default function Leaderboard() {
       {/* HEADER */}
       <div className="sticky top-0 z-50 bg-gradient-to-b from-[#0F172A]/95 to-black/95 backdrop-blur-xl text-white safe-area-top border-b border-white/10">
         <div className="container mx-auto px-4 py-4 max-w-2xl">
-          <Header 
+          <AppHeader 
             leftAction={
               <Button 
                 variant="ghost" 

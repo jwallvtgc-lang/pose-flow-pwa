@@ -14,7 +14,7 @@ import { getVideoSignedUrl } from '@/lib/storage';
 import { toast } from 'sonner';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
 import { cn } from '@/lib/utils';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 
 interface SwingData {
   id: string;
@@ -442,7 +442,7 @@ export default function SwingDetail() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
       {/* BRANDED HEADER BAR */}
-      <Header 
+      <AppHeader 
         leftAction={
           <Button 
             variant="ghost" 

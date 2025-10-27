@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 import { SplashScreen } from '@/components/SplashScreen';
 import { toast } from 'sonner';
 
@@ -494,7 +494,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black relative pb-28">
       {/* BRANDED HEADER BAR */}
-      <Header 
+      <AppHeader 
         rightAction={
           <Link 
             to="/profile" 

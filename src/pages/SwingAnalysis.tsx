@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { poseWorkerClient, type PoseAnalysisResult } from '@/lib/poseWorkerClient';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 import { SplashScreen } from '@/components/SplashScreen';
 
 type FlowStep = 'capture' | 'score' | 'feedback';
@@ -318,7 +318,7 @@ export default function SwingAnalysis() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black pb-safe">
       {/* Header */}
-      <Header 
+      <AppHeader 
         leftAction={
           <Button
             variant="ghost"

@@ -1,14 +1,14 @@
 import { Trophy, Star, Award, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 
 export default function Achievements() {
   const navigate = useNavigate();
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-      <Header 
+      <AppHeader 
         leftAction={
           <Button 
             variant="ghost" 

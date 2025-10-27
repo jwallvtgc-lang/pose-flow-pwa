@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -41,7 +41,7 @@ const MetricsDebug = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-        <Header 
+        <AppHeader 
           leftAction={
             <Button 
               variant="ghost" 
@@ -64,7 +64,7 @@ const MetricsDebug = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-        <Header 
+        <AppHeader 
           leftAction={
             <Button 
               variant="ghost" 
@@ -88,7 +88,7 @@ const MetricsDebug = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-      <Header 
+      <AppHeader 
         leftAction={
           <Button 
             variant="ghost" 

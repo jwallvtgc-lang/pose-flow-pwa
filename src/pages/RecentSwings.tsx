@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Clock, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 
 type TimeFilter = 'week' | 'month' | 'all';
 
@@ -119,7 +119,7 @@ export default function RecentSwings() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-        <Header 
+        <AppHeader 
           leftAction={
             <Button 
               variant="ghost" 
@@ -153,7 +153,7 @@ export default function RecentSwings() {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-        <Header 
+        <AppHeader 
           leftAction={
             <Button 
               variant="ghost" 
@@ -188,7 +188,7 @@ export default function RecentSwings() {
   if (!swings.length) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-        <Header 
+        <AppHeader 
           leftAction={
             <Button 
               variant="ghost" 
@@ -227,7 +227,7 @@ export default function RecentSwings() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-      <Header 
+      <AppHeader 
         leftAction={
           <Button 
             variant="ghost" 

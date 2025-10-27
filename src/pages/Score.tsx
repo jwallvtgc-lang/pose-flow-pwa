@@ -9,7 +9,7 @@ import { ArrowLeft, AlertTriangle, Loader2, RotateCcw, Save, TrendingUp, Chevron
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';
-import { Header } from '@/components/Header';
+import { AppHeader } from '@/components/AppHeader';
 
 // Analytics
 import { trackCapture } from '@/lib/analytics';
@@ -399,7 +399,7 @@ export default function Score() {
   if (shouldRetake) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-        <Header 
+        <AppHeader 
           leftAction={
             <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
               <ArrowLeft className="w-4 h-4" />
@@ -458,7 +458,7 @@ export default function Score() {
   if (isAnalyzing) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-        <Header 
+        <AppHeader 
           leftAction={
             <Button variant="ghost" size="sm" disabled className="text-white/40">
               <ArrowLeft className="w-4 h-4" />
@@ -496,7 +496,7 @@ export default function Score() {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-        <Header 
+        <AppHeader 
           leftAction={
             <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
               <ArrowLeft className="w-4 h-4" />
@@ -528,7 +528,7 @@ export default function Score() {
   // Show consolidated results with tabs
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-      <Header 
+      <AppHeader 
         leftAction={
           <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
             <ArrowLeft className="w-4 h-4" />
