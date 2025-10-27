@@ -8,9 +8,9 @@ interface AppHeaderProps {
 
 export function AppHeader({ onBack, onActionRight, rightIcon }: AppHeaderProps) {
   return (
-    <header className="flex items-center justify-between px-4 py-4 bg-black/50 backdrop-blur-md border-b border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+    <header className="flex items-center justify-between px-4 py-3 bg-black/60 backdrop-blur-md border-b border-white/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]">
       {/* Left slot - Back button or spacer */}
-      <div className="w-10 flex items-center justify-start shrink-0">
+      <div className="w-10 flex items-center justify-start">
         {onBack ? (
           <button
             aria-label="Back"
@@ -22,18 +22,17 @@ export function AppHeader({ onBack, onActionRight, rightIcon }: AppHeaderProps) 
         ) : null}
       </div>
 
-      {/* Center - Large horizontal wordmark stretched across header */}
-      <div className="flex-1 flex justify-center items-center pointer-events-none select-none min-w-0">
+      {/* Center - Logo integrated directly into header */}
+      <div className="flex-1 flex justify-center items-center">
         <img
           src="/logo-horizontal.png"
           alt="SwingSense"
-          className="h-14 w-full object-cover drop-shadow-[0_0_20px_rgba(16,185,129,0.6)]"
-          style={{ maxWidth: 'none' }}
+          className="h-10 sm:h-12 w-auto drop-shadow-[0_0_16px_rgba(16,185,129,0.4)] opacity-90"
         />
       </div>
 
       {/* Right slot - Action button or spacer */}
-      <div className="w-10 flex items-center justify-end shrink-0">
+      <div className="w-10 flex items-center justify-end">
         {onActionRight && rightIcon ? (
           <button
             aria-label="Action"
