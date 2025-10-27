@@ -239,8 +239,7 @@ export default function TeamDetail() {
                 <Button
                   onClick={copyInviteCode}
                   size="sm"
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10"
+                  className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30"
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
@@ -337,8 +336,7 @@ export default function TeamDetail() {
           {isCoach && (
             <Button
               onClick={() => toast('Manage team coming soon!')}
-              variant="outline"
-              className="w-full border-white/20 text-white hover:bg-white/10"
+              className="w-full bg-white/10 border border-white/20 text-white hover:bg-white/20"
             >
               Manage Team
             </Button>
