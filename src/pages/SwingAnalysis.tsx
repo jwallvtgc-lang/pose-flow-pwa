@@ -130,30 +130,42 @@ export default function SwingAnalysis() {
       // Get or create athlete for current user
       let athleteId = null;
       if (user?.id) {
-        const { data: existingAthlete } = await supabase
-          .from('athletes')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (existingAthlete) {
-          athleteId = existingAthlete.id;
-        } else {
-          // Create a new athlete for this user
-          const { data: newAthlete, error: athleteError } = await supabase
+        try {
+          const { data: existingAthlete, error: athleteQueryError } = await supabase
             .from('athletes')
-            .insert({
-              user_id: user.id,
-              name: user.email?.split('@')[0] || 'Player'
-            })
             .select('id')
-            .single();
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-          if (athleteError) {
-            console.error('Failed to create athlete:', athleteError);
-          } else {
-            athleteId = newAthlete.id;
+          if (athleteQueryError) {
+            console.error('Error querying athlete:', athleteQueryError);
           }
+
+          if (existingAthlete) {
+            athleteId = existingAthlete.id;
+            console.log('Found existing athlete:', athleteId);
+          } else {
+            // Create a new athlete for this user
+            console.log('Creating new athlete for user:', user.id);
+            const { data: newAthlete, error: athleteError } = await supabase
+              .from('athletes')
+              .insert({
+                user_id: user.id,
+                name: user.email?.split('@')[0] || 'Player'
+              })
+              .select('id')
+              .single();
+
+            if (athleteError) {
+              console.error('Failed to create athlete:', athleteError);
+              toast.error('Warning: Could not link swing to your profile');
+            } else {
+              athleteId = newAthlete.id;
+              console.log('Created new athlete:', athleteId);
+            }
+          }
+        } catch (error) {
+          console.error('Athlete lookup/creation error:', error);
         }
       }
 
