@@ -449,12 +449,12 @@ export default function TeamDetail() {
         </Card>
 
         {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
+        <div className="flex gap-2 overflow-x-auto pb-2">
           <button
             onClick={() => setActiveTab('roster')}
-            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all snap-start ${
+            className={`flex-1 min-w-[80px] rounded-xl px-3 py-2.5 text-sm font-bold transition-all text-center ${
               activeTab === 'roster'
-                ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
             }`}
           >
@@ -462,9 +462,9 @@ export default function TeamDetail() {
           </button>
           <button
             onClick={() => setActiveTab('leaderboard')}
-            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all snap-start ${
+            className={`flex-1 min-w-[80px] rounded-xl px-3 py-2.5 text-sm font-bold transition-all text-center ${
               activeTab === 'leaderboard'
-                ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
             }`}
           >
@@ -472,9 +472,9 @@ export default function TeamDetail() {
           </button>
           <button
             onClick={() => setActiveTab('drills')}
-            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all snap-start ${
+            className={`flex-1 min-w-[80px] rounded-xl px-3 py-2.5 text-sm font-bold transition-all text-center ${
               activeTab === 'drills'
-                ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
             }`}
           >
@@ -482,15 +482,14 @@ export default function TeamDetail() {
           </button>
           <button
             onClick={() => setActiveTab('chat')}
-            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all snap-start ${
+            className={`flex-1 min-w-[80px] rounded-xl px-3 py-2.5 text-sm font-bold transition-all text-center ${
               activeTab === 'chat'
-                ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
             }`}
           >
             Chat
           </button>
-          <div className="shrink-0 w-4"></div>
         </div>
 
         {/* Tab Content */}
