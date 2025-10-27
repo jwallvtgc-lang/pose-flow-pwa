@@ -555,7 +555,44 @@ const Index = () => {
           </div>
         </div>
 
-        {/* 2. TODAY'S FOCUS CARD */}
+        {/* 2. AI COACH INSIGHT CARD */}
+        {hasSwings && user && (() => {
+          const aiInsight = {
+            praise: "You kept head drift under 8 cm on 4 of your last 5 swings.",
+            issue: "Your average attack angle is still steep (37°). That leads to weak pop-ups.",
+            action: "Do 3×8 slow Step-Behind reps and stay stacked over your back hip.",
+            updated: "Updated from yesterday's swings."
+          };
+
+          return (
+            <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white mb-4">
+              <h3 className="flex items-center gap-2 text-white font-semibold text-base mb-2">
+                🤖 AI Coach Insight
+              </h3>
+
+              <p className="text-sm text-white leading-relaxed mb-1">
+                <span className="text-green-400 font-medium">✅ Head control is improving.</span>
+                {' '}{aiInsight.praise}
+              </p>
+
+              <p className="text-sm text-white leading-relaxed mb-1">
+                <span className="text-yellow-400 font-medium">⚠ Attack angle still steep.</span>
+                {' '}{aiInsight.issue}
+              </p>
+
+              <p className="text-sm text-white leading-relaxed">
+                <span className="text-green-400 font-medium">🎯 Today:</span>
+                {' '}{aiInsight.action}
+              </p>
+
+              <p className="text-[11px] text-white/40 mt-3">
+                {aiInsight.updated}
+              </p>
+            </div>
+          );
+        })()}
+
+        {/* 3. TODAY'S FOCUS CARD */}
         {(() => {
           // Mock assignment data for now
           const currentAssignment = {
