@@ -282,6 +282,7 @@ export type Database = {
           pose_data: Json | null
           score_phase1: number | null
           session_id: string | null
+          user_id: string | null
           video_url: string | null
         }
         Insert: {
@@ -296,6 +297,7 @@ export type Database = {
           pose_data?: Json | null
           score_phase1?: number | null
           session_id?: string | null
+          user_id?: string | null
           video_url?: string | null
         }
         Update: {
@@ -310,6 +312,7 @@ export type Database = {
           pose_data?: Json | null
           score_phase1?: number | null
           session_id?: string | null
+          user_id?: string | null
           video_url?: string | null
         }
         Relationships: [

@@ -121,6 +121,13 @@ export async function saveSwing({
   try {
     console.log('=== SAVE SWING DEBUG ===');
     
+    // Get current user for RLS
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('User not authenticated:', userError);
+      throw new Error('User must be authenticated to save swings');
+    }
+    
     // Handle drill information - either use drill_id or save drill_data
     const firstCard = cards[0];
     const drillId = (firstCard?.drill && typeof firstCard.drill === 'object' && 'id' in firstCard.drill) 
@@ -133,6 +140,7 @@ export async function saveSwing({
     
     console.log('Payload:', {
       session_id,
+      user_id: user.id,
       score_phase1: score,
       cues: cards.map(c => c.cue),
       drill_id: drillId,
@@ -147,6 +155,7 @@ export async function saveSwing({
       .from('swings')
       .insert({
         session_id,
+        user_id: user.id,
         score_phase1: score,
         cues: cards.map(c => c.cue),
         drill_id: drillId,
