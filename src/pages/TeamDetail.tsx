@@ -94,7 +94,12 @@ export default function TeamDetail() {
         .eq('team_id', id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading assignments:', error);
+        throw error;
+      }
+      
+      console.log('✅ Loaded assignments:', data);
       setAssignments(data || []);
     } catch (error) {
       console.error('Error loading assignments:', error);
@@ -617,72 +622,80 @@ export default function TeamDetail() {
             </div>
 
             {/* Assignments List */}
-            {assignments.length === 0 ? (
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-8 text-center">
-                <p className="text-white/60 text-sm">No assignments yet</p>
-              </div>
-            ) : (
-              (() => {
-                const playerAssignments = new Map();
-                assignments.forEach(assignment => {
-                  const playerId = assignment.player_id || 'team';
-                  const playerName = assignment.player_id 
-                    ? (assignment.profiles?.full_name || 'Unknown')
-                    : 'Entire Team';
-                  
-                  if (!playerAssignments.has(playerId)) {
-                    playerAssignments.set(playerId, {
-                      playerName,
-                      avatarInitials: playerName.split(' ').map((n: string) => n[0]).join('').toUpperCase(),
-                      drills: []
-                    });
-                  }
-                  
-                  playerAssignments.get(playerId).drills.push({
-                    drillName: assignment.drill_name,
-                    due: assignment.due_at ? format(new Date(assignment.due_at), 'MMM d') : 'No due date',
-                    completed: assignment.completed || false
+            {(() => {
+              console.log('📋 Rendering assignments, count:', assignments.length);
+              
+              if (assignments.length === 0) {
+                return (
+                  <div className="rounded-2xl bg-white/5 border border-white/10 p-8 text-center">
+                    <p className="text-white/60 text-sm">No assignments yet</p>
+                  </div>
+                );
+              }
+              
+              const playerAssignments = new Map();
+              console.log('Processing assignments:', assignments);
+              
+              assignments.forEach(assignment => {
+                const playerId = assignment.player_id || 'team';
+                const playerName = assignment.player_id 
+                  ? (assignment.profiles?.full_name || 'Unknown')
+                  : 'Entire Team';
+                
+                if (!playerAssignments.has(playerId)) {
+                  playerAssignments.set(playerId, {
+                    playerName,
+                    avatarInitials: playerName.split(' ').map((n: string) => n[0]).join('').toUpperCase(),
+                    drills: []
                   });
+                }
+                
+                playerAssignments.get(playerId).drills.push({
+                  drillName: assignment.drill_name,
+                  due: assignment.due_at ? format(new Date(assignment.due_at), 'MMM d') : 'No due date',
+                  completed: assignment.completed || false
                 });
+              });
 
-                return Array.from(playerAssignments.values()).map((assignment, idx) => (
-                  <div
-                    key={idx}
-                    className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400/30 to-transparent border border-green-400/40 flex items-center justify-center text-white text-xs font-semibold shadow-[0_0_20px_rgba(16,185,129,0.4)]">
-                        {assignment.avatarInitials}
-                      </div>
-                      <div className="text-white font-semibold text-sm">
-                        {assignment.playerName}
-                      </div>
+              console.log('Player assignments map:', Array.from(playerAssignments.entries()));
+
+              return Array.from(playerAssignments.values()).map((assignment, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400/30 to-transparent border border-green-400/40 flex items-center justify-center text-white text-xs font-semibold shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                      {assignment.avatarInitials}
                     </div>
-                    <div className="space-y-2">
-                      {assignment.drills.map((drill: any, drillIdx: number) => (
-                        <div key={drillIdx} className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="text-sm text-white font-medium">{drill.drillName}</div>
-                            <div className="text-[10px] text-white/40 mt-0.5">Due {drill.due}</div>
-                          </div>
-                          <div className="ml-3">
-                            {drill.completed ? (
-                              <div className="bg-green-500/20 text-green-400 border border-green-500/40 rounded-lg text-[10px] px-2 py-[2px] font-medium">
-                                Done
-                              </div>
-                            ) : (
-                              <div className="bg-white/10 text-white/70 border border-white/20 rounded-lg text-[10px] px-2 py-[2px]">
-                                Pending
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                    <div className="text-white font-semibold text-sm">
+                      {assignment.playerName}
                     </div>
                   </div>
-                ));
-              })()
-            )}
+                  <div className="space-y-2">
+                    {assignment.drills.map((drill: any, drillIdx: number) => (
+                      <div key={drillIdx} className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="text-sm text-white font-medium">{drill.drillName}</div>
+                          <div className="text-[10px] text-white/40 mt-0.5">Due {drill.due}</div>
+                        </div>
+                        <div className="ml-3">
+                          {drill.completed ? (
+                            <div className="bg-green-500/20 text-green-400 border border-green-500/40 rounded-lg text-[10px] px-2 py-[2px] font-medium">
+                              Done
+                            </div>
+                          ) : (
+                            <div className="bg-white/10 text-white/70 border border-white/20 rounded-lg text-[10px] px-2 py-[2px]">
+                              Pending
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
         )}
 
