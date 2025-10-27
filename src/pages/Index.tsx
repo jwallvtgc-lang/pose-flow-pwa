@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Camera, TrendingUp, Award, Zap, Trophy, Play, User, Dumbbell, Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppHeader } from '@/components/AppHeader';
 import { SplashScreen } from '@/components/SplashScreen';
 import { toast } from 'sonner';
+import { drillsData } from '@/lib/drillsData';
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [weekSwingCount, setWeekSwingCount] = useState(0);
   const [showSplash, setShowSplash] = useState(true);
   const [assignmentCompleted, setAssignmentCompleted] = useState(false);
@@ -603,11 +605,26 @@ const Index = () => {
                     </>
                   )}
                 </div>
-                <Link to="/analysis">
-                  <Button className="rounded-xl bg-emerald-500 text-black font-semibold text-sm px-4 py-2 hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]">
-                    Start Drill
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => {
+                    const drillName = assignedDrill?.drill_name || topDrills[0]?.name;
+                    // Try to find matching drill in drillsData
+                    const matchingDrill = drillsData.find(d => 
+                      d.name.toLowerCase().includes(drillName.toLowerCase()) || 
+                      drillName.toLowerCase().includes(d.name.toLowerCase())
+                    );
+                    
+                    if (matchingDrill) {
+                      navigate(`/drills/${matchingDrill.id}`);
+                    } else {
+                      // Fallback to swing analysis if no matching drill found
+                      navigate('/analysis');
+                    }
+                  }}
+                  className="rounded-xl bg-emerald-500 text-black font-semibold text-sm px-4 py-2 hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+                >
+                  Start Drill
+                </Button>
               </div>
             );
           }
