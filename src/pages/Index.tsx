@@ -426,11 +426,20 @@ const Index = () => {
       const teamIds = (userTeams || []).map(t => t.team_id);
 
       // Get assigned drills for this player or their teams
-      const { data: drills, error: drillsError } = await supabase
+      let query = supabase
         .from('assigned_drills')
         .select('drill_name, notes, created_at')
-        .or(`player_id.eq.${user.id},and(player_id.is.null,team_id.in.(${teamIds.join(',')}))`)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      // Build the OR condition based on whether user has teams
+      if (teamIds.length > 0) {
+        query = query.or(`player_id.eq.${user.id},and(player_id.is.null,team_id.in.(${teamIds.join(',')}))`);
+      } else {
+        // User not on any teams, only check for direct player assignments
+        query = query.eq('player_id', user.id);
+      }
+
+      const { data: drills, error: drillsError } = await query
         .limit(1)
         .maybeSingle();
 

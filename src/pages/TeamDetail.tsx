@@ -449,10 +449,10 @@ export default function TeamDetail() {
         </Card>
 
         {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
           <button
             onClick={() => setActiveTab('roster')}
-            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all snap-start ${
               activeTab === 'roster'
                 ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
@@ -462,7 +462,7 @@ export default function TeamDetail() {
           </button>
           <button
             onClick={() => setActiveTab('leaderboard')}
-            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all snap-start ${
               activeTab === 'leaderboard'
                 ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
@@ -472,7 +472,7 @@ export default function TeamDetail() {
           </button>
           <button
             onClick={() => setActiveTab('drills')}
-            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all snap-start ${
               activeTab === 'drills'
                 ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
@@ -482,7 +482,7 @@ export default function TeamDetail() {
           </button>
           <button
             onClick={() => setActiveTab('chat')}
-            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all snap-start ${
               activeTab === 'chat'
                 ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
@@ -490,6 +490,7 @@ export default function TeamDetail() {
           >
             Chat
           </button>
+          <div className="shrink-0 w-4"></div>
         </div>
 
         {/* Tab Content */}
