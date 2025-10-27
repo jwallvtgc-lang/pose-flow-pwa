@@ -29,6 +29,7 @@ const Index = () => {
   const [latestSwing, setLatestSwing] = useState<any>(null);
   const [recentSwings, setRecentSwings] = useState<any[]>([]);
   const [topDrills, setTopDrills] = useState<Array<{name: string; count: number; description: string}>>([]);
+  const [assignedDrill, setAssignedDrill] = useState<{ drill_name: string; notes: string | null } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -40,6 +41,7 @@ const Index = () => {
       loadTopDrills().catch(err => console.error('loadTopDrills failed:', err));
       loadLeaderboardRank().catch(err => console.error('loadLeaderboardRank failed:', err));
       loadWeekSwingCount().catch(err => console.error('loadWeekSwingCount failed:', err));
+      loadAssignedDrill().catch(err => console.error('loadAssignedDrill failed:', err));
     } else if (!loading) {
       // Show placeholder data for non-authenticated users
       setStats({
@@ -406,6 +408,48 @@ const Index = () => {
     }
   };
 
+  const loadAssignedDrill = async () => {
+    if (!user?.id) return;
+    
+    try {
+      // Get user's teams
+      const { data: userTeams, error: teamsError } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', user.id);
+
+      if (teamsError) {
+        console.error('Error loading teams:', teamsError);
+        return;
+      }
+
+      const teamIds = (userTeams || []).map(t => t.team_id);
+
+      // Get assigned drills for this player or their teams
+      const { data: drills, error: drillsError } = await supabase
+        .from('assigned_drills')
+        .select('drill_name, notes, created_at')
+        .or(`player_id.eq.${user.id},and(player_id.is.null,team_id.in.(${teamIds.join(',')}))`)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (drillsError) {
+        console.error('Error loading assigned drills:', drillsError);
+        return;
+      }
+
+      if (drills) {
+        setAssignedDrill({
+          drill_name: drills.drill_name,
+          notes: drills.notes
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load assigned drill:', error);
+    }
+  };
+
   // Show loading state while authentication is being checked
   if (loading) {
     return <SplashScreen />;
@@ -487,12 +531,24 @@ const Index = () => {
         </div>
 
         {/* 2. TODAY'S FOCUS CARD */}
-        {topDrills.length > 0 && (
+        {(assignedDrill || topDrills.length > 0) && (
           <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6 hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all duration-200">
             <h3 className="text-white font-semibold text-base mb-3">Today's Focus</h3>
             <div className="mb-4">
-              <h4 className="text-emerald-400 font-semibold text-lg mb-2">{topDrills[0].name}</h4>
-              <p className="text-white/70 text-sm">{topDrills[0].description}</p>
+              {assignedDrill ? (
+                <>
+                  <h4 className="text-emerald-400 font-semibold text-lg mb-2">{assignedDrill.drill_name}</h4>
+                  {assignedDrill.notes && (
+                    <p className="text-white/70 text-sm mb-2">{assignedDrill.notes}</p>
+                  )}
+                  <p className="text-white/40 text-[11px]">From Coach</p>
+                </>
+              ) : (
+                <>
+                  <h4 className="text-emerald-400 font-semibold text-lg mb-2">{topDrills[0].name}</h4>
+                  <p className="text-white/70 text-sm">{topDrills[0].description}</p>
+                </>
+              )}
             </div>
             <Link to="/analysis">
               <Button className="rounded-xl bg-emerald-500 text-black font-semibold text-sm px-4 py-2 hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]">

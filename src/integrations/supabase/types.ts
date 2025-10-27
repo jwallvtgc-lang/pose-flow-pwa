@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      assigned_drills: {
+        Row: {
+          created_at: string | null
+          drill_name: string
+          due_at: string | null
+          id: string
+          notes: string | null
+          player_id: string | null
+          team_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          drill_name: string
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          player_id?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          drill_name?: string
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          player_id?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assigned_drills_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athletes: {
         Row: {
           bat_length_in: number | null

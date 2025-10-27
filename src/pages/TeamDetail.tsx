@@ -4,11 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Users, Copy, UserPlus, AlertCircle } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { drillsData } from '@/lib/drillsData';
 
 interface TeamData {
   id: string;
@@ -41,6 +46,10 @@ export default function TeamDetail() {
   const [activeTab, setActiveTab] = useState<TabType>('roster');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlayer, setSelectedPlayer] = useState<TeamMember | null>(null);
+  const [showAssignDrill, setShowAssignDrill] = useState(false);
+  const [selectedDrill, setSelectedDrill] = useState<string>('');
+  const [drillNotes, setDrillNotes] = useState('');
+  const [assignToWholeTeam, setAssignToWholeTeam] = useState(false);
 
   useEffect(() => {
     if (user && id) {
@@ -178,6 +187,38 @@ export default function TeamDetail() {
     } catch (error) {
       console.error('Error leaving team:', error);
       toast.error('Failed to leave team');
+    }
+  };
+
+  const handleAssignDrill = async () => {
+    if (!selectedDrill || !id) {
+      toast.error('Please select a drill');
+      return;
+    }
+
+    try {
+      const assignmentData = {
+        team_id: id,
+        player_id: assignToWholeTeam ? null : selectedPlayer?.user_id,
+        drill_name: selectedDrill,
+        notes: drillNotes.trim() || null
+      };
+
+      const { error } = await supabase
+        .from('assigned_drills')
+        .insert(assignmentData);
+
+      if (error) throw error;
+
+      toast.success(assignToWholeTeam ? 'Drill assigned to whole team!' : 'Drill assigned to player!');
+      setShowAssignDrill(false);
+      setSelectedPlayer(null);
+      setSelectedDrill('');
+      setDrillNotes('');
+      setAssignToWholeTeam(false);
+    } catch (error) {
+      console.error('Error assigning drill:', error);
+      toast.error('Failed to assign drill');
     }
   };
 
@@ -348,6 +389,7 @@ export default function TeamDetail() {
                 onClick={() => {
                   if (isCoach && member.role !== 'coach') {
                     setSelectedPlayer(member);
+                    setShowAssignDrill(true);
                   }
                 }}
                 className={`flex items-center justify-between rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white transition-all ${
@@ -450,8 +492,101 @@ export default function TeamDetail() {
         </div>
       </div>
 
-      {/* Player Detail Modal (Coach only) */}
-      <Dialog open={!!selectedPlayer} onOpenChange={(open) => !open && setSelectedPlayer(null)}>
+      {/* Assign Drill Modal (Coach only) */}
+      <Dialog open={showAssignDrill} onOpenChange={(open) => {
+        setShowAssignDrill(open);
+        if (!open) {
+          setSelectedPlayer(null);
+          setSelectedDrill('');
+          setDrillNotes('');
+          setAssignToWholeTeam(false);
+        }
+      }}>
+        <DialogContent className="bg-gradient-to-b from-[#0F172A]/95 to-black/95 backdrop-blur-xl border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              Assign Drill
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 rounded-xl bg-white/5 border border-white/10 p-3">
+              <Checkbox 
+                id="wholeTeam" 
+                checked={assignToWholeTeam}
+                onCheckedChange={(checked) => setAssignToWholeTeam(checked === true)}
+              />
+              <Label htmlFor="wholeTeam" className="text-white text-sm cursor-pointer">
+                Assign to whole team
+              </Label>
+            </div>
+
+            {!assignToWholeTeam && selectedPlayer && (
+              <div className="rounded-xl bg-white/5 border border-white/10 p-3">
+                <p className="text-white/60 text-xs mb-1">Assigning to:</p>
+                <p className="text-white font-semibold">
+                  {(selectedPlayer.profiles as any)?.full_name || 'Player'}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="text-white text-sm">Select Drill</Label>
+              <Select value={selectedDrill} onValueChange={setSelectedDrill}>
+                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                  <SelectValue placeholder="Choose a drill..." />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0F172A] border-white/10">
+                  {drillsData.map((drill) => (
+                    <SelectItem 
+                      key={drill.id} 
+                      value={drill.name}
+                      className="text-white hover:bg-white/10"
+                    >
+                      {drill.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-white text-sm">Notes (Optional)</Label>
+              <Textarea
+                placeholder="What do you want them focusing on?"
+                value={drillNotes}
+                onChange={(e) => setDrillNotes(e.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/40 min-h-[100px]"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  setShowAssignDrill(false);
+                  setSelectedPlayer(null);
+                  setSelectedDrill('');
+                  setDrillNotes('');
+                  setAssignToWholeTeam(false);
+                }}
+                variant="outline"
+                className="flex-1 border-white/20 text-white hover:bg-white/10"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAssignDrill}
+                disabled={!selectedDrill}
+                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+              >
+                Assign
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Player Detail Modal (Coach only - deprecated, replaced by assign drill) */}
+      <Dialog open={!!selectedPlayer && !showAssignDrill} onOpenChange={(open) => !open && setSelectedPlayer(null)}>
         <DialogContent className="bg-[#0F172A] border-white/10 text-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
