@@ -18,8 +18,13 @@ interface ProfileData {
   height_inches: number | '';
   weight_lbs: number | '';
   primary_position: string;
-  current_team: string;
   avatar_url: string | null;
+}
+
+interface UserTeam {
+  id: string;
+  name: string;
+  role: string;
 }
 
 const positions = ['1B', '2B', 'SS', '3B', 'P', 'C', 'LF', 'RF', 'CF'];
@@ -31,6 +36,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [userTeams, setUserTeams] = useState<UserTeam[]>([]);
   const [profile, setProfile] = useState<ProfileData>({
     full_name: '',
     email: '',
@@ -38,12 +44,12 @@ export default function Profile() {
     height_inches: '',
     weight_lbs: '',
     primary_position: '',
-    current_team: '',
     avatar_url: null,
   });
 
   useEffect(() => {
     fetchProfile();
+    fetchUserTeams();
   }, [user]);
 
   const fetchProfile = async () => {
@@ -68,7 +74,6 @@ export default function Profile() {
           height_inches: data.height_inches || '',
           weight_lbs: data.weight_lbs || '',
           primary_position: data.primary_position || '',
-          current_team: data.current_team || '',
           avatar_url: data.avatar_url || null,
         });
       } else {
@@ -87,6 +92,39 @@ export default function Profile() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserTeams = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select(`
+          role,
+          team_id,
+          teams:team_id (
+            id,
+            name
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      if (data) {
+        const teams: UserTeam[] = data
+          .filter(item => item.teams)
+          .map(item => ({
+            id: (item.teams as any).id,
+            name: (item.teams as any).name,
+            role: item.role
+          }));
+        setUserTeams(teams);
+      }
+    } catch (error) {
+      console.error('Error fetching teams:', error);
     }
   };
 
@@ -210,7 +248,6 @@ export default function Profile() {
         height_inches: profile.height_inches === '' ? null : Number(profile.height_inches),
         weight_lbs: profile.weight_lbs === '' ? null : Number(profile.weight_lbs),
         primary_position: profile.primary_position,
-        current_team: profile.current_team,
         avatar_url: profile.avatar_url,
       };
 
@@ -293,9 +330,12 @@ export default function Profile() {
             <h1 className="text-xl font-semibold text-white mb-1">
               {profile.full_name || 'Profile'}
             </h1>
-            {(profile.current_team || profile.primary_position) && (
+            {(userTeams.length > 0 || profile.primary_position) && (
               <p className="text-white/60 text-sm mb-1">
-                {[profile.current_team, profile.primary_position].filter(Boolean).join(' · ')}
+                {[
+                  userTeams.length > 0 ? userTeams[0].name : null,
+                  profile.primary_position
+                ].filter(Boolean).join(' · ')}
               </p>
             )}
             {profile.email && (
@@ -412,17 +452,22 @@ export default function Profile() {
               </Select>
             </div>
 
-            {/* Current Team */}
+            {/* Current Team - Read Only */}
             <div className="space-y-2">
               <Label htmlFor="team" className="text-white/80 font-medium">Current Team</Label>
-              <Input
-                id="team"
-                type="text"
-                value={profile.current_team}
-                onChange={(e) => handleInputChange('current_team', e.target.value)}
-                placeholder="Enter your team name"
-                className="rounded-xl bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:ring-green-500/50 focus:border-green-500/50"
-              />
+              <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 min-h-[42px] flex items-center">
+                {userTeams.length > 0 ? (
+                  <div className="flex flex-col gap-1">
+                    {userTeams.map((team) => (
+                      <span key={team.id} className="text-white text-sm">
+                        {team.name} <span className="text-white/50 text-xs">({team.role})</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-white/40 text-sm">No team yet - join one from the Teams tab</span>
+                )}
+              </div>
             </div>
 
             {/* Save Button */}
