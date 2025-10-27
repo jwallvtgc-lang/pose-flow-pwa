@@ -557,13 +557,8 @@ const Index = () => {
 
         {/* 2. AI COACH INSIGHT CARD */}
         {hasSwings && user && (() => {
-          const aiInsight = {
-            praise: "You kept head drift under 8 cm on 4 of your last 5 swings.",
-            issue: "Your average attack angle is still steep (37°). That leads to weak pop-ups.",
-            action: "Do 3×8 slow Step-Behind reps and stay stacked over your back hip.",
-            updated: "Updated from yesterday's swings."
-          };
-
+          const firstName = getFirstName();
+          
           return (
             <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white mb-4">
               <h3 className="flex items-center gap-2 text-white font-semibold text-base mb-2">
@@ -571,23 +566,31 @@ const Index = () => {
               </h3>
 
               <p className="text-sm text-white leading-relaxed mb-1">
-                <span className="text-green-400 font-medium">✅ Head control is improving.</span>
-                {' '}{aiInsight.praise}
+                <span className="text-green-400 font-medium">✅ {firstName}, head control is improving.</span>
+                {' '}You kept drift under 8 cm on 4 of your last 5 swings.
               </p>
 
               <p className="text-sm text-white leading-relaxed mb-1">
-                <span className="text-yellow-400 font-medium">⚠ Attack angle still steep.</span>
-                {' '}{aiInsight.issue}
+                <span className="text-yellow-400 font-medium">⚠ Attack angle is still steep (37° avg).</span>
+                {' '}That&apos;s creating more pop-ups than driven balls.
               </p>
 
               <p className="text-sm text-white leading-relaxed">
                 <span className="text-green-400 font-medium">🎯 Today:</span>
-                {' '}{aiInsight.action}
+                {' '}Do 3×8 slow Step-Behind reps and stay stacked over your back hip.
               </p>
 
-              <p className="text-[11px] text-white/40 mt-3">
-                {aiInsight.updated}
-              </p>
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-[11px] text-white/40">
+                  Updated from yesterday&apos;s swings.
+                </p>
+                <button
+                  onClick={() => console.log('View full breakdown clicked')}
+                  className="text-[11px] text-green-400/70 underline hover:text-green-400"
+                >
+                  View full breakdown →
+                </button>
+              </div>
             </div>
           );
         })()}
