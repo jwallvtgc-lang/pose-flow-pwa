@@ -120,16 +120,7 @@ export default function RecentSwings() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
         <AppHeader 
-          leftAction={
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/')}
-              className="text-white hover:bg-white/10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          }
+          onBack={() => navigate('/')}
         />
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="text-center mb-8">
@@ -154,16 +145,7 @@ export default function RecentSwings() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
         <AppHeader 
-          leftAction={
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/')}
-              className="text-white hover:bg-white/10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          }
+          onBack={() => navigate('/')}
         />
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="text-center mb-8">
@@ -189,16 +171,7 @@ export default function RecentSwings() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
         <AppHeader 
-          leftAction={
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/')}
-              className="text-white hover:bg-white/10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          }
+          onBack={() => navigate('/')}
         />
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="text-center mb-8">
@@ -228,16 +201,7 @@ export default function RecentSwings() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
       <AppHeader 
-        leftAction={
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate('/')}
-            className="text-white hover:bg-white/10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        }
+        onBack={() => navigate('/')}
       />
 
       <div className="container mx-auto px-4 py-6 max-w-4xl">

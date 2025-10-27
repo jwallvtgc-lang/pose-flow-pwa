@@ -67,17 +67,7 @@ export default function Drills() {
       <div className="sticky top-0 z-50 bg-gradient-to-b from-[#0F172A]/95 to-black/95 backdrop-blur-xl text-white safe-area-top border-b border-white/10">
         <div className="container mx-auto px-4 py-4 max-w-2xl">
           <AppHeader 
-            leftAction={
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/')}
-                className="h-8 w-8 p-0 text-white hover:bg-white/20"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            }
-            rightAction={<div className="w-8" />}
+            onBack={() => navigate('/')}
           />
         </div>
       </div>

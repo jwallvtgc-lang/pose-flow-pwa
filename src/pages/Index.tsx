@@ -497,14 +497,8 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black relative pb-28">
       {/* BRANDED HEADER BAR */}
       <AppHeader 
-        rightAction={
-          <Link 
-            to="/profile" 
-            className="text-white/70 hover:text-white transition-colors"
-          >
-            <User className="w-5 h-5" />
-          </Link>
-        }
+        onActionRight={() => navigate('/profile')}
+        rightIcon="menu"
       />
 
       <div className="max-w-2xl mx-auto px-4 py-6 relative z-10">

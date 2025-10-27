@@ -400,11 +400,7 @@ export default function Score() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
         <AppHeader 
-          leftAction={
-            <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          }
+          onBack={handleRetake}
         />
         
         <div className="container mx-auto px-4 py-6 max-w-2xl">
@@ -458,13 +454,7 @@ export default function Score() {
   if (isAnalyzing) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
-        <AppHeader 
-          leftAction={
-            <Button variant="ghost" size="sm" disabled className="text-white/40">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          }
-        />
+        <AppHeader />
         
         <div className="container mx-auto px-4 py-6 max-w-2xl">
 
@@ -497,11 +487,7 @@ export default function Score() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
         <AppHeader 
-          leftAction={
-            <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          }
+          onBack={handleRetake}
         />
         
         <div className="container mx-auto px-4 py-6 max-w-2xl">
@@ -529,16 +515,7 @@ export default function Score() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
       <AppHeader 
-        leftAction={
-          <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        }
-        rightAction={
-          <Button variant="ghost" size="sm" onClick={handleRetake} className="text-white hover:text-white hover:bg-white/20">
-            Retake
-          </Button>
-        }
+        onBack={handleRetake}
       />
 
       <div className="container mx-auto px-4 py-6 max-w-2xl">

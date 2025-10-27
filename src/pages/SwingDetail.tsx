@@ -443,29 +443,20 @@ export default function SwingDetail() {
     <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black">
       {/* BRANDED HEADER BAR */}
       <AppHeader 
-        leftAction={
+        onBack={() => navigate('/')}
+      />
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogTrigger asChild>
           <Button 
             variant="ghost" 
-            size="icon" 
-            onClick={() => navigate('/')}
-            className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
+            size="sm"
+            className="absolute right-4 top-4 z-20 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <Share2 className="w-4 h-4 mr-1.5" />
+            Share
           </Button>
-        }
-        rightAction={
-          <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
-              >
-                <Share2 className="w-4 h-4 mr-1.5" />
-                Share
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md rounded-2xl bg-[#0F172A] border border-white/10 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md rounded-2xl bg-[#0F172A] border border-white/10 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-white text-xl">
                   <Share2 className="w-5 h-5 text-emerald-400" />

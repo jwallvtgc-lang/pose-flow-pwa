@@ -319,24 +319,15 @@ export default function SwingAnalysis() {
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black pb-safe">
       {/* Header */}
       <AppHeader 
-        leftAction={
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (currentStep === 'capture') {
-                navigate('/');
-              } else if (currentStep === 'score') {
-                setCurrentStep('capture');
-              } else if (currentStep === 'feedback') {
-                setCurrentStep('score');
-              }
-            }}
-            className="text-white/70 hover:text-white hover:bg-white/10 h-10 w-10 p-0 rounded-xl"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        }
+        onBack={() => {
+          if (currentStep === 'capture') {
+            navigate('/');
+          } else if (currentStep === 'score') {
+            setCurrentStep('capture');
+          } else if (currentStep === 'feedback') {
+            setCurrentStep('score');
+          }
+        }}
       />
 
       {/* Main content */}

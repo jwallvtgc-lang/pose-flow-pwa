@@ -46,16 +46,7 @@ const Debug = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
       <AppHeader 
-        leftAction={
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate('/')}
-            className="text-white/70 hover:text-white hover:bg-white/10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        }
+        onBack={() => navigate('/')}
       />
       
       <div className="max-w-2xl mx-auto px-4 py-6">

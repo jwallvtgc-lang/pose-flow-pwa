@@ -251,16 +251,7 @@ export default function Profile() {
       
       {/* BRANDED HEADER BAR */}
       <AppHeader 
-        leftAction={
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/')}
-            className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        }
+        onBack={() => navigate('/')}
       />
       
       <div className="max-w-2xl mx-auto px-4 py-4 relative z-10">
