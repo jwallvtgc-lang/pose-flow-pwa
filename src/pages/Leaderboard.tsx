@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trophy, TrendingUp, TrendingDown, Plus, Home, Target, Award, User, ArrowLeft } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -238,7 +238,7 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black pb-32 relative">
+    <div className="min-h-screen bg-gradient-to-b from-[#0f172a] to-black pb-28 relative">
       {/* Vignette overlay */}
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none" />
       
@@ -250,18 +250,23 @@ export default function Leaderboard() {
       }} />
       
       {/* HEADER */}
-      <Header 
-        leftAction={
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate('/')}
-            className="rounded-full text-white hover:text-white bg-white/10 hover:bg-white/20"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        }
-      />
+      <div className="sticky top-0 z-50 bg-gradient-to-b from-[#0F172A]/95 to-black/95 backdrop-blur-xl text-white safe-area-top border-b border-white/10">
+        <div className="container mx-auto px-4 py-4 max-w-2xl">
+          <Header 
+            leftAction={
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/')}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            }
+            rightAction={<div className="w-8" />}
+          />
+        </div>
+      </div>
 
       <div className="px-4 py-6 max-w-2xl mx-auto relative z-10">
         {/* TITLE */}
@@ -506,45 +511,6 @@ export default function Leaderboard() {
         )}
       </div>
 
-      {/* BOTTOM NAVIGATION */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md border-t border-white/10 z-50">
-        <div className="max-w-2xl mx-auto flex items-center justify-around py-3 px-4">
-          <button onClick={() => navigate('/')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white/90 transition-all duration-200">
-            <Home className="w-5 h-5" />
-            <span className="text-xs">Home</span>
-          </button>
-          <button onClick={() => navigate('/swings')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white/90 transition-all duration-200">
-            <Target className="w-5 h-5" />
-            <span className="text-xs">Swings</span>
-          </button>
-          <button onClick={() => navigate('/drills')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white/90 transition-all duration-200">
-            <Award className="w-5 h-5" />
-            <span className="text-xs">Drills</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 text-green-400 transition-all duration-200">
-            <Trophy className="w-5 h-5" />
-            <span className="text-xs font-semibold">Leaderboard</span>
-          </button>
-          <button onClick={() => navigate('/profile')} className="flex flex-col items-center gap-1 text-white/60 hover:text-white/90 transition-all duration-200">
-            <User className="w-5 h-5" />
-            <span className="text-xs">Profile</span>
-          </button>
-        </div>
-      </div>
-
-      {/* FLOATING UPLOAD BUTTON */}
-      <Button
-        onClick={() => navigate('/swing-analysis')}
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all hover:scale-110 hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] z-50 group"
-        style={{
-          animation: 'pulse-soft 2s ease-in-out infinite'
-        }}
-      >
-        <Plus className="w-6 h-6 text-white" />
-        <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-          Upload Swing
-        </span>
-      </Button>
 
       <style>{`
         @keyframes shimmer-slow {
