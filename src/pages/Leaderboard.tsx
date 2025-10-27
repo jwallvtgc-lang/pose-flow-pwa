@@ -51,7 +51,7 @@ export default function Leaderboard() {
         dateFilter = new Date('2020-01-01'); // Far back date for all-time
       }
       
-      // Query for leaderboard data
+      // Query for swings with sessions and athletes to get user_id
       const { data: swingData, error } = await supabase
         .from('swings')
         .select(`
@@ -60,7 +60,12 @@ export default function Leaderboard() {
           bat_speed_peak,
           bat_speed_avg,
           created_at,
-          session_id
+          sessions!inner(
+            athlete_id,
+            athletes!inner(
+              user_id
+            )
+          )
         `)
         .gte('created_at', dateFilter.toISOString())
         .not('score_phase1', 'is', null)
@@ -68,6 +73,12 @@ export default function Leaderboard() {
 
       if (error) {
         console.error('Error loading leaderboard data:', error);
+        setEntries([]);
+        return;
+      }
+
+      if (!swingData || swingData.length === 0) {
+        setEntries([]);
         return;
       }
 
@@ -80,7 +91,7 @@ export default function Leaderboard() {
         console.error('Error loading profiles:', profileError);
       }
 
-      // Process data to create leaderboard
+      // Process data to create leaderboard grouped by user
       const userStats = new Map<string, {
         user_id: string;
         full_name: string;
@@ -91,29 +102,35 @@ export default function Leaderboard() {
         batSpeeds: number[];
       }>();
       
-      if (!user || !swingData || swingData.length === 0) {
-        setEntries([]);
-        return;
-      }
+      // Group swings by user
+      swingData.forEach((swing: any) => {
+        const userId = swing.sessions?.athletes?.user_id;
+        if (!userId) return;
 
-      const currentUserProfile = profiles?.find(p => p.id === user.id);
-      
-      if (currentUserProfile) {
-        const validScores = swingData.map(swing => swing.score_phase1).filter((score): score is number => score !== null);
-        const validBatSpeeds = swingData
-          .map(swing => swing.bat_speed_peak)
-          .filter((speed): speed is number => speed !== null && speed > 0);
-        
-        userStats.set(user.id, {
-          user_id: user.id,
-          full_name: currentUserProfile.full_name || 'Unknown Player',
-          current_team: currentUserProfile?.current_team || undefined,
-          primary_position: currentUserProfile?.primary_position || undefined,
-          avatar_url: currentUserProfile?.avatar_url || undefined,
-          scores: validScores,
-          batSpeeds: validBatSpeeds
-        });
-      }
+        const score = swing.score_phase1;
+        const batSpeed = swing.bat_speed_peak;
+
+        if (!userStats.has(userId)) {
+          const profile = profiles?.find(p => p.id === userId);
+          userStats.set(userId, {
+            user_id: userId,
+            full_name: profile?.full_name || 'Unknown Player',
+            current_team: profile?.current_team || undefined,
+            primary_position: profile?.primary_position || undefined,
+            avatar_url: profile?.avatar_url || undefined,
+            scores: [],
+            batSpeeds: []
+          });
+        }
+
+        const stats = userStats.get(userId)!;
+        if (score !== null && score > 0) {
+          stats.scores.push(score);
+        }
+        if (batSpeed !== null && batSpeed > 0) {
+          stats.batSpeeds.push(batSpeed);
+        }
+      });
 
       // Create leaderboard entries
       let leaderboardEntries: LeaderboardEntry[] = Array.from(userStats.values()).map(user => ({
