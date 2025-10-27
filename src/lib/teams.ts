@@ -16,15 +16,15 @@ export async function createTeam(
 
   console.log('createTeam called with:', { teamName, currentUserId });
 
-  // Verify session before attempting insert
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  // Force refresh the session to ensure JWT token is fresh
+  const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
   
   if (sessionError || !session) {
-    console.error('No valid session', sessionError);
-    return { error: new Error('You must be logged in to create a team') };
+    console.error('Failed to refresh session', sessionError);
+    return { error: new Error('Session error - please try logging out and back in') };
   }
 
-  console.log('Session user ID:', session.user.id);
+  console.log('Refreshed session user ID:', session.user.id);
   console.log('Passed user ID:', currentUserId);
   
   if (session.user.id !== currentUserId) {
@@ -32,14 +32,18 @@ export async function createTeam(
     return { error: new Error('Authentication error - please try logging in again') };
   }
 
+  const teamData = {
+    name: teamName,
+    coach_id: session.user.id,
+    invite_code: generateInviteCode()
+  };
+
+  console.log('Attempting to insert team with data:', teamData);
+
   // 1. insert the team row with coach_id and invite_code
   const { data: teamInsert, error: teamError } = await supabase
     .from('teams')
-    .insert([{
-      name: teamName,
-      coach_id: session.user.id,
-      invite_code: generateInviteCode()
-    }])
+    .insert([teamData])
     .select('id')
     .single();
 
