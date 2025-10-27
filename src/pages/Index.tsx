@@ -14,7 +14,13 @@ const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [weekSwingCount, setWeekSwingCount] = useState(0);
-  const [showSplash, setShowSplash] = useState(true);
+  
+  // Only show splash on initial app load, not on navigation back
+  const [showSplash, setShowSplash] = useState(() => {
+    const hasShownSplash = sessionStorage.getItem('hasShownSplash');
+    return !hasShownSplash;
+  });
+  
   const [assignmentCompleted, setAssignmentCompleted] = useState(false);
   
   const [stats, setStats] = useState({
@@ -36,13 +42,16 @@ const Index = () => {
   const [topDrills, setTopDrills] = useState<Array<{name: string; count: number; description: string}>>([]);
   const [assignedDrill, setAssignedDrill] = useState<{ drill_name: string; notes: string | null } | null>(null);
 
-  // Minimum splash screen display time
+  // Minimum splash screen display time - only on first load
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (showSplash) {
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+        sessionStorage.setItem('hasShownSplash', 'true');
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash]);
 
   useEffect(() => {
     if (user) {
