@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, Users, Copy, UserPlus, AlertCircle } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +29,7 @@ interface TeamMember {
   avgScore?: number;
 }
 
-type TabType = 'roster' | 'leaderboard';
+type TabType = 'roster' | 'leaderboard' | 'drills';
 
 export default function TeamDetail() {
   const navigate = useNavigate();
@@ -39,6 +40,7 @@ export default function TeamDetail() {
   const [userRole, setUserRole] = useState<string>('');
   const [activeTab, setActiveTab] = useState<TabType>('roster');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedPlayer, setSelectedPlayer] = useState<TeamMember | null>(null);
 
   useEffect(() => {
     if (user && id) {
@@ -91,17 +93,46 @@ export default function TeamDetail() {
         setUserRole(userMember.role);
       }
 
-      // Load swing scores for members (placeholder for future implementation)
-      // const { data: swingsData } = await supabase
-      //   .from('swings')
-      //   .select('id, score_phase1, session_id')
-      //   .in('session_id', memberIds);
+      // Load swing scores for members
+      const memberUserIds = (membersData || []).map(m => m.user_id);
+      
+      // Query for swings via sessions -> athletes -> user_id
+      const { data: swingsData } = await supabase
+        .from('swings')
+        .select(`
+          score_phase1,
+          sessions!inner(
+            athletes!inner(
+              user_id
+            )
+          )
+        `)
+        .not('score_phase1', 'is', null)
+        .gt('score_phase1', 0);
 
-      // Calculate average scores (simplified - placeholder)
-      const membersWithScores = (membersData || []).map(member => ({
-        ...member,
-        avgScore: 0 // Placeholder - would calculate from swings in production
-      }));
+      // Calculate average scores by user_id
+      const scoresByUser = new Map<string, number[]>();
+      (swingsData || []).forEach((swing: any) => {
+        const userId = swing.sessions?.athletes?.user_id;
+        if (userId && memberUserIds.includes(userId)) {
+          if (!scoresByUser.has(userId)) {
+            scoresByUser.set(userId, []);
+          }
+          scoresByUser.get(userId)!.push(swing.score_phase1);
+        }
+      });
+
+      // Calculate average scores
+      const membersWithScores = (membersData || []).map(member => {
+        const scores = scoresByUser.get(member.user_id) || [];
+        const avgScore = scores.length > 0 
+          ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length)
+          : undefined;
+        return {
+          ...member,
+          avgScore
+        };
+      });
 
       // Sort: coaches first, then by name
       membersWithScores.sort((a, b) => {
@@ -270,11 +301,41 @@ export default function TeamDetail() {
           >
             Leaderboard
           </button>
+          <button
+            onClick={() => setActiveTab('drills')}
+            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+              activeTab === 'drills'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/40 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
+            }`}
+          >
+            Drills
+          </button>
         </div>
 
         {/* Tab Content */}
         {activeTab === 'roster' && (
           <div className="space-y-3">
+            {/* Invite Code Box (Coach only) */}
+            {isCoach && (
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-2">
+                <p className="text-white/80 text-sm font-medium">Share this team code</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-black/30 border border-white/20 rounded-lg px-3 py-2.5 text-green-400 font-mono text-lg font-bold tracking-wider">
+                    {team?.invite_code}
+                  </code>
+                  <Button
+                    onClick={copyInviteCode}
+                    size="sm"
+                    className="bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 h-10"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-white/40 text-xs">Players can join from Teams → Join Team</p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <h3 className="text-white font-semibold text-base">
                 Team Members ({members.length})
@@ -282,10 +343,18 @@ export default function TeamDetail() {
             </div>
 
             {members.map((member) => (
-              <Card
+              <div
                 key={member.id}
-                className="bg-white/5 border border-white/10 rounded-xl p-4 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                onClick={() => {
+                  if (isCoach && member.role !== 'coach') {
+                    setSelectedPlayer(member);
+                  }
+                }}
+                className={`flex items-center justify-between rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white transition-all ${
+                  isCoach && member.role !== 'coach' ? 'cursor-pointer hover:bg-white/10 hover:shadow-[0_0_25px_rgba(16,185,129,0.25)]' : ''
+                }`}
               >
+                {/* Left side */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center border border-emerald-500/30">
                     {(member.profiles as any)?.avatar_url ? (
@@ -301,22 +370,33 @@ export default function TeamDetail() {
                     )}
                   </div>
 
-                  <div className="flex-1">
-                    <p className={`text-white text-sm ${member.role === 'coach' ? 'font-bold' : 'font-medium'}`}>
+                  <div>
+                    <p className="text-white font-semibold text-sm">
                       {(member.profiles as any)?.full_name || 'Anonymous'}
                     </p>
-                    <p className="text-white/50 text-xs">
-                      {member.role === 'coach' ? 'Coach' : 'Player'}
-                    </p>
+                    <div className="mt-1">
+                      {member.role === 'coach' ? (
+                        <span className="inline-block bg-green-500/20 text-green-400 text-[11px] font-semibold rounded-md px-2 py-[2px]">
+                          Coach
+                        </span>
+                      ) : (
+                        <span className="inline-block bg-white/10 text-white/60 text-[11px] rounded-md px-2 py-[2px]">
+                          Player
+                        </span>
+                      )}
+                    </div>
                   </div>
+                </div>
 
-                  {member.role === 'coach' && (
-                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
-                      Coach
-                    </Badge>
+                {/* Right side */}
+                <div className="text-right">
+                  {member.avgScore !== undefined ? (
+                    <p className="text-green-400 font-semibold text-sm">Score: {member.avgScore}</p>
+                  ) : (
+                    <p className="text-white/40 text-sm">No swings yet</p>
                   )}
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         )}
@@ -326,6 +406,15 @@ export default function TeamDetail() {
             <AlertCircle className="w-12 h-12 text-white/40 mx-auto mb-3" />
             <p className="text-white/60 text-sm">
               Team leaderboard coming soon!
+            </p>
+          </Card>
+        )}
+
+        {activeTab === 'drills' && (
+          <Card className="bg-white/5 border-white/10 rounded-2xl p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-white/40 mx-auto mb-3" />
+            <p className="text-white/60 text-sm">
+              Assigned drills coming soon!
             </p>
           </Card>
         )}
@@ -360,6 +449,33 @@ export default function TeamDetail() {
           </Button>
         </div>
       </div>
+
+      {/* Player Detail Modal (Coach only) */}
+      <Dialog open={!!selectedPlayer} onOpenChange={(open) => !open && setSelectedPlayer(null)}>
+        <DialogContent className="bg-[#0F172A] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              {(selectedPlayer?.profiles as any)?.full_name || 'Player'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <p className="text-white/60 text-sm mb-1">Average Score</p>
+              {selectedPlayer?.avgScore !== undefined ? (
+                <p className="text-green-400 font-bold text-2xl">{selectedPlayer.avgScore}</p>
+              ) : (
+                <p className="text-white/40 text-sm">No swings yet</p>
+              )}
+            </div>
+            <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
+              <AlertCircle className="w-10 h-10 text-white/40 mx-auto mb-2" />
+              <p className="text-white/60 text-sm">
+                Drill assignment and player stats coming soon!
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         .scrollbar-hide {
