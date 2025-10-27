@@ -470,7 +470,7 @@ export default function TeamDetail() {
         <div className="flex gap-2 overflow-x-auto pb-2">
           <button
             onClick={() => setActiveTab('roster')}
-            className={`flex-1 min-w-[80px] rounded-xl px-3 py-2.5 text-sm font-bold transition-all text-center ${
+            className={`flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${
               activeTab === 'roster'
                 ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
@@ -480,7 +480,7 @@ export default function TeamDetail() {
           </button>
           <button
             onClick={() => setActiveTab('leaderboard')}
-            className={`flex-1 min-w-[80px] rounded-xl px-3 py-2.5 text-sm font-bold transition-all text-center ${
+            className={`flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${
               activeTab === 'leaderboard'
                 ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
@@ -490,7 +490,7 @@ export default function TeamDetail() {
           </button>
           <button
             onClick={() => setActiveTab('assignments')}
-            className={`flex-1 min-w-[80px] rounded-xl px-3 py-2.5 text-sm font-bold transition-all text-center ${
+            className={`flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${
               activeTab === 'assignments'
                 ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
@@ -500,7 +500,7 @@ export default function TeamDetail() {
           </button>
           <button
             onClick={() => setActiveTab('chat')}
-            className={`flex-1 min-w-[80px] rounded-xl px-3 py-2.5 text-sm font-bold transition-all text-center ${
+            className={`flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${
               activeTab === 'chat'
                 ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
