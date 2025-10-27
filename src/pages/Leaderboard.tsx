@@ -42,8 +42,152 @@ export default function Leaderboard() {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
+
+      // Handle "My Team" filter
+      if (timeFilter === 'team') {
+        if (!user) {
+          setEntries([]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Get user's team
+        const { data: userTeams, error: teamError } = await supabase
+          .from('team_members')
+          .select('team_id')
+          .eq('user_id', user.id)
+          .limit(1);
+
+        if (teamError || !userTeams || userTeams.length === 0) {
+          // User is not on a team
+          setEntries([]);
+          setIsLoading(false);
+          return;
+        }
+
+        const teamId = userTeams[0].team_id;
+
+        // Get all team members
+        const { data: teamMembers, error: membersError } = await supabase
+          .from('team_members')
+          .select(`
+            user_id,
+            role,
+            profiles:user_id (
+              full_name,
+              avatar_url
+            )
+          `)
+          .eq('team_id', teamId);
+
+        if (membersError || !teamMembers) {
+          console.error('Error loading team members:', membersError);
+          setEntries([]);
+          setIsLoading(false);
+          return;
+        }
+
+        const memberUserIds = teamMembers.map(m => m.user_id);
+
+        // Get swings for all team members
+        const { data: swingsData, error: swingsError } = await supabase
+          .from('swings')
+          .select(`
+            score_phase1,
+            bat_speed_peak,
+            created_at,
+            sessions!inner(
+              athletes!inner(
+                user_id
+              )
+            )
+          `)
+          .not('score_phase1', 'is', null)
+          .gt('score_phase1', 0);
+
+        if (swingsError) {
+          console.error('Error loading swings:', swingsError);
+        }
+
+        // Group swings by user
+        const userStats = new Map<string, {
+          user_id: string;
+          full_name: string;
+          avatar_url?: string;
+          scores: number[];
+          batSpeeds: number[];
+          lastSwingDate?: string;
+        }>();
+
+        teamMembers.forEach((member: any) => {
+          const profile = member.profiles;
+          userStats.set(member.user_id, {
+            user_id: member.user_id,
+            full_name: profile?.full_name || 'Unknown Player',
+            avatar_url: profile?.avatar_url,
+            scores: [],
+            batSpeeds: [],
+            lastSwingDate: undefined
+          });
+        });
+
+        (swingsData || []).forEach((swing: any) => {
+          const userId = swing.sessions?.athletes?.user_id;
+          if (userId && memberUserIds.includes(userId) && userStats.has(userId)) {
+            const stats = userStats.get(userId)!;
+            if (swing.score_phase1 !== null && swing.score_phase1 > 0) {
+              stats.scores.push(swing.score_phase1);
+            }
+            if (swing.bat_speed_peak !== null && swing.bat_speed_peak > 0) {
+              stats.batSpeeds.push(swing.bat_speed_peak);
+            }
+            // Track most recent swing date
+            if (!stats.lastSwingDate || swing.created_at > stats.lastSwingDate) {
+              stats.lastSwingDate = swing.created_at;
+            }
+          }
+        });
+
+        // Create leaderboard entries
+        let leaderboardEntries: LeaderboardEntry[] = Array.from(userStats.values()).map(user => ({
+          user_id: user.user_id,
+          full_name: user.full_name,
+          avatar_url: user.avatar_url,
+          total_swings: user.scores.length,
+          average_score: user.scores.length > 0 ? 
+            Math.round((user.scores.reduce((sum, score) => sum + score, 0) / user.scores.length)) : 0,
+          max_score: user.scores.length > 0 ? Math.max(...user.scores) : 0,
+          average_bat_speed: user.batSpeeds.length > 0 ?
+            Math.round((user.batSpeeds.reduce((sum, speed) => sum + speed, 0) / user.batSpeeds.length)) : 0,
+          rank: 0,
+          trend: 0
+        }));
+
+        // Sort based on selected metric
+        if (metricFilter === 'score') {
+          leaderboardEntries = leaderboardEntries
+            .filter(e => e.total_swings > 0 && e.average_score > 0)
+            .sort((a, b) => b.average_score - a.average_score);
+        } else if (metricFilter === 'swings') {
+          leaderboardEntries = leaderboardEntries
+            .sort((a, b) => b.total_swings - a.total_swings);
+        } else if (metricFilter === 'speed') {
+          leaderboardEntries = leaderboardEntries
+            .filter(e => e.average_bat_speed > 0)
+            .sort((a, b) => b.average_bat_speed - a.average_bat_speed);
+        }
+
+        // Assign ranks
+        const rankedEntries = leaderboardEntries
+          .slice(0, 10)
+          .map((entry, index) => ({ ...entry, rank: index + 1 }));
+
+        setEntries(rankedEntries);
+        setIsLoading(false);
+        return;
+      }
       
-      // Calculate date based on time filter
+      // Calculate date based on time filter (for week and alltime)
       let dateFilter = new Date();
       if (timeFilter === 'week') {
         dateFilter.setDate(dateFilter.getDate() - 7);
@@ -374,14 +518,29 @@ export default function Leaderboard() {
           {entries.length === 0 ? (
             <div className="rounded-2xl bg-white/5 border border-white/10 shadow-lg p-8 text-center max-w-md mx-auto">
               <Trophy className="w-16 h-16 mx-auto mb-4 text-white/20" />
-              <p className="text-white/80 font-semibold text-lg mb-2">No Swings Yet</p>
-              <p className="text-white/50 text-sm mb-4">Upload your first swing to unlock the leaderboard!</p>
-              <button 
-                onClick={() => navigate('/swing-analysis')}
-                className="text-green-400 text-sm underline hover:opacity-80 transition-opacity"
-              >
-                Get started now
-              </button>
+              {timeFilter === 'team' ? (
+                <>
+                  <p className="text-white/80 font-semibold text-lg mb-2">No Team Yet</p>
+                  <p className="text-white/50 text-sm mb-4">Join a team to unlock your team leaderboard</p>
+                  <button 
+                    onClick={() => navigate('/teams')}
+                    className="text-green-400 text-sm underline hover:opacity-80 transition-opacity"
+                  >
+                    Go to Teams
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-white/80 font-semibold text-lg mb-2">No Swings Yet</p>
+                  <p className="text-white/50 text-sm mb-4">Upload your first swing to unlock the leaderboard!</p>
+                  <button 
+                    onClick={() => navigate('/swing-analysis')}
+                    className="text-green-400 text-sm underline hover:opacity-80 transition-opacity"
+                  >
+                    Get started now
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             entries.map((entry, index) => {
