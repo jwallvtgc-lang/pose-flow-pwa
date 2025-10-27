@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Users, Copy, UserPlus, AlertCircle } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,7 +33,7 @@ interface TeamMember {
   avgScore?: number;
 }
 
-type TabType = 'roster' | 'leaderboard' | 'drills' | 'chat';
+type TabType = 'roster' | 'leaderboard' | 'assignments' | 'chat';
 
 interface TeamMessage {
   id: string;
@@ -212,38 +211,6 @@ export default function TeamDetail() {
     } catch (error) {
       console.error('Error leaving team:', error);
       toast.error('Failed to leave team');
-    }
-  };
-
-  const handleAssignDrill = async () => {
-    if (!selectedDrill || !id) {
-      toast.error('Please select a drill');
-      return;
-    }
-
-    try {
-      const assignmentData = {
-        team_id: id,
-        player_id: assignToWholeTeam ? null : selectedPlayer?.user_id,
-        drill_name: selectedDrill,
-        notes: drillNotes.trim() || null
-      };
-
-      const { error } = await supabase
-        .from('assigned_drills')
-        .insert(assignmentData);
-
-      if (error) throw error;
-
-      toast.success(assignToWholeTeam ? 'Drill assigned to whole team!' : 'Drill assigned to player!');
-      setShowAssignDrill(false);
-      setSelectedPlayer(null);
-      setSelectedDrill('');
-      setDrillNotes('');
-      setAssignToWholeTeam(false);
-    } catch (error) {
-      console.error('Error assigning drill:', error);
-      toast.error('Failed to assign drill');
     }
   };
 
@@ -471,14 +438,14 @@ export default function TeamDetail() {
             Leaderboard
           </button>
           <button
-            onClick={() => setActiveTab('drills')}
+            onClick={() => setActiveTab('assignments')}
             className={`flex-1 min-w-[80px] rounded-xl px-3 py-2.5 text-sm font-bold transition-all text-center ${
-              activeTab === 'drills'
+              activeTab === 'assignments'
                 ? 'bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
             }`}
           >
-            Drills
+            Assignments
           </button>
           <button
             onClick={() => setActiveTab('chat')}
@@ -590,13 +557,93 @@ export default function TeamDetail() {
           </Card>
         )}
 
-        {activeTab === 'drills' && (
-          <Card className="bg-white/5 border-white/10 rounded-2xl p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-white/40 mx-auto mb-3" />
-            <p className="text-white/60 text-sm">
-              Assigned drills coming soon!
-            </p>
-          </Card>
+        {activeTab === 'assignments' && (
+          <div className="space-y-4">
+            {/* Header Card */}
+            <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white flex items-start justify-between">
+              <div>
+                <div className="text-white font-semibold text-lg flex items-center gap-2">
+                  <span>📋</span>
+                  <span>Assignments</span>
+                </div>
+                <div className="text-white/60 text-xs mt-1">
+                  Who's working on what
+                </div>
+              </div>
+              {isCoach && (
+                <button
+                  onClick={() => {
+                    setShowAssignDrill(true);
+                    setSelectedPlayer(null);
+                  }}
+                  className="rounded-xl bg-green-500 text-black font-semibold text-sm px-3 py-2 shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:bg-green-400 transition-all active:scale-95"
+                >
+                  Assign Drill
+                </button>
+              )}
+            </div>
+
+            {/* Mock Assignments List */}
+            {(() => {
+              const mockAssignments = [
+                {
+                  playerName: "Jared W.",
+                  avatarInitials: "JW",
+                  drills: [
+                    { drillName: "Wall Head Check", due: "Oct 28", completed: false },
+                    { drillName: "Step-Behind Sequence", due: "Oct 29", completed: true }
+                  ]
+                },
+                {
+                  playerName: "Evan P.",
+                  avatarInitials: "EP",
+                  drills: [
+                    { drillName: "Hip/Shoulder Separation", due: "Oct 28", completed: false }
+                  ]
+                }
+              ];
+
+              return mockAssignments.map((assignment, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white"
+                >
+                  {/* Player Header */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400/30 to-transparent border border-green-400/40 flex items-center justify-center text-white text-xs font-semibold shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                      {assignment.avatarInitials}
+                    </div>
+                    <div className="text-white font-semibold text-sm">
+                      {assignment.playerName}
+                    </div>
+                  </div>
+
+                  {/* Drills List */}
+                  <div className="space-y-2">
+                    {assignment.drills.map((drill, drillIdx) => (
+                      <div key={drillIdx} className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="text-sm text-white font-medium">{drill.drillName}</div>
+                          <div className="text-[10px] text-white/40 mt-0.5">Due {drill.due}</div>
+                        </div>
+                        <div className="ml-3">
+                          {drill.completed ? (
+                            <div className="bg-green-500/20 text-green-400 border border-green-500/40 rounded-lg text-[10px] px-2 py-[2px] font-medium">
+                              Done
+                            </div>
+                          ) : (
+                            <div className="bg-white/10 text-white/70 border border-white/20 rounded-lg text-[10px] px-2 py-[2px]">
+                              Pending
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
         )}
 
         {activeTab === 'chat' && (
@@ -721,40 +768,60 @@ export default function TeamDetail() {
           setAssignToWholeTeam(false);
         }
       }}>
-        <DialogContent className="bg-gradient-to-b from-[#0F172A]/95 to-black/95 backdrop-blur-xl border-white/10 text-white">
+        <DialogContent className="rounded-2xl bg-gradient-to-b from-[#1a2333] to-[#0F172A] border border-white/10 shadow-[0_0_40px_rgba(16,185,129,0.4)] text-white max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
+            <DialogTitle className="text-xl font-bold text-white">
               Assign Drill
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="flex items-center space-x-2 rounded-xl bg-white/5 border border-white/10 p-3">
-              <Checkbox 
-                id="wholeTeam" 
-                checked={assignToWholeTeam}
-                onCheckedChange={(checked) => setAssignToWholeTeam(checked === true)}
-              />
-              <Label htmlFor="wholeTeam" className="text-white text-sm cursor-pointer">
-                Assign to whole team
-              </Label>
+            {/* Player Selection */}
+            <div className="space-y-2">
+              <Label className="text-white text-sm">Player</Label>
+              <Select 
+                value={assignToWholeTeam ? 'entire-team' : selectedPlayer?.user_id || ''} 
+                onValueChange={(value) => {
+                  if (value === 'entire-team') {
+                    setAssignToWholeTeam(true);
+                    setSelectedPlayer(null);
+                  } else {
+                    setAssignToWholeTeam(false);
+                    const player = members.find(m => m.user_id === value);
+                    setSelectedPlayer(player || null);
+                  }
+                }}
+              >
+                <SelectTrigger className="bg-white/10 border-white/20 text-white min-h-[44px]">
+                  <SelectValue placeholder="Select player..." />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a2333] border-white/10">
+                  <SelectItem 
+                    value="entire-team"
+                    className="text-white hover:bg-white/10"
+                  >
+                    Entire Team
+                  </SelectItem>
+                  {members.filter(m => m.role !== 'coach').map((member) => (
+                    <SelectItem 
+                      key={member.user_id} 
+                      value={member.user_id}
+                      className="text-white hover:bg-white/10"
+                    >
+                      {(member.profiles as any)?.full_name || 'Player'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {!assignToWholeTeam && selectedPlayer && (
-              <div className="rounded-xl bg-white/5 border border-white/10 p-3">
-                <p className="text-white/60 text-xs mb-1">Assigning to:</p>
-                <p className="text-white font-semibold">
-                  {(selectedPlayer.profiles as any)?.full_name || 'Player'}
-                </p>
-              </div>
-            )}
-
+            {/* Drill Selection */}
             <div className="space-y-2">
-              <Label className="text-white text-sm">Select Drill</Label>
+              <Label className="text-white text-sm">Drill</Label>
               <Select value={selectedDrill} onValueChange={setSelectedDrill}>
-                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="bg-white/10 border-white/20 text-white min-h-[44px]">
                   <SelectValue placeholder="Choose a drill..." />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0F172A] border-white/10">
+                <SelectContent className="bg-[#1a2333] border-white/10">
                   {drillsData.map((drill) => (
                     <SelectItem 
                       key={drill.id} 
@@ -768,36 +835,52 @@ export default function TeamDetail() {
               </Select>
             </div>
 
+            {/* Notes */}
             <div className="space-y-2">
-              <Label className="text-white text-sm">Notes (Optional)</Label>
+              <Label className="text-white text-sm">Notes to player</Label>
               <Textarea
-                placeholder="What do you want them focusing on?"
                 value={drillNotes}
                 onChange={(e) => setDrillNotes(e.target.value)}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/40 min-h-[100px]"
+                placeholder="Keep head still. 3×8 slow reps."
+                className="bg-white/10 border-white/20 text-white placeholder-white/40 min-h-[80px]"
               />
             </div>
 
-            <div className="flex gap-2">
+            {/* Due Date */}
+            <div className="space-y-2">
+              <Label className="text-white text-sm">Due Date</Label>
+              <input
+                type="date"
+                className="w-full bg-white/10 border border-white/20 rounded-lg text-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-400 focus:border-green-400 min-h-[44px]"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={() => setShowAssignDrill(false)}
+                className="flex-1 rounded-xl bg-white/10 text-white/70 border border-white/20 hover:bg-white/20 min-h-[44px]"
+              >
+                Cancel
+              </Button>
               <Button
                 onClick={() => {
+                  console.log('Assigning drill:', {
+                    player: assignToWholeTeam ? 'Entire Team' : selectedPlayer?.user_id,
+                    drill: selectedDrill,
+                    notes: drillNotes
+                  });
+                  toast.success('Drill assigned! (Mock)');
                   setShowAssignDrill(false);
                   setSelectedPlayer(null);
                   setSelectedDrill('');
                   setDrillNotes('');
                   setAssignToWholeTeam(false);
                 }}
-                variant="outline"
-                className="flex-1 border-white/20 text-white hover:bg-white/10"
+                disabled={!selectedDrill || (!assignToWholeTeam && !selectedPlayer)}
+                className="flex-1 rounded-xl bg-green-500 text-black font-semibold hover:bg-green-400 shadow-[0_0_20px_rgba(16,185,129,0.5)] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleAssignDrill}
-                disabled={!selectedDrill}
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
-              >
-                Assign
+                Assign Drill
               </Button>
             </div>
           </div>

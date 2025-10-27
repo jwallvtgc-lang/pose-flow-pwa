@@ -7,11 +7,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Header } from '@/components/Header';
 import { SplashScreen } from '@/components/SplashScreen';
+import { toast } from 'sonner';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const [weekSwingCount, setWeekSwingCount] = useState(0);
   const [showSplash, setShowSplash] = useState(true);
+  const [assignmentCompleted, setAssignmentCompleted] = useState(false);
   
   const [stats, setStats] = useState({
     bestScore: 0,
@@ -549,32 +551,69 @@ const Index = () => {
         </div>
 
         {/* 2. TODAY'S FOCUS CARD */}
-        {(assignedDrill || topDrills.length > 0) && (
-          <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6 hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all duration-200">
-            <h3 className="text-white font-semibold text-base mb-3">Today's Focus</h3>
-            <div className="mb-4">
-              {assignedDrill ? (
-                <>
-                  <h4 className="text-emerald-400 font-semibold text-lg mb-2">{assignedDrill.drill_name}</h4>
-                  {assignedDrill.notes && (
-                    <p className="text-white/70 text-sm mb-2">{assignedDrill.notes}</p>
+        {(() => {
+          // Mock assignment data for now
+          const currentAssignment = {
+            drillName: "Wall Head Check",
+            notes: "Keep your head still. 3×8 slow reps.",
+            dueText: "Due tonight",
+            completed: false
+          };
+
+          // If there's an active assignment that hasn't been completed
+          if (currentAssignment && !assignmentCompleted) {
+            return (
+              <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6">
+                <h3 className="text-white font-semibold text-base mb-3">Coach Assignment</h3>
+                <h4 className="text-green-400 font-semibold text-lg mb-2">{currentAssignment.drillName}</h4>
+                <p className="text-white/70 text-sm mb-2">{currentAssignment.notes}</p>
+                <p className="text-white/40 text-xs mb-3">{currentAssignment.dueText}</p>
+                <button
+                  onClick={() => {
+                    console.log('Marking assignment as complete');
+                    setAssignmentCompleted(true);
+                    toast.success('Assignment marked as done!');
+                  }}
+                  className="rounded-xl bg-green-500 text-black font-semibold text-sm px-3 py-2 shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:bg-green-400 transition-all active:scale-95 min-h-[44px]"
+                >
+                  Mark Done
+                </button>
+              </div>
+            );
+          }
+
+          // Fallback to the existing "Today's Focus" logic
+          if (assignedDrill || topDrills.length > 0) {
+            return (
+              <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6 hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all duration-200">
+                <h3 className="text-white font-semibold text-base mb-3">Today's Focus</h3>
+                <div className="mb-4">
+                  {assignedDrill ? (
+                    <>
+                      <h4 className="text-emerald-400 font-semibold text-lg mb-2">{assignedDrill.drill_name}</h4>
+                      {assignedDrill.notes && (
+                        <p className="text-white/70 text-sm mb-2">{assignedDrill.notes}</p>
+                      )}
+                      <p className="text-white/40 text-[11px]">From Coach</p>
+                    </>
+                  ) : (
+                    <>
+                      <h4 className="text-emerald-400 font-semibold text-lg mb-2">{topDrills[0].name}</h4>
+                      <p className="text-white/70 text-sm">{topDrills[0].description}</p>
+                    </>
                   )}
-                  <p className="text-white/40 text-[11px]">From Coach</p>
-                </>
-              ) : (
-                <>
-                  <h4 className="text-emerald-400 font-semibold text-lg mb-2">{topDrills[0].name}</h4>
-                  <p className="text-white/70 text-sm">{topDrills[0].description}</p>
-                </>
-              )}
-            </div>
-            <Link to="/analysis">
-              <Button className="rounded-xl bg-emerald-500 text-black font-semibold text-sm px-4 py-2 hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]">
-                Start Drill
-              </Button>
-            </Link>
-          </div>
-        )}
+                </div>
+                <Link to="/analysis">
+                  <Button className="rounded-xl bg-emerald-500 text-black font-semibold text-sm px-4 py-2 hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                    Start Drill
+                  </Button>
+                </Link>
+              </div>
+            );
+          }
+
+          return null;
+        })()}
 
         {/* 3. RECENT SWINGS CAROUSEL */}
         {recentSwings.length > 0 && (
