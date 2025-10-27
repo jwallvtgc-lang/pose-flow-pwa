@@ -20,7 +20,7 @@ export function Header({ leftAction, rightAction }: HeaderProps) {
       <img
         src={wideLogo}
         alt="SwingSense"
-        className="h-12 w-auto drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] animate-[glowpulse_6s_ease-in-out_infinite]"
+        className="h-14 w-auto drop-shadow-[0_0_24px_rgba(16,185,129,0.6)] animate-[glowpulse_6s_ease-in-out_infinite]"
       />
 
       {/* Right Action */}
@@ -33,10 +33,10 @@ export function Header({ leftAction, rightAction }: HeaderProps) {
       <style>{`
         @keyframes glowpulse {
           0%, 100% {
-            filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+            filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.4));
           }
           50% {
-            filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.6));
+            filter: drop-shadow(0 0 24px rgba(16, 185, 129, 0.7));
           }
         }
       `}</style>
