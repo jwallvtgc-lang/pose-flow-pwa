@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, AlertTriangle, Loader2, RotateCcw, Save, TrendingUp, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Loader2, RotateCcw, Save, TrendingUp, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SwingOverlayCanvas } from '@/components/SwingOverlayCanvas';

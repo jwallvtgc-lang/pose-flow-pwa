@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, TrendingUp, Award, Zap, Trophy, Play, User, Dumbbell, Users } from 'lucide-react';
+import { Camera, TrendingUp, Award, Zap, Trophy, Play, Dumbbell, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';

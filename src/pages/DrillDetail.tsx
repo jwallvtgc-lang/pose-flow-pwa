@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Target, Zap, CheckCircle2, Package } from 'lucide-react';
+import { Target, Zap, CheckCircle2, Package } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { drillsData } from '@/lib/drillsData';
 import { StartDrillModal } from '@/components/StartDrillModal';

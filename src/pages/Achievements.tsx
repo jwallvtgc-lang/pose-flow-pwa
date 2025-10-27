@@ -1,6 +1,5 @@
-import { Trophy, Star, Award, ArrowLeft } from 'lucide-react';
+import { Trophy, Star, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { AppHeader } from '@/components/AppHeader';
 
 export default function Achievements() {

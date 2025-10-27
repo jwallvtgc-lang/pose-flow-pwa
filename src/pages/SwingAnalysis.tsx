@@ -3,7 +3,7 @@ import { CameraCapture } from '@/components/CameraCapture';
 import { SwingAnalysisResults } from '@/components/SwingAnalysisResults';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Camera, BarChart3 } from 'lucide-react';
+import { Camera, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { evaluateSwing } from '@/lib/swing-evaluation';
 import { saveSwing, saveMetrics, ensureSession } from '@/lib/persistence';

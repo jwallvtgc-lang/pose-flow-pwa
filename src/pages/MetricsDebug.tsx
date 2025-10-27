@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AppHeader } from '@/components/AppHeader';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 type MetricSpec = {
@@ -42,16 +40,7 @@ const MetricsDebug = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
         <AppHeader 
-          leftAction={
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/')}
-              className="text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          }
+          onBack={() => navigate('/')}
         />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold text-white mb-6">Metrics Debug</h1>
@@ -65,16 +54,7 @@ const MetricsDebug = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
         <AppHeader 
-          leftAction={
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/')}
-              className="text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          }
+          onBack={() => navigate('/')}
         />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold text-white mb-6">Metrics Debug</h1>
@@ -89,16 +69,7 @@ const MetricsDebug = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-black">
       <AppHeader 
-        leftAction={
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate('/')}
-            className="text-white/70 hover:text-white hover:bg-white/10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        }
+        onBack={() => navigate('/')}
       />
       
       <div className="max-w-4xl mx-auto px-4 py-8">

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress as ProgressBar } from '@/components/ui/progress';
-import { TrendingUp, ArrowRight, ArrowLeft, Target, Share2, ChevronRight, Zap, Activity, Brain, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, ArrowRight, ArrowLeft, Target, ChevronRight, Zap, Activity, Brain, ArrowUp, ArrowDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackCapture } from '@/lib/analytics';
 import { metricSpecs } from '@/config/phase1_metrics';
@@ -561,26 +561,9 @@ export default function Progress() {
       >
         <div className="container mx-auto px-4 py-4 max-w-2xl">
           <AppHeader 
-            leftAction={
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/')}
-                className="h-8 w-8 p-0 text-white hover:bg-white/20"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            }
-            rightAction={
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleShare}
-                className="h-8 w-8 p-0 text-white hover:bg-white/20"
-              >
-                <Share2 className="h-5 w-5" />
-              </Button>
-            }
+            onBack={() => navigate('/')}
+            onActionRight={handleShare}
+            rightIcon="share"
           />
 
           {/* Time Filter Tabs */}
