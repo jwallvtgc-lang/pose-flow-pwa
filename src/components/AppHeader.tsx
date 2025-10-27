@@ -22,12 +22,12 @@ export function AppHeader({ onBack, onActionRight, rightIcon }: AppHeaderProps) 
         ) : null}
       </div>
 
-      {/* Center - Large horizontal wordmark */}
+      {/* Center - Large horizontal wordmark stretched across header */}
       <div className="flex-1 flex justify-center items-center pointer-events-none select-none px-2">
         <img
           src="/logo-horizontal.png"
           alt="SwingSense"
-          className="h-10 sm:h-12 w-auto drop-shadow-[0_0_20px_rgba(16,185,129,0.6)] transition-all duration-300"
+          className="h-10 sm:h-12 w-48 sm:w-64 md:w-80 lg:w-96 object-contain drop-shadow-[0_0_20px_rgba(16,185,129,0.6)] transition-all duration-300"
         />
       </div>
 
