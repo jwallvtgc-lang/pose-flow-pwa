@@ -62,14 +62,25 @@ const Index = () => {
   }, [user, loading]);
 
   const loadWeekSwingCount = async () => {
+    if (!user?.id) return;
+    
     try {
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
       
       const { data: swings, error } = await supabase
         .from('swings')
-        .select('id')
-        .gte('created_at', oneWeekAgo.toISOString());
+        .select(`
+          id,
+          sessions!inner(
+            athlete_id,
+            athletes!inner(
+              user_id
+            )
+          )
+        `)
+        .gte('created_at', oneWeekAgo.toISOString())
+        .eq('sessions.athletes.user_id', user.id);
 
       if (error) {
         console.error('Error loading week swing count:', error);
@@ -83,10 +94,23 @@ const Index = () => {
   };
 
   const loadStats = async () => {
+    if (!user?.id) return;
+    
     try {
       const { data: swings, error: swingsError } = await supabase
         .from('swings')
-        .select('id, created_at, score_phase1')
+        .select(`
+          id,
+          created_at,
+          score_phase1,
+          sessions!inner(
+            athlete_id,
+            athletes!inner(
+              user_id
+            )
+          )
+        `)
+        .eq('sessions.athletes.user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (swingsError) {
@@ -126,13 +150,25 @@ const Index = () => {
   };
 
   const loadMonthlyStats = async () => {
+    if (!user?.id) return;
+    
     try {
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       
       const { data: swings, error: swingsError } = await supabase
         .from('swings')
-        .select('score_phase1, bat_speed_peak')
+        .select(`
+          score_phase1,
+          bat_speed_peak,
+          sessions!inner(
+            athlete_id,
+            athletes!inner(
+              user_id
+            )
+          )
+        `)
+        .eq('sessions.athletes.user_id', user.id)
         .gte('created_at', firstDayOfMonth.toISOString())
         .order('created_at', { ascending: false });
 
@@ -184,13 +220,28 @@ const Index = () => {
   };
 
   const loadLatestSwing = async () => {
+    if (!user?.id) return;
+    
     try {
       const { data: swing, error } = await supabase
         .from('swings')
-        .select('id, created_at, score_phase1, cues, video_url')
+        .select(`
+          id,
+          created_at,
+          score_phase1,
+          cues,
+          video_url,
+          sessions!inner(
+            athlete_id,
+            athletes!inner(
+              user_id
+            )
+          )
+        `)
+        .eq('sessions.athletes.user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading latest swing:', error);
@@ -204,10 +255,24 @@ const Index = () => {
   };
 
   const loadRecentSwings = async () => {
+    if (!user?.id) return;
+    
     try {
       const { data: swings, error } = await supabase
         .from('swings')
-        .select('id, created_at, score_phase1, video_url')
+        .select(`
+          id,
+          created_at,
+          score_phase1,
+          video_url,
+          sessions!inner(
+            athlete_id,
+            athletes!inner(
+              user_id
+            )
+          )
+        `)
+        .eq('sessions.athletes.user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -231,7 +296,18 @@ const Index = () => {
       
       const { data: userSwings, error: swingsError } = await supabase
         .from('swings')
-        .select('id, score_phase1, created_at')
+        .select(`
+          id,
+          score_phase1,
+          created_at,
+          sessions!inner(
+            athlete_id,
+            athletes!inner(
+              user_id
+            )
+          )
+        `)
+        .eq('sessions.athletes.user_id', user.id)
         .gte('created_at', thirtyDaysAgo.toISOString())
         .not('score_phase1', 'is', null)
         .gt('score_phase1', 0);
@@ -261,13 +337,25 @@ const Index = () => {
   };
 
   const loadTopDrills = async () => {
+    if (!user?.id) return;
+    
     try {
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
       
       const { data: swings, error } = await supabase
         .from('swings')
-        .select('drill_id, drill_data')
+        .select(`
+          drill_id,
+          drill_data,
+          sessions!inner(
+            athlete_id,
+            athletes!inner(
+              user_id
+            )
+          )
+        `)
+        .eq('sessions.athletes.user_id', user.id)
         .gte('created_at', oneWeekAgo.toISOString());
 
       if (error) {
