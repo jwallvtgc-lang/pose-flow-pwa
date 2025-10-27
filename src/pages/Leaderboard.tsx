@@ -215,6 +215,12 @@ export default function Leaderboard() {
         .not('score_phase1', 'is', null)
         .gt('score_phase1', 0);
 
+      console.log('=== LEADERBOARD DEBUG ===');
+      console.log('Time filter:', timeFilter);
+      console.log('Date filter:', dateFilter.toISOString());
+      console.log('Swing data returned:', swingData);
+      console.log('Number of swings:', swingData?.length);
+
       if (error) {
         console.error('Error loading leaderboard data:', error);
         setEntries([]);
@@ -293,6 +299,8 @@ export default function Leaderboard() {
         trend: Math.floor(Math.random() * 7) - 3 // Mock trend data for now
       }));
 
+      console.log('All leaderboard entries before filtering:', leaderboardEntries);
+
       // Sort based on selected metric
       if (metricFilter === 'score') {
         leaderboardEntries = leaderboardEntries
@@ -307,10 +315,14 @@ export default function Leaderboard() {
           .sort((a, b) => b.average_bat_speed - a.average_bat_speed);
       }
 
+      console.log('Filtered and sorted entries:', leaderboardEntries);
+
       // Assign ranks and take top 10
       const rankedEntries = leaderboardEntries
         .slice(0, 10)
         .map((entry, index) => ({ ...entry, rank: index + 1 }));
+
+      console.log('Final ranked entries:', rankedEntries);
 
       setEntries(rankedEntries);
 
@@ -426,6 +438,7 @@ export default function Leaderboard() {
           </div>
           <p className="text-white/60 text-sm mb-4">
             {timeFilter === 'week' ? "This Week's Top Swings" : timeFilter === 'alltime' ? "All-Time Champions" : "My Team Rankings"}
+            {entries.length > 0 && ` • ${entries.length} player${entries.length !== 1 ? 's' : ''}`}
           </p>
           {/* Divider glow line */}
           <div className="flex justify-center">
@@ -437,7 +450,7 @@ export default function Leaderboard() {
         <div className="flex items-center justify-center gap-3 mb-6">
           <button
             onClick={() => setTimeFilter('week')}
-            className={`px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all duration-200 ${
+            className={`px-5 py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 whitespace-nowrap ${
               timeFilter === 'week'
                 ? 'bg-green-500/20 text-green-300 border border-green-400/60 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105'
                 : 'text-white/50 hover:text-white/80 bg-white/5 border border-white/10 hover:bg-white/10'
@@ -447,7 +460,7 @@ export default function Leaderboard() {
           </button>
           <button
             onClick={() => setTimeFilter('alltime')}
-            className={`px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all duration-200 ${
+            className={`px-5 py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 whitespace-nowrap ${
               timeFilter === 'alltime'
                 ? 'bg-green-500/20 text-green-300 border border-green-400/60 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105'
                 : 'text-white/50 hover:text-white/80 bg-white/5 border border-white/10 hover:bg-white/10'
@@ -457,7 +470,7 @@ export default function Leaderboard() {
           </button>
           <button
             onClick={() => setTimeFilter('team')}
-            className={`px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all duration-200 ${
+            className={`px-5 py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 whitespace-nowrap ${
               timeFilter === 'team'
                 ? 'bg-green-500/20 text-green-300 border border-green-400/60 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105'
                 : 'text-white/50 hover:text-white/80 bg-white/5 border border-white/10 hover:bg-white/10'
