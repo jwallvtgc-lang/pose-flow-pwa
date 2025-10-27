@@ -149,6 +149,16 @@ export default {
             transform: "scale(1)"
           },
         },
+        "pulseGlow": {
+          "0%, 100%": {
+            opacity: "0.6",
+            filter: "drop-shadow(0 0 10px rgba(16,185,129,0.25))",
+          },
+          "50%": {
+            opacity: "1",
+            filter: "drop-shadow(0 0 22px rgba(16,185,129,0.45))",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -163,6 +173,7 @@ export default {
         "swing-draw": "swing-draw 0.8s ease-out forwards",
         "glow-pulse": "glow-pulse 1.2s ease-in-out 6s infinite",
         "fade-scale-in": "fade-scale-in 0.6s ease-out 0.3s forwards",
+        "pulseGlow": "pulseGlow 3s ease-in-out infinite",
       },
     },
   },

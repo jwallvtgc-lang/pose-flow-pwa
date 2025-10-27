@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, TrendingUp, Award, Zap, Trophy, Play, Dumbbell, Users } from 'lucide-react';
+import { Camera, TrendingUp, Award, Zap, Trophy, Play, Dumbbell, Users, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { SplashScreen } from '@/components/SplashScreen';
 import { toast } from 'sonner';
 import { drillsData } from '@/lib/drillsData';
+import { motion } from 'framer-motion';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -586,48 +587,94 @@ const Index = () => {
 
         {/* 2. AI COACH INSIGHT CARD */}
         {hasSwings && user && (
-          <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white mb-4">
-            <h3 className="flex items-center gap-2 text-white font-semibold text-base mb-2">
-              🤖 AI Coach Insight
-            </h3>
-
-            {aiInsightLoading ? (
-              <div className="flex items-center gap-2 py-4">
-                <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-white/60">Analyzing your recent swings...</p>
+          <div className="relative mb-4">
+            {/* Radial glow background */}
+            <div className="absolute -inset-px rounded-2xl bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.12),transparent_70%)] animate-pulseGlow pointer-events-none" />
+            
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut", delay: 0.1 }}
+              className="relative rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white backdrop-blur-sm"
+            >
+              {/* Subtitle */}
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Sparkles className="w-3 h-3 text-green-400/70 animate-pulse" />
+                <p className="text-[10px] uppercase tracking-wider text-green-400/60 font-semibold">
+                  Personalized Analysis
+                </p>
               </div>
-            ) : aiInsight ? (
-              <>
-                <p className="text-sm text-white leading-relaxed mb-1">
-                  <span className="text-green-400 font-medium">✅ {getFirstName()}, {aiInsight.praise.split('.')[0]}.</span>
-                  {' '}{aiInsight.praise.split('.').slice(1).join('.')}
-                </p>
 
-                <p className="text-sm text-white leading-relaxed mb-1">
-                  <span className="text-yellow-400 font-medium">⚠ {aiInsight.issue.split('.')[0]}.</span>
-                  {' '}{aiInsight.issue.split('.').slice(1).join('.')}
-                </p>
+              <h3 className="flex items-center gap-2 text-white font-semibold text-base mb-3">
+                🤖 AI Coach Insight
+              </h3>
 
-                <p className="text-sm text-white leading-relaxed">
-                  <span className="text-green-400 font-medium">🎯 Today:</span>
-                  {' '}{aiInsight.action}
-                </p>
-
-                <div className="flex items-center justify-between mt-3">
-                  <p className="text-[11px] text-white/40">
-                    Updated {aiInsight.updated}
-                  </p>
-                  <button
-                    onClick={() => console.log('View full breakdown clicked')}
-                    className="text-[11px] text-green-400/70 underline hover:text-green-400"
+              {aiInsightLoading ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center gap-2 py-4"
+                >
+                  <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-white/60">Analyzing your recent swings...</p>
+                </motion.div>
+              ) : aiInsight ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <motion.p
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.3 }}
+                    className="text-sm text-white leading-relaxed mb-2.5"
                   >
-                    View full breakdown →
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-white/60 py-2">Record more swings to get personalized AI coaching insights.</p>
-            )}
+                    <span className="text-green-400 font-medium">✅ {getFirstName()}, {aiInsight.praise.split('.')[0]}.</span>
+                    {' '}{aiInsight.praise.split('.').slice(1).join('.')}
+                  </motion.p>
+
+                  <motion.p
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.4 }}
+                    className="text-sm text-white leading-relaxed mb-2.5"
+                  >
+                    <span className="text-yellow-400 font-medium">⚠ {aiInsight.issue.split('.')[0]}.</span>
+                    {' '}{aiInsight.issue.split('.').slice(1).join('.')}
+                  </motion.p>
+
+                  <motion.p
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.5 }}
+                    className="text-sm text-white leading-relaxed"
+                  >
+                    <span className="text-green-400 font-medium">🎯 Today:</span>
+                    {' '}{aiInsight.action}
+                  </motion.p>
+
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3, delay: 0.6 }}
+                    className="flex items-center justify-between mt-3 pt-3 border-t border-white/5"
+                  >
+                    <p className="text-[11px] text-white/40">
+                      Updated {aiInsight.updated}
+                    </p>
+                    <button
+                      onClick={() => console.log('View full breakdown clicked')}
+                      className="text-[11px] text-green-400/70 underline hover:text-green-400 transition-colors duration-200"
+                    >
+                      View full breakdown →
+                    </button>
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <p className="text-sm text-white/60 py-2">Record more swings to get personalized AI coaching insights.</p>
+              )}
+            </motion.div>
           </div>
         )}
 
