@@ -68,6 +68,16 @@ export default function TeamDetail() {
   const [messageInput, setMessageInput] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [assignments, setAssignments] = useState<any[]>([]);
+  
+  // Leaderboard state
+  const [activeFilter, setActiveFilter] = useState<'thisWeek' | 'allTime' | 'mostImproved' | 'batSpeed'>('thisWeek');
+  const mockLeaders = [
+    { rank: 1, name: "Jared W.", swingsThisWeek: 12, swingScore: 84, delta: "+3", batSpeed: "71 mph", isCurrentUser: true, initials: "JW" },
+    { rank: 2, name: "Evan R.", swingsThisWeek: 9, swingScore: 81, delta: "+1", batSpeed: "69 mph", isCurrentUser: false, initials: "ER" },
+    { rank: 3, name: "Mike J.", swingsThisWeek: 7, swingScore: 78, delta: "+2", batSpeed: "68 mph", isCurrentUser: false, initials: "MJ" },
+    { rank: 4, name: "Sarah L.", swingsThisWeek: 5, swingScore: 75, delta: "+1", batSpeed: "66 mph", isCurrentUser: false, initials: "SL" },
+    { rank: 5, name: "Tom B.", swingsThisWeek: 3, swingScore: 72, delta: "-1", batSpeed: "64 mph", isCurrentUser: false, initials: "TB" }
+  ];
 
   useEffect(() => {
     if (user && id) {
@@ -600,12 +610,126 @@ export default function TeamDetail() {
         )}
 
         {activeTab === 'leaderboard' && (
-          <Card className="bg-white/5 border-white/10 rounded-2xl p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-white/40 mx-auto mb-3" />
-            <p className="text-white/60 text-sm">
-              Team leaderboard coming soon!
-            </p>
-          </Card>
+          <div className="space-y-4">
+            {/* Header Card */}
+            <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white mb-4">
+              <h2 className="text-white font-semibold text-lg flex items-center gap-2 mb-1">
+                🏆 {team?.name} Leaderboard
+              </h2>
+              <p className="text-white/60 text-xs mb-3">
+                This Week's Top Swings
+              </p>
+              
+              {/* Filter Pills */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setActiveFilter('thisWeek')}
+                  className={`rounded-xl px-3 py-1 text-xs font-semibold transition-all ${
+                    activeFilter === 'thisWeek'
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/40'
+                      : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  This Week
+                </button>
+                <button
+                  onClick={() => setActiveFilter('allTime')}
+                  className={`rounded-xl px-3 py-1 text-xs font-semibold transition-all ${
+                    activeFilter === 'allTime'
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/40'
+                      : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  All-Time
+                </button>
+                <button
+                  onClick={() => setActiveFilter('mostImproved')}
+                  className={`rounded-xl px-3 py-1 text-xs font-semibold transition-all ${
+                    activeFilter === 'mostImproved'
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/40'
+                      : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  Most Improved
+                </button>
+                <button
+                  onClick={() => setActiveFilter('batSpeed')}
+                  className={`rounded-xl px-3 py-1 text-xs font-semibold transition-all ${
+                    activeFilter === 'batSpeed'
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/40'
+                      : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  Bat Speed
+                </button>
+              </div>
+            </div>
+
+            {/* Leaderboard List */}
+            <div className="space-y-2">
+              {mockLeaders.map((player) => (
+                <div
+                  key={player.rank}
+                  onClick={() => console.log('Clicked player:', player.name)}
+                  className={`relative flex items-center justify-between rounded-2xl bg-white/5 border ${
+                    player.isCurrentUser 
+                      ? 'border-green-500/40 shadow-[0_0_20px_rgba(16,185,129,0.2)]' 
+                      : 'border-white/10'
+                  } shadow-[0_0_20px_rgba(16,185,129,0.15)] p-4 text-white cursor-pointer hover:bg-white/10 transition-all`}
+                >
+                  {/* Left Cluster */}
+                  <div className="flex items-center gap-3">
+                    {/* Rank */}
+                    <div className="text-white text-lg font-bold w-6">
+                      #{player.rank}
+                    </div>
+                    
+                    {/* Avatar */}
+                    <div className={`h-10 w-10 rounded-full bg-gradient-to-br from-green-400/30 to-transparent border border-green-400/40 flex items-center justify-center text-white text-xs font-semibold ${
+                      player.rank === 1 ? 'shadow-[0_0_20px_rgba(16,185,129,0.5)]' : ''
+                    }`}>
+                      {player.initials}
+                    </div>
+                    
+                    {/* Player Info */}
+                    <div className="flex flex-col">
+                      <div className="text-white text-sm font-semibold">{player.name}</div>
+                      <div className="text-white/50 text-[11px]">
+                        {activeFilter === 'thisWeek' && `${player.swingsThisWeek} swings this week`}
+                        {activeFilter === 'allTime' && `Avg: ${player.swingScore} pts`}
+                        {activeFilter === 'mostImproved' && `Up ${player.delta} pts vs last week`}
+                        {activeFilter === 'batSpeed' && `Avg bat speed: ${player.batSpeed}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Cluster */}
+                  <div className="text-right">
+                    <div className="text-green-400 font-bold text-lg leading-none">
+                      {activeFilter === 'thisWeek' && player.swingScore}
+                      {activeFilter === 'allTime' && player.swingScore}
+                      {activeFilter === 'mostImproved' && player.delta}
+                      {activeFilter === 'batSpeed' && player.batSpeed}
+                    </div>
+                    <div className="text-white/40 text-[10px] leading-none mt-1">
+                      {activeFilter === 'thisWeek' && 'SwingScore'}
+                      {activeFilter === 'allTime' && 'Avg Score'}
+                      {activeFilter === 'mostImproved' && 'Change'}
+                      {activeFilter === 'batSpeed' && 'Bat Speed'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Motivation Bar */}
+            <div className="fixed bottom-20 left-4 right-4 rounded-xl bg-white/5 border border-white/10 text-center text-white/70 text-xs shadow-[0_0_20px_rgba(16,185,129,0.4)] px-4 py-3 z-10">
+              {isCoach 
+                ? "📣 3 players haven't logged a swing yet this week. Assign a drill."
+                : "💪 You're #2. One more clean swing today could put you in #1."
+              }
+            </div>
+          </div>
         )}
 
         {activeTab === 'assignments' && (
