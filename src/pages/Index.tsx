@@ -911,12 +911,13 @@ const Index = () => {
                     {swing.video_url ? (
                       <>
                         <video
-                          src={swing.video_url}
+                          src={`${swing.video_url}#t=0.1`}
                           className="w-full h-full object-cover"
                           preload="metadata"
                           playsInline
+                          webkit-playsinline="true"
                           muted
-                          crossOrigin="anonymous"
+                          disablePictureInPicture
                         />
                         {/* Play icon overlay */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
