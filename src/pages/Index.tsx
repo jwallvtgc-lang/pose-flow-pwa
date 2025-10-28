@@ -44,6 +44,8 @@ const Index = () => {
   const [assignedDrill, setAssignedDrill] = useState<{ drill_name: string; notes: string | null } | null>(null);
   const [aiInsight, setAiInsight] = useState<{ praise: string; issue: string; action: string; updated: string } | null>(null);
   const [aiInsightLoading, setAiInsightLoading] = useState(false);
+  const [teamLeaderboard, setTeamLeaderboard] = useState<Array<{ name: string; initials: string; score: number }>>([]);
+  const [teamLeaderboardLoading, setTeamLeaderboardLoading] = useState(false);
 
   // Minimum splash screen display time - only on first load
   useEffect(() => {
@@ -68,6 +70,7 @@ const Index = () => {
       loadWeekSwingCount().catch(err => console.error('loadWeekSwingCount failed:', err));
       loadAssignedDrill().catch(err => console.error('loadAssignedDrill failed:', err));
       loadAiInsight().catch(err => console.error('loadAiInsight failed:', err));
+      loadTeamLeaderboard().catch(err => console.error('loadTeamLeaderboard failed:', err));
     } else if (!loading) {
       // Show placeholder data for non-authenticated users
       setStats({
@@ -511,6 +514,124 @@ const Index = () => {
     }
   };
 
+  const loadTeamLeaderboard = async () => {
+    if (!user?.id) return;
+    
+    setTeamLeaderboardLoading(true);
+    try {
+      // Get user's teams
+      const { data: userTeams, error: teamsError } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', user.id);
+
+      if (teamsError) {
+        console.error('Error loading user teams:', teamsError);
+        setTeamLeaderboardLoading(false);
+        return;
+      }
+
+      if (!userTeams || userTeams.length === 0) {
+        setTeamLeaderboardLoading(false);
+        return;
+      }
+
+      const teamIds = userTeams.map(t => t.team_id);
+
+      // Get all team members
+      const { data: teamMembers, error: membersError } = await supabase
+        .from('team_members')
+        .select('user_id')
+        .in('team_id', teamIds);
+
+      if (membersError) {
+        console.error('Error loading team members:', membersError);
+        setTeamLeaderboardLoading(false);
+        return;
+      }
+
+      if (!teamMembers || teamMembers.length === 0) {
+        setTeamLeaderboardLoading(false);
+        return;
+      }
+
+      const userIds = teamMembers.map(m => m.user_id);
+
+      // Get profiles for all team members
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+        setTeamLeaderboardLoading(false);
+        return;
+      }
+
+      // Get recent swings for all team members (last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const { data: swings, error: swingsError } = await supabase
+        .from('swings')
+        .select('user_id, score_phase1')
+        .in('user_id', userIds)
+        .gte('created_at', sevenDaysAgo.toISOString())
+        .not('score_phase1', 'is', null)
+        .gt('score_phase1', 0);
+
+      if (swingsError) {
+        console.error('Error loading swings:', swingsError);
+        setTeamLeaderboardLoading(false);
+        return;
+      }
+
+      // Calculate average scores per user
+      const userScores: Record<string, { scores: number[]; name: string }> = {};
+      
+      profiles?.forEach(profile => {
+        if (profile.full_name) {
+          userScores[profile.id] = {
+            scores: [],
+            name: profile.full_name
+          };
+        }
+      });
+
+      swings?.forEach(swing => {
+        if (swing.user_id && userScores[swing.user_id] && swing.score_phase1) {
+          userScores[swing.user_id].scores.push(swing.score_phase1);
+        }
+      });
+
+      // Calculate averages and create leaderboard
+      const leaderboard = Object.entries(userScores)
+        .filter(([_, data]) => data.scores.length > 0)
+        .map(([, data]) => {
+          const avgScore = data.scores.reduce((sum, score) => sum + score, 0) / data.scores.length;
+          const nameParts = data.name.split(' ');
+          const initials = nameParts.length >= 2 
+            ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
+            : data.name.substring(0, 2).toUpperCase();
+          
+          return {
+            name: data.name,
+            initials,
+            score: Math.round(avgScore)
+          };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+      setTeamLeaderboard(leaderboard);
+    } catch (error) {
+      console.error('Failed to load team leaderboard:', error);
+    } finally {
+      setTeamLeaderboardLoading(false);
+    }
+  };
+
   // Show loading state while authentication is being checked or minimum display time
   if (loading || showSplash) {
     return <SplashScreen />;
@@ -678,24 +799,18 @@ const Index = () => {
           </div>
         )}
 
-        {/* 3. TODAY'S FOCUS CARD */}
+        {/* 3. COACH ASSIGNMENT / TODAY'S FOCUS CARD */}
         {(() => {
-          // Mock assignment data for now
-          const currentAssignment = {
-            drillName: "Wall Head Check",
-            notes: "Keep your head still. 3×8 slow reps.",
-            dueText: "Due tonight",
-            completed: false
-          };
-
-          // If there's an active assignment that hasn't been completed
-          if (currentAssignment && !assignmentCompleted) {
+          // Show coach assignment if there's an active drill assignment
+          if (assignedDrill && !assignmentCompleted) {
             return (
               <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6">
                 <h3 className="text-white font-semibold text-base mb-3">Coach Assignment</h3>
-                <h4 className="text-green-400 font-semibold text-lg mb-2">{currentAssignment.drillName}</h4>
-                <p className="text-white/70 text-sm mb-2">{currentAssignment.notes}</p>
-                <p className="text-white/40 text-xs mb-3">{currentAssignment.dueText}</p>
+                <h4 className="text-green-400 font-semibold text-lg mb-2">{assignedDrill.drill_name}</h4>
+                {assignedDrill.notes && (
+                  <p className="text-white/70 text-sm mb-2">{assignedDrill.notes}</p>
+                )}
+                <p className="text-white/40 text-xs mb-3">From your coach</p>
                 <button
                   onClick={() => {
                     console.log('Marking assignment as complete');
@@ -710,8 +825,8 @@ const Index = () => {
             );
           }
 
-          // Fallback to the existing "Today's Focus" logic
-          if (assignedDrill || topDrills.length > 0) {
+          // Fallback to "Today's Focus" with top drills
+          if (topDrills.length > 0) {
             return (
               <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6 hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all duration-200">
                 <h3 className="text-white font-semibold text-base mb-3">Today's Focus</h3>
@@ -877,7 +992,7 @@ const Index = () => {
           </div>
         )}
 
-        {/* 5. TEAM HIGHLIGHTS (Visual Mock) */}
+        {/* 5. TEAM HIGHLIGHTS */}
         {hasSwings && user && (
           <div className="mb-6 animate-fade-in">
             <div className="mb-3">
@@ -888,47 +1003,43 @@ const Index = () => {
               <div className="bg-gradient-to-r from-green-500/60 to-transparent h-[1px] w-2/3 rounded-full mt-2" />
             </div>
             
-            <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(16,185,129,0.1)] p-4 flex flex-col gap-3">
-              <p className="text-white/70 text-xs uppercase tracking-wide text-center">
-                Top 3 Players — This Week
-              </p>
-              
-              {/* Rank 1 */}
-              <div className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-3 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-200">
-                <div className="flex items-center gap-3">
-                  <span className="text-yellow-400 text-sm w-5 text-center font-bold">1</span>
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center border border-white/20">
-                    <span className="text-white font-bold text-xs">ER</span>
-                  </div>
-                  <span className="text-white font-medium text-sm">Evan R</span>
-                </div>
-                <div className="text-green-400 font-semibold text-sm">84</div>
+            {teamLeaderboardLoading ? (
+              <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(16,185,129,0.1)] p-8 flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
               </div>
-              
-              {/* Rank 2 */}
-              <div className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-3 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-200">
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-300 text-sm w-5 text-center font-bold">2</span>
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center border border-white/20">
-                    <span className="text-white font-bold text-xs">MJ</span>
-                  </div>
-                  <span className="text-white font-medium text-sm">Mike J</span>
-                </div>
-                <div className="text-green-400 font-semibold text-sm">82</div>
+            ) : teamLeaderboard.length > 0 ? (
+              <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(16,185,129,0.1)] p-4 flex flex-col gap-3">
+                <p className="text-white/70 text-xs uppercase tracking-wide text-center">
+                  Top 3 Players — This Week
+                </p>
+                
+                {teamLeaderboard.map((player, index) => {
+                  const rankColors = [
+                    { text: 'text-yellow-400', bg: 'from-yellow-400 to-yellow-600' },
+                    { text: 'text-gray-300', bg: 'from-gray-300 to-gray-500' },
+                    { text: 'text-orange-400', bg: 'from-orange-400 to-orange-600' }
+                  ];
+                  const colors = rankColors[index] || rankColors[2];
+                  
+                  return (
+                    <div key={index} className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-3 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-200">
+                      <div className="flex items-center gap-3">
+                        <span className={`${colors.text} text-sm w-5 text-center font-bold`}>{index + 1}</span>
+                        <div className={`h-8 w-8 rounded-full bg-gradient-to-br ${colors.bg} flex items-center justify-center border border-white/20`}>
+                          <span className="text-white font-bold text-xs">{player.initials}</span>
+                        </div>
+                        <span className="text-white font-medium text-sm">{player.name}</span>
+                      </div>
+                      <div className="text-green-400 font-semibold text-sm">{player.score}</div>
+                    </div>
+                  );
+                })}
               </div>
-              
-              {/* Rank 3 */}
-              <div className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-3 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-200">
-                <div className="flex items-center gap-3">
-                  <span className="text-orange-400 text-sm w-5 text-center font-bold">3</span>
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center border border-white/20">
-                    <span className="text-white font-bold text-xs">SL</span>
-                  </div>
-                  <span className="text-white font-medium text-sm">Sarah L</span>
-                </div>
-                <div className="text-green-400 font-semibold text-sm">79</div>
+            ) : (
+              <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(16,185,129,0.1)] p-6 text-center">
+                <p className="text-white/50 text-sm">Join a team to see the leaderboard</p>
               </div>
-            </div>
+            )}
           </div>
         )}
 
