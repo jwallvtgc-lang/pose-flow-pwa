@@ -168,7 +168,7 @@ Provide three specific pieces of feedback:
           }
         ],
         tool_choice: { type: 'function', function: { name: 'provide_coaching_insight' } },
-        max_completion_tokens: 500
+        max_completion_tokens: 1000
       }),
     });
 
