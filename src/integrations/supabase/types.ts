@@ -16,30 +16,36 @@ export type Database = {
     Tables: {
       assigned_drills: {
         Row: {
+          completed_at: string | null
           created_at: string | null
           drill_name: string
           due_at: string | null
           id: string
           notes: string | null
           player_id: string | null
+          status: string
           team_id: string | null
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string | null
           drill_name: string
           due_at?: string | null
           id?: string
           notes?: string | null
           player_id?: string | null
+          status?: string
           team_id?: string | null
         }
         Update: {
+          completed_at?: string | null
           created_at?: string | null
           drill_name?: string
           due_at?: string | null
           id?: string
           notes?: string | null
           player_id?: string | null
+          status?: string
           team_id?: string | null
         }
         Relationships: [

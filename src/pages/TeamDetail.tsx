@@ -666,7 +666,8 @@ export default function TeamDetail() {
                 playerAssignments.get(playerId).drills.push({
                   drillName: assignment.drill_name,
                   due: assignment.due_at ? format(new Date(assignment.due_at), 'MMM d') : 'No due date',
-                  completed: assignment.completed || false
+                  completed: assignment.status === 'completed',
+                  assignmentId: assignment.id
                 });
               });
 
@@ -698,9 +699,30 @@ export default function TeamDetail() {
                               Done
                             </div>
                           ) : (
-                            <div className="bg-white/10 text-white/70 border border-white/20 rounded-lg text-[10px] px-2 py-[2px]">
-                              Pending
-                            </div>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const { error } = await supabase
+                                    .from('assigned_drills')
+                                    .update({ 
+                                      status: 'completed',
+                                      completed_at: new Date().toISOString()
+                                    })
+                                    .eq('id', drill.assignmentId);
+
+                                  if (error) throw error;
+                                  
+                                  toast.success('Assignment marked as complete!');
+                                  await loadAssignments();
+                                } catch (error) {
+                                  console.error('Error marking assignment complete:', error);
+                                  toast.error('Failed to update assignment');
+                                }
+                              }}
+                              className="bg-white/10 text-white/70 border border-white/20 rounded-lg text-[10px] px-2 py-[2px] hover:bg-green-500/20 hover:text-green-400 hover:border-green-500/40 transition-all"
+                            >
+                              Mark Done
+                            </button>
                           )}
                         </div>
                       </div>

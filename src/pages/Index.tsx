@@ -41,7 +41,7 @@ const Index = () => {
   const [latestSwing, setLatestSwing] = useState<any>(null);
   const [recentSwings, setRecentSwings] = useState<any[]>([]);
   const [topDrills, setTopDrills] = useState<Array<{name: string; count: number; description: string}>>([]);
-  const [assignedDrill, setAssignedDrill] = useState<{ drill_name: string; notes: string | null } | null>(null);
+  const [assignedDrill, setAssignedDrill] = useState<{ id: string; drill_name: string; notes: string | null } | null>(null);
   const [aiInsight, setAiInsight] = useState<{ praise: string; issue: string; action: string; updated: string } | null>(null);
   const [aiInsightLoading, setAiInsightLoading] = useState(false);
   const [teamLeaderboard, setTeamLeaderboard] = useState<Array<{ name: string; initials: string; score: number }>>([]);
@@ -454,10 +454,11 @@ const Index = () => {
 
       const teamIds = (userTeams || []).map(t => t.team_id);
 
-      // Get assigned drills for this player or their teams
+      // Get assigned drills for this player or their teams (only pending ones)
       let query = supabase
         .from('assigned_drills')
-        .select('drill_name, notes, created_at')
+        .select('id, drill_name, notes, created_at')
+        .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
       // Build the OR condition based on whether user has teams
@@ -479,6 +480,7 @@ const Index = () => {
 
       if (drills) {
         setAssignedDrill({
+          id: drills.id,
           drill_name: drills.drill_name,
           notes: drills.notes
         });
@@ -801,7 +803,7 @@ const Index = () => {
 
         {/* 3. COACH ASSIGNMENT / TODAY'S FOCUS CARD */}
         {(() => {
-          // Show coach assignment if there's an active drill assignment
+          // Show coach assignment if there's an active pending drill assignment
           if (assignedDrill && !assignmentCompleted) {
             return (
               <div className="rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] p-5 mb-6">
@@ -812,10 +814,26 @@ const Index = () => {
                 )}
                 <p className="text-white/40 text-xs mb-3">From your coach</p>
                 <button
-                  onClick={() => {
-                    console.log('Marking assignment as complete');
-                    setAssignmentCompleted(true);
-                    toast.success('Assignment marked as done!');
+                  onClick={async () => {
+                    try {
+                      if (!assignedDrill.id) return;
+                      
+                      const { error } = await supabase
+                        .from('assigned_drills')
+                        .update({ 
+                          status: 'completed',
+                          completed_at: new Date().toISOString()
+                        })
+                        .eq('id', assignedDrill.id);
+
+                      if (error) throw error;
+                      
+                      setAssignmentCompleted(true);
+                      toast.success('Assignment marked as done!');
+                    } catch (error) {
+                      console.error('Error marking assignment complete:', error);
+                      toast.error('Failed to update assignment');
+                    }
                   }}
                   className="rounded-xl bg-green-500 text-black font-semibold text-sm px-3 py-2 shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:bg-green-400 transition-all active:scale-95 min-h-[44px]"
                 >
