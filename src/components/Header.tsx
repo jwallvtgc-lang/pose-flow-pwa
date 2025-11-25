@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import wideLogo from '@/assets/swingsense-wide.png';
+import headerLogo from '@/assets/swingsense-header.png';
 
 interface HeaderProps {
   leftAction?: ReactNode;
@@ -18,9 +18,9 @@ export function Header({ leftAction, rightAction }: HeaderProps) {
 
       {/* Wide Brand Logo - Centered and Prominent */}
       <img
-        src={wideLogo}
+        src={headerLogo}
         alt="SwingSense"
-        className="h-20 w-auto max-w-[70%] drop-shadow-[0_0_30px_rgba(16,185,129,0.7)] animate-[glowpulse_6s_ease-in-out_infinite]"
+        className="h-12 w-auto max-w-[80%] object-contain drop-shadow-[0_0_30px_rgba(16,185,129,0.7)] animate-[glowpulse_6s_ease-in-out_infinite]"
       />
 
       {/* Right Action */}
